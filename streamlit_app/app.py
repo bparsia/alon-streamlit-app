@@ -141,17 +141,10 @@ def run_responsibility_analysis(model, result_prop: str, eval_history: str) -> O
 
         try:
             adapter = KoncludeAdapter(konclude_path)
-            st.info(f"Running Konclude from: {konclude_path}")
-            st.info(f"OWL file size: {temp_owl_path.stat().st_size} bytes")
-
             result = adapter.run(temp_owl_path, ReasoningMode.REALISATION, timeout=300, verbose=False)
 
             if not result.success:
                 st.error(f"Reasoner failed: {result.error_message}")
-                if result.stdout:
-                    st.code(result.stdout, language="text")
-                if result.stderr:
-                    st.code(result.stderr, language="text")
                 return None
 
             # Extract satisfied queries
@@ -247,48 +240,9 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str)
     return '\n'.join(lines)
 
 
-def check_konclude():
-    """Check if Konclude is available and working."""
-    try:
-        from pathlib import Path
-        import subprocess
-        from alo_translator.reasoners.config import load_config
-
-        config = load_config(Path("reasoner_config.toml"))
-        konclude_path = Path(config.reasoners["konclude"].path)
-
-        # Check if file exists
-        if not konclude_path.exists():
-            return False, f"Konclude not found at: {konclude_path}"
-
-        # Try to run Konclude with --version
-        result = subprocess.run(
-            [str(konclude_path), "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-
-        if result.returncode == 0:
-            version = result.stdout.strip() or result.stderr.strip()
-            return True, f"Konclude found: {version}"
-        else:
-            return False, f"Konclude exists but failed to run: {result.stderr}"
-
-    except Exception as e:
-        return False, f"Konclude check failed: {str(e)}"
-
-
 def main():
     st.title("🌳 ALOn Model Explorer")
     st.markdown("Interactive tool for editing, visualizing, and reasoning over ALOn models")
-
-    # Show Konclude status
-    konclude_ok, konclude_msg = check_konclude()
-    if konclude_ok:
-        st.success(konclude_msg)
-    else:
-        st.warning(f"⚠️ {konclude_msg} - Responsibility analysis will not work.")
 
     st.markdown("""You may load an enter either a Discrete Branching Time or and Index style model. The model can also be *partially* specified in the following ways:
 
@@ -434,6 +388,20 @@ For faster results, download the OWL file and run locally using `analyze_owl.py`
 
             with col2:
                 st.markdown("**Download for Local Analysis:**")
+
+                # Download analyzer script
+                analyzer_path = Path(__file__).parent.parent / "analyze_owl.py"
+                if analyzer_path.exists():
+                    with open(analyzer_path, 'r') as f:
+                        analyzer_content = f.read()
+                    st.download_button(
+                        label="📥 Download Analyzer Script",
+                        data=analyzer_content,
+                        file_name="analyze_owl.py",
+                        mime="text/x-python",
+                        help="Standalone Python script (no dependencies)"
+                    )
+
                 if st.button("📥 Generate OWL File"):
                     try:
                         # Parse model
@@ -469,11 +437,12 @@ For faster results, download the OWL file and run locally using `analyze_owl.py`
                             data=owl_output,
                             file_name="model.owl",
                             mime="application/rdf+xml",
-                            help="Download this file and analyze locally with analyze_owl.py"
+                            help="Download this file and analyze locally with analyze_owl.py",
+                            key="download_owl"
                         )
 
-                        st.info(f"OWL file ready ({len(owl_output):,} bytes). Run locally with:\n\n"
-                               f"`python analyze_owl.py model.owl`")
+                        st.success(f"OWL file ready ({len(owl_output):,} bytes)")
+                        st.code("python analyze_owl.py model.owl", language="bash")
 
                     except Exception as e:
                         st.error(f"OWL generation failed: {str(e)}")
