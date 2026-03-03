@@ -3,5 +3,6 @@
 
 [reasoners.konclude]
 # Local development: update this path to your Konclude installation
-# Streamlit Cloud: Konclude will be installed via packages.txt to /usr/bin/konclude
-path = "konclude"  # Will search in PATH
+# Streamlit Cloud: Konclude installed via packages.txt
+# Try common paths: /usr/bin/Konclude or /usr/bin/konclude
+path = "/usr/bin/Konclude"  # Debian package binary
