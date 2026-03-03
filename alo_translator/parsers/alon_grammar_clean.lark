@@ -1,0 +1,112 @@
+// Lark grammar for ALOn (Action Logic with Opposing) query expressions
+// Clean version with consistent naming and full parenthesization support
+
+?start: formula | expansion_axiom
+
+// Expansion axiom for formula naming (used by expander/serializer)
+expansion_axiom: formula "=>" IDENTIFIER
+
+// Formula with precedence (lowest to highest):
+// 1. Biconditional (<->)
+// 2. Implication (->)
+// 3. Disjunction (v)
+// 4. Conjunction (&)
+// 5. Negation (~)
+// 6. Primary formulas (modal operators, atoms, parenthesized)
+
+?formula: biconditional
+
+?biconditional: implication ("<->" implication)*   -> biconditional
+
+?implication: disjunction ("->" disjunction)*      -> implication
+
+?disjunction: conjunction ("v" conjunction)*       -> disjunction
+
+?conjunction: negation ("&" negation)*             -> conjunction
+
+?negation: "~" negation                            -> negation
+         | primary
+
+// Primary formulas: modal operators, atoms, and parenthesized formulas
+?primary: box
+        | diamond
+        | next
+        | pdl_box
+        | pdl_diamond
+        | expected_result
+        | but_for
+        | ness
+        | xstit
+        | dxstit
+        | pres
+        | sres
+        | res
+        | do_action
+        | free_do_action
+        | opposing
+        | atom
+
+// Primitive modal operators
+box: "[]" primary
+diamond: "<>" primary
+next: X_OP primary
+
+// PDL-style modalities
+pdl_box: "[" action_expr "]" primary
+pdl_diamond: "<" action_expr ">" primary
+
+// Action predicates
+do_action: "do" "(" action_expr ")"
+free_do_action: "free_do" "(" action_expr ")"
+opposing: action_expr "|>" action_expr
+
+// Causal operators
+expected_result: "do" "(" action_expr ")" "[+]->" primary
+but_for: "but" "(" action_expr "," formula ")"
+ness: "ness" "(" action_expr "," formula ")"
+
+// STIT operators
+xstit: "[" agent_expr "XSTIT" "]" primary
+dxstit: "[" agent_expr "DXSTIT" "]" primary
+
+// Responsibility operators
+pres: "[" agent_expr "pres" "]" primary
+sres: "[" agent_expr "sres" "]" primary
+res: "[" agent_expr "res" "]" primary
+
+// Atoms and parenthesized formulas
+?atom: "(" formula ")"                             -> parens
+     | top
+     | bottom
+     | prop
+
+top: "T"
+bottom: "_L"
+prop: IDENTIFIER
+
+// Action expressions
+?action_expr: individual_action
+            | group_action
+
+individual_action: IDENTIFIER
+group_action: "{" action_mapping ("," action_mapping)* "}"
+
+action_mapping: NUMBER ":" IDENTIFIER
+              | IDENTIFIER                         -> action_id
+
+// Agent expressions
+?agent_expr: individual_agent
+           | agent_group
+           | named_agent_group
+
+individual_agent: NUMBER
+agent_group: "{" NUMBER ("," NUMBER)* "}"
+named_agent_group: IDENTIFIER
+
+// Terminals
+X_OP.10: "X"
+IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
+NUMBER: /[0-9]+/
+
+%import common.WS
+%ignore WS

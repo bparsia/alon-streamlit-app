@@ -1,0 +1,4 @@
+streamlit>=1.54.0
+streamlit-mermaid>=0.3.0
+lark>=1.1.0
+strictyaml>=1.7.0

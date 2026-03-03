@@ -1,0 +1,7 @@
+# Reasoner configuration
+# This file specifies paths to OWL reasoners
+
+[reasoners.konclude]
+# Local development: update this path to your Konclude installation
+# Streamlit Cloud: Konclude will be installed via packages.txt to /usr/bin/konclude
+path = "konclude"  # Will search in PATH

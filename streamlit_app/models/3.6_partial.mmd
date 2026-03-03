@@ -1,0 +1,28 @@
+---
+type: DBT
+actions:
+  1:
+    - sd
+    - ss
+  3:
+    - sd
+    - ss
+aliases:
+  1: Alice
+  3: Carl
+  q: Dan dies
+  sd: shoots Dan
+  ss: stands still
+---
+classDiagram
+direction BT
+  class m {
+  }
+  m --> m1 : h1({sd1, sd3})
+  m --> m2 : h2({ss1, sd3})
+  m --> m3 : h3({ss1, ss3})
+  m --> m4 : h4({sd1, ss3})
+  m1: q
+  m2: q
+  m3: ~q
+  m4: q

@@ -1,0 +1,28 @@
+---
+type: DBT
+actions:
+  1:
+    - sd
+    - ss
+  2:
+    - ss
+    - ha
+opposings:
+  sd1:
+    - ha2
+aliases:
+  1: Alice
+  2: Beth
+  sd: shoots Dan
+  ss: stands still
+  ha: hits Alice
+  q: Dan dies
+result: q
+evaluation_point: m/h1
+---
+classDiagram
+direction BT
+  class m {
+  }
+  m --> m1 : h1({sd1, ss2})
+  m1: q

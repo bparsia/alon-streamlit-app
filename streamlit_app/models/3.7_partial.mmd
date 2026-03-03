@@ -1,0 +1,22 @@
+---
+type: DBT
+actions:
+  1:
+    - pd
+    - ss
+  3:
+    - pd
+    - ss
+aliases:
+  1: Alice
+  3: Carl
+  pd: push Dan
+  q: Dan dies
+  ss: stands still
+---
+classDiagram
+direction BT
+  class m {
+  }
+  m --> m1 : h1({pd1, pd3})
+  m1: q

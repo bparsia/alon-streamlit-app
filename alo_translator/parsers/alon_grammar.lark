@@ -1,0 +1,118 @@
+// Lark grammar for ALOn (Action Logic with Opposing) query expressions
+// Version 2: Compositional grammar with full formula support
+//
+// This grammar parses the full ALOn language including:
+// - Propositional operators: &, v, ->, <->, ~
+// - Modal operators: [], <>, X
+// - Action operators: do, free_do, opposing
+// - PDL-style: [a]φ, <a>φ
+// - ALOn-specific: expected result, but-for, ness, XSTIT, responsibility
+
+?start: formula
+
+// Formula with precedence (lowest to highest):
+// 1. Biconditional (<->)
+// 2. Implication (->)
+// 3. Disjunction (v)
+// 4. Conjunction (&)
+// 5. Negation (~)
+// 6. Modal/temporal operators
+// 7. Atoms
+
+?formula: biconditional
+
+?biconditional: implication ("<->" implication)*   -> biconditional_op
+
+?implication: disjunction ("->" disjunction)*      -> implication_op
+
+?disjunction: conjunction ("v" conjunction)*       -> disjunction_op
+
+?conjunction: unary ("&" unary)*                   -> conjunction_op
+
+?unary: "~" unary                                  -> negation
+      | modal
+
+?modal: box_op
+      | diamond_op
+      | next_op
+      | pdl_box
+      | pdl_diamond
+      | expected_result
+      | but_for
+      | ness
+      | xstit
+      | dxstit
+      | potential_responsibility
+      | strong_responsibility
+      | plain_responsibility
+      | do_action_op
+      | free_do_action_op
+      | opposing_op
+      | atom
+
+// Primitive modal operators
+box_op: "[]" unary                                 -> box
+diamond_op: "<>" unary                             -> diamond
+next_op: X_OP unary                                -> next
+
+// PDL-style modalities: [action]formula, <action>formula
+pdl_box: "[" action_expr "]" unary                 -> pdl_box
+pdl_diamond: "<" action_expr ">" unary             -> pdl_diamond
+
+// Action predicates
+do_action_op: "do" "(" action_expr ")"             -> do_action
+free_do_action_op: "free_do" "(" action_expr ")"   -> free_do_action
+opposing_op: action_expr "|>" action_expr          -> opposing
+
+// Causal operators
+expected_result: "do" "(" action_expr ")" "[+]->" unary    -> expected_result
+but_for: "but" "(" action_expr "," formula ")"     -> but_for
+ness: "ness" "(" action_expr "," formula ")"       -> ness
+
+// STIT operators
+xstit: "[" agent_expr "XSTIT" "]" unary            -> xstit
+dxstit: "[" agent_expr "DXSTIT" "]" unary          -> dxstit
+
+// Responsibility operators
+potential_responsibility: "[" agent_expr "pres" "]" unary   -> pres
+strong_responsibility: "[" agent_expr "sres" "]" unary      -> sres
+plain_responsibility: "[" agent_expr "res" "]" unary        -> res
+
+// Atoms
+?atom: "(" formula ")"                             -> parens
+     | top
+     | bottom
+     | prop
+
+top: "T"                                           -> top
+bottom: "_L"                                       -> bottom
+prop: IDENTIFIER                                   -> prop
+
+// Action expressions
+?action_expr: individual_action
+            | group_action
+
+individual_action: IDENTIFIER                      -> individual_action
+group_action: "{" action_mapping ("," action_mapping)* "}" -> group_action
+
+// Action mapping for group actions: agent:action or just action_with_agent
+action_mapping: NUMBER ":" IDENTIFIER              -> action_mapping
+              | IDENTIFIER                         -> action_id
+
+// Agent expressions
+?agent_expr: individual_agent
+           | agent_group
+           | named_agent_group
+
+individual_agent: NUMBER                           -> individual_agent
+agent_group: "{" NUMBER ("," NUMBER)* "}"          -> agent_group
+named_agent_group: IDENTIFIER                      -> named_agent_group
+
+// Terminals (X_OP has higher priority to prevent it being part of IDENTIFIER)
+X_OP.10: "X"
+IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
+NUMBER: /[0-9]+/
+
+// Ignore whitespace
+%import common.WS
+%ignore WS

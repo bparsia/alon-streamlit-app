@@ -1,0 +1,52 @@
+// Lark grammar for restricted Mermaid class diagrams
+// Supports: YAML front matter, class definitions with methods/attributes,
+// associations (-->), and shorthand member declarations
+
+?start: frontmatter? diagram
+
+// Optional YAML front matter (between --- delimiters)
+// Capture YAML as a single block to preserve indentation
+frontmatter: "---" _NL YAML_BLOCK "---" _NL
+
+YAML_BLOCK: /(?:(?!^---$)(?:.*\n))+/m
+
+// Main class diagram
+diagram: "classDiagram" _NL direction? statement*
+
+// Optional direction specification
+direction: "direction" DIRECTION _NL
+DIRECTION: "BT" | "TB" | "LR" | "RL"
+
+// Diagram statements
+?statement: moment
+          | succ
+          | shorthand_member
+          | _NL
+
+// Class definition: class NAME { members }
+moment: "class" IDENTIFIER "{" _NL? members? "}" _NL?
+
+members: member+
+
+?member: (action | proposition) _NL?
+
+action: IDENTIFIER "()"
+proposition: "~"? IDENTIFIER  // Propositions or their negations
+
+// Association/link: CLASS1 --> CLASS2 : label
+succ: IDENTIFIER "-->" IDENTIFIER (":" label)? _NL?
+
+label: /[^\n]+/
+
+// Shorthand member declaration: CLASS: value
+shorthand_member: IDENTIFIER ":" member_value _NL?
+member_value: /[^\n]+/
+
+// Class name identifier (alphanumeric + underscore/hyphen)
+IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_-]*/
+
+// Newline (one or more)
+_NL: /\r?\n/+
+
+%import common.WS_INLINE
+%ignore WS_INLINE
