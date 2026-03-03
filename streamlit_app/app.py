@@ -399,11 +399,42 @@ def main():
     with st.expander("🧠 Responsibility Analysis", expanded=False):
         if mermaid_text.strip():
             st.markdown("""Analyze responsibility for outcomes using various operators.
-            
-All formulae will be analysed at m/h1.""")
 
-            if st.button("▶️ Run Analysis"):
-                with st.spinner("Running responsibility analysis..."):
+All formulae will be analysed at m/h1.
+
+**Note:** Analysis on Streamlit Cloud may be slow due to resource constraints.
+For faster results, download the OWL file and run locally using `analyze_owl.py`.""")
+
+            col1, col2 = st.columns([1, 1])
+
+            with col1:
+                if st.button("▶️ Run Analysis (Cloud)"):
+                    with st.spinner("Running responsibility analysis..."):
+                        try:
+                            # Parse model
+                            model, partial_spec = parse_dbt_diagram(mermaid_text)
+
+                            # Get result prop and eval history
+                            result_prop = partial_spec.get("result", "q")
+                            eval_point = partial_spec.get("evaluation_point", "m/h1")
+                            eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
+
+                            # Run analysis
+                            satisfied_query_ids = run_responsibility_analysis(model, result_prop, eval_history)
+
+                            if satisfied_query_ids is not None:
+                                st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
+
+                                # Show results table
+                                results_md = format_results_table(model, satisfied_query_ids, result_prop)
+                                st.markdown(results_md)
+
+                        except Exception as e:
+                            st.error(f"Analysis failed: {str(e)}")
+
+            with col2:
+                st.markdown("**Download for Local Analysis:**")
+                if st.button("📥 Generate OWL File"):
                     try:
                         # Parse model
                         model, partial_spec = parse_dbt_diagram(mermaid_text)
@@ -413,18 +444,39 @@ All formulae will be analysed at m/h1.""")
                         eval_point = partial_spec.get("evaluation_point", "m/h1")
                         eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
 
-                        # Run analysis
-                        satisfied_query_ids = run_responsibility_analysis(model, result_prop, eval_history)
+                        # Generate queries
+                        resp_config = ResponsibilityConfig(
+                            target_proposition=result_prop,
+                            agents="all",
+                            groups="all",
+                            responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
+                            history=eval_history
+                        )
+                        model.responsibility_config = resp_config
+                        queries = generate_queries(model)
+                        model.queries.extend(queries)
+                        model = parse_queries(model)
+                        model = expand_queries(model, evaluation_history=eval_history)
 
-                        if satisfied_query_ids is not None:
-                            st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
+                        # Serialize to OWL
+                        strategy = EquivFullCardinalityStrategy()
+                        serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
+                        owl_output = serializer.serialize()
 
-                            # Show results table
-                            results_md = format_results_table(model, satisfied_query_ids, result_prop)
-                            st.markdown(results_md)
+                        # Offer download
+                        st.download_button(
+                            label="⬇️ Download OWL File",
+                            data=owl_output,
+                            file_name="model.owl",
+                            mime="application/rdf+xml",
+                            help="Download this file and analyze locally with analyze_owl.py"
+                        )
+
+                        st.info(f"OWL file ready ({len(owl_output):,} bytes). Run locally with:\n\n"
+                               f"`python analyze_owl.py model.owl`")
 
                     except Exception as e:
-                        st.error(f"Analysis failed: {str(e)}")
+                        st.error(f"OWL generation failed: {str(e)}")
         else:
             st.info("Enter a Mermaid diagram in the Model Definition section")
 
