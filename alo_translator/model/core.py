@@ -105,6 +105,7 @@ class Result:
     """
     history_name: str
     true_propositions: Set[str]  # Proposition symbols that are true
+    moment_name: Optional[str] = None  # Successor moment name (e.g., "m1")
 
     def __str__(self) -> str:
         if self.true_propositions:

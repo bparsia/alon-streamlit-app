@@ -266,8 +266,6 @@ def main():
 
             if selected_example and st.button("Load"):
                 st.session_state.mermaid_input = example_models[selected_example]
-                # Also update the editor's state
-                st.session_state.mermaid_editor = example_models[selected_example]
                 st.rerun()
 
         st.divider()
@@ -278,7 +276,6 @@ def main():
         if uploaded_file is not None:
             content = uploaded_file.read().decode("utf-8")
             st.session_state.mermaid_input = content
-            st.session_state.mermaid_editor = content
             st.success(f"Loaded {uploaded_file.name}")
 
         st.divider()
@@ -341,8 +338,16 @@ def main():
                 # Show complete Index diagram
                 st.subheader("Complete Index Structure")
                 index_diagram = serialize_index(model, partial_spec, mode="complete")
-                # Use full width for complete diagram
-                st_mermaid(index_diagram, height=800)
+
+                # Add tabs for viewing diagram vs source
+                tab1, tab2 = st.tabs(["Diagram", "Mermaid Source"])
+
+                with tab1:
+                    # Use full width for complete diagram
+                    st_mermaid(index_diagram, height=800)
+
+                with tab2:
+                    st.code(index_diagram, language="mermaid")
 
             except Exception as e:
                 st.error(f"Failed to parse model: {str(e)}")

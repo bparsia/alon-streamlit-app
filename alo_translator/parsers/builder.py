@@ -313,18 +313,26 @@ def _parse_histories(histories_dict: Dict[str, Dict[str, str]]) -> Dict[str, Gro
     return named_histories
 
 
-def _parse_results(results_dict: Dict[str, List[str]]) -> List[Result]:
+def _parse_results(results_dict: Dict[str, any]) -> List[Result]:
     """
     Parse [Results] section.
 
     Format: h1 = ["q"] means proposition "q" is true at the successor of h1
+           or h1 = {"moment": "m1", "props": ["q"]} from DBT parser
 
     Returns list of Result objects.
     """
     results = []
-    for history_name, prop_list in results_dict.items():
-        true_props = set(prop_list)
-        results.append(Result(history_name, true_props))
+    for history_name, value in results_dict.items():
+        # Handle both old format (list) and new format (dict with moment)
+        if isinstance(value, dict):
+            true_props = set(value.get("props", []))
+            moment_name = value.get("moment")
+        else:
+            true_props = set(value)
+            moment_name = None
+
+        results.append(Result(history_name, true_props, moment_name))
 
     return results
 

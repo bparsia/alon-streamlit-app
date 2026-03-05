@@ -114,8 +114,9 @@ def serialize_index(
 
         lines.append("  }")
 
-        # Outcome moment: m1_h1
-        outcome_index = f"m1_{hist_name}"
+        # Outcome moment: use moment_name from result if available, else default to m1
+        moment_name = result.moment_name if result and result.moment_name else "m1"
+        outcome_index = f"{moment_name}_{hist_name}"
         lines.append(f"  class {outcome_index} {{")
 
         # Add propositions as attributes

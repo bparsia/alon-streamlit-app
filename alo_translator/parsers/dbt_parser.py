@@ -75,7 +75,7 @@ def parse_dbt_label(label: str) -> Tuple[str, Dict[int, str]]:
     return history_name, actions_dict
 
 
-def extract_histories_and_results(diagram: Dict[str, Any]) -> Tuple[Dict[str, Dict[int, str]], Dict[str, list]]:
+def extract_histories_and_results(diagram: Dict[str, Any]) -> Tuple[Dict[str, Dict[int, str]], Dict[str, dict]]:
     """
     Extract histories and results from parsed Mermaid diagram.
 
@@ -88,7 +88,7 @@ def extract_histories_and_results(diagram: Dict[str, Any]) -> Tuple[Dict[str, Di
     Returns:
         Tuple of (histories_dict, results_dict)
         - histories_dict: {history_name: {agent: action}}
-        - results_dict: {history_name: [props]}
+        - results_dict: {history_name: {"moment": moment_name, "props": [props]}}
     """
     histories = {}
     results = {}
@@ -114,8 +114,8 @@ def extract_histories_and_results(diagram: Dict[str, Any]) -> Tuple[Dict[str, Di
 
         # Get results for this history's outcome moment
         outcome_moment = succ["to_moment"]
-        if outcome_moment in outcome_props:
-            results[history_name] = outcome_props[outcome_moment]
+        props = outcome_props.get(outcome_moment, [])
+        results[history_name] = {"moment": outcome_moment, "props": props}
 
     return histories, results
 
@@ -246,6 +246,6 @@ def parse_dbt_diagram(mermaid_string: str) -> Tuple[ALOModel, Dict[str, Any]]:
             # Default to negation of all specified propositions
             negated_props = {f"~{p}" if not p.startswith("~") else p[1:]
                            for p in specified_props}
-            model.results.append(Result(hist_name, negated_props))
+            model.results.append(Result(hist_name, negated_props, None))
 
     return model, partial_spec
