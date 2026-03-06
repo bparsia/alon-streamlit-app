@@ -247,9 +247,22 @@ class OWLIndexSerializer(Serializer):
         for history_name in history_names:
             indices.append(('m', history_name))
 
-        # Successor moments (one per history in 1-step models)
-        for i, history_name in enumerate(history_names, 1):
-            successor_moment = f"m{i}"
+        # Successor moments: use moment_name from Result if available
+        for history_name in history_names:
+            # Find the result for this history to get its moment name
+            result = None
+            for r in self.model.results:
+                if r.history_name == history_name:
+                    result = r
+                    break
+
+            # Use moment_name from result, or fall back to enumeration
+            if result and result.moment_name:
+                successor_moment = result.moment_name
+            else:
+                # Fallback: enumerate (shouldn't happen with fixed DBT parser)
+                successor_moment = f"m{len([idx for idx in indices if idx[0] != 'm']) + 1}"
+
             indices.append((successor_moment, history_name))
 
         return indices
@@ -425,20 +438,28 @@ class OWLIndexSerializer(Serializer):
         # Get all propositions in the model
         all_props = set(self.model.get_all_propositions())
 
-        for i, history_name in enumerate(self.history_to_cga.keys(), 1):
-            succ_index = self._index_name(f'm{i}', history_name)
-
-            # Find the result for this history
-            true_props = set()
-            for result in self.model.results:
-                if result.history_name == history_name:
-                    true_props = set(result.true_propositions)
-                    # Add positive assertions
-                    for prop in result.true_propositions:
-                        assertion = SubElement(ontology, "ClassAssertion")
-                        SubElement(assertion, "Class", {"IRI": self._iri(prop)})
-                        SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
+        for history_name in self.history_to_cga.keys():
+            # Find the result for this history to get moment name
+            result = None
+            for r in self.model.results:
+                if r.history_name == history_name:
+                    result = r
                     break
+
+            if not result:
+                continue  # No result for this history, skip
+
+            # Use moment_name from result
+            successor_moment = result.moment_name if result.moment_name else "m1"
+            succ_index = self._index_name(successor_moment, history_name)
+
+            # Get true propositions
+            true_props = set(result.true_propositions)
+            # Add positive assertions
+            for prop in result.true_propositions:
+                assertion = SubElement(ontology, "ClassAssertion")
+                SubElement(assertion, "Class", {"IRI": self._iri(prop)})
+                SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
 
             # Add negative assertions for propositions that are NOT true
             false_props = all_props - true_props

@@ -240,12 +240,25 @@ def parse_dbt_diagram(mermaid_string: str) -> Tuple[ALOModel, Dict[str, Any]]:
     for result in model.results:
         specified_props.update(result.true_propositions)
 
-    # Default: unspecified histories have all specified props negated
+    # Find highest moment number from existing results
+    moment_counter = 1
+    for result in model.results:
+        if result.moment_name:
+            # Extract number from moment name like "m1", "m2", etc.
+            match = re.match(r'm(\d+)', result.moment_name)
+            if match:
+                moment_num = int(match.group(1))
+                moment_counter = max(moment_counter, moment_num + 1)
+
+    # Default: unspecified histories have all specified props negated and new moments
     for hist_name in model.named_histories.keys():
         if hist_name not in existing_result_histories:
             # Default to negation of all specified propositions
             negated_props = {f"~{p}" if not p.startswith("~") else p[1:]
                            for p in specified_props}
-            model.results.append(Result(hist_name, negated_props, None))
+            # Assign new moment number
+            new_moment = f"m{moment_counter}"
+            moment_counter += 1
+            model.results.append(Result(hist_name, negated_props, new_moment))
 
     return model, partial_spec
