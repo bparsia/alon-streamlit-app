@@ -3,6 +3,7 @@
 from .base import Serializer
 from .owl_index import OWLIndexSerializer
 from .owl_index_new_expander import OWLIndexNewExpanderSerializer
+from .datalog_index import DatalogSerializer
 from .index_strategies import (
     EquivChainedNominalStrategy,
     EquivFullCardinalityStrategy,
@@ -18,6 +19,7 @@ __all__ = [
     "Serializer",
     "OWLIndexSerializer",
     "OWLIndexNewExpanderSerializer",
+    "DatalogSerializer",
     "EquivChainedNominalStrategy",
     "EquivFullCardinalityStrategy",
     "EquivFullNominalStrategy",
