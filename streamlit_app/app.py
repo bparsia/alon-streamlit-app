@@ -34,24 +34,20 @@ except ImportError:
 
 
 def _konclude_path() -> Optional[Path]:
-    """Return Konclude binary path if available, else None."""
+    """Return Konclude binary path if explicitly configured via Streamlit secret, else None.
+
+    Add KONCLUDE_PATH to .streamlit/secrets.toml when running locally:
+        KONCLUDE_PATH = "/absolute/path/to/Konclude"
+    Leave it unset on Streamlit Cloud to disable the Konclude option.
+    """
     if not _KONCLUDE_IMPORTS_OK:
         return None
-    # Try reasoner_config.toml (relative to CWD, then relative to this file)
-    for config_path in [
-        Path("reasoner_config.toml"),
-        Path(__file__).parent / "reasoner_config.toml",
-        Path(__file__).parent.parent / "reasoner_config.toml",
-    ]:
-        try:
-            config = load_config(config_path)
-            p = Path(config.reasoners["konclude"].path)
-            if not p.is_absolute():
-                p = config_path.parent / p
-            if p.exists():
-                return p
-        except Exception:
-            continue
+    try:
+        p = Path(st.secrets["KONCLUDE_PATH"])
+        if p.exists():
+            return p
+    except (KeyError, Exception):
+        pass
     return None
 
 
@@ -398,7 +394,7 @@ All formulae will be analysed at m/h1.""")
             if konclude_bin:
                 backend = st.radio(
                     "Reasoner",
-                    ["pyDatalog (fast)", "Konclude (OWL)"],
+                    ["pyDatalog", "Konclude (OWL)"],
                     horizontal=True,
                 )
                 use_konclude = backend == "Konclude (OWL)"
