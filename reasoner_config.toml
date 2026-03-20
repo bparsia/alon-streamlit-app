@@ -5,4 +5,5 @@
 # Local development: update this path to your Konclude installation
 # Streamlit Cloud: Konclude installed via packages.txt
 # Try common paths: /usr/bin/Konclude or /usr/bin/konclude
-path = "/usr/bin/Konclude"  # Debian package binary
+#path = "/usr/bin/Konclude"  # Debian package binary
+path = ""
