@@ -230,6 +230,41 @@ class ALOModel:
 
         return complete_actions
 
+    def complete(self, target_prop: str = "q", eval_history: str = "h1") -> None:
+        """
+        Complete the partial model in place.
+
+        - Names all unnamed complete group actions (h2, h3, …)
+        - Adds default results for every unspecified history:
+            eval_history → target_prop is True
+            all others   → target_prop is False (~target_prop)
+        """
+        import re
+
+        # Name every CGA that doesn't already have a history name
+        history_counter = 1
+        for cga in self.generate_complete_group_actions():
+            if not any(ga.actions == cga.actions for ga in self.named_histories.values()):
+                while f"h{history_counter}" in self.named_histories:
+                    history_counter += 1
+                self.named_histories[f"h{history_counter}"] = cga
+                history_counter += 1
+
+        # Default results for histories with no explicit result
+        existing = {r.history_name for r in self.results}
+        moment_counter = 1
+        for result in self.results:
+            if result.moment_name:
+                m = re.match(r'm(\d+)', result.moment_name)
+                if m:
+                    moment_counter = max(moment_counter, int(m.group(1)) + 1)
+
+        for hist_name in self.named_histories:
+            if hist_name not in existing:
+                props = {target_prop} if hist_name == eval_history else {f"~{target_prop}"}
+                self.results.append(Result(hist_name, props, f"m{moment_counter}"))
+                moment_counter += 1
+
     def get_all_propositions(self) -> Set[str]:
         """Get all proposition symbols mentioned in results"""
         props = set()
