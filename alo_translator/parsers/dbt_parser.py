@@ -234,15 +234,11 @@ def parse_dbt_diagram(mermaid_string: str) -> Tuple[ALOModel, Dict[str, Any]]:
             model.named_histories[new_name] = group_action
             history_counter += 1
 
-    # Generate default results for histories not in partial_spec
+    # Generate default results for histories not in partial_spec.
+    # Default semantics: target outcome is false at unspecified histories.
     existing_result_histories = {r.history_name for r in model.results}
-
-    # Collect base proposition names (strip leading ~ so {q, ~q} → {q})
-    base_props = set()
-    for result in model.results:
-        for p in result.true_propositions:
-            base_props.add(p[1:] if p.startswith("~") else p)
-    negated_props = {f"~{p}" for p in base_props}
+    target_prop = partial_spec.get("result", "q")
+    default_props = {f"~{target_prop}"}
 
     # Find highest moment number from existing results
     moment_counter = 1
@@ -253,11 +249,11 @@ def parse_dbt_diagram(mermaid_string: str) -> Tuple[ALOModel, Dict[str, Any]]:
                 moment_num = int(match.group(1))
                 moment_counter = max(moment_counter, moment_num + 1)
 
-    # Default: unspecified histories get negation of all base propositions
     for hist_name in model.named_histories.keys():
         if hist_name not in existing_result_histories:
             new_moment = f"m{moment_counter}"
             moment_counter += 1
-            model.results.append(Result(hist_name, negated_props, new_moment))
+            # Fresh copy per Result so sets are never shared
+            model.results.append(Result(hist_name, set(default_props), new_moment))
 
     return model, partial_spec
