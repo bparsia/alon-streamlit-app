@@ -297,11 +297,9 @@ def main():
                 format_func=lambda x: "Select an example..." if x == "" else x
             )
 
-            if selected_example and st.button("Load"):
+            if selected_example:
                 st.session_state.mermaid_input = example_models[selected_example]
-                # Also update the editor's state
                 st.session_state.mermaid_editor = example_models[selected_example]
-                st.rerun()
 
         st.divider()
 
@@ -360,7 +358,7 @@ def main():
                 st.info("Enter a Mermaid diagram to see preview")
 
     # Section 2: Complete Model
-    with st.expander("📊 Complete Model", expanded=False):
+    with st.expander("📊 Complete Model", expanded=True):
         if mermaid_text.strip():
             try:
                 # Parse the diagram
@@ -383,7 +381,7 @@ def main():
             st.info("Enter a Mermaid diagram in the Model Definition section")
 
     # Section 3: Responsibility Analysis
-    with st.expander("🧠 Responsibility Analysis", expanded=False):
+    with st.expander("🧠 Responsibility Analysis", expanded=True):
         if mermaid_text.strip():
             st.markdown("""Analyze responsibility for outcomes using various operators.
 
