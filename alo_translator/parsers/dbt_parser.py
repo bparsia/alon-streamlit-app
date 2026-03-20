@@ -235,10 +235,12 @@ def parse_dbt_diagram(mermaid_string: str) -> Tuple[ALOModel, Dict[str, Any]]:
             history_counter += 1
 
     # Generate default results for histories not in partial_spec.
-    # Default semantics: target outcome is false at unspecified histories.
+    # The evaluation history gets target_prop=True; all others get ~target_prop.
     existing_result_histories = {r.history_name for r in model.results}
     target_prop = partial_spec.get("result", "q")
-    default_props = {f"~{target_prop}"}
+
+    eval_point = partial_spec.get("evaluation_point", "m/h1")
+    eval_history = eval_point.split("/")[-1] if "/" in eval_point else eval_point
 
     # Find highest moment number from existing results
     moment_counter = 1
@@ -253,7 +255,8 @@ def parse_dbt_diagram(mermaid_string: str) -> Tuple[ALOModel, Dict[str, Any]]:
         if hist_name not in existing_result_histories:
             new_moment = f"m{moment_counter}"
             moment_counter += 1
-            # Fresh copy per Result so sets are never shared
-            model.results.append(Result(hist_name, set(default_props), new_moment))
+            # Evaluation history: outcome must be true; all others: false
+            props = {target_prop} if hist_name == eval_history else {f"~{target_prop}"}
+            model.results.append(Result(hist_name, props, new_moment))
 
     return model, partial_spec
