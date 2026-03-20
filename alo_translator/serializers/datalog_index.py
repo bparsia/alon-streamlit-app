@@ -1,240 +1,82 @@
 """
-Datalog Index serializer using pyDatalog.
+Datalog Index serializer - generates complete pyDatalog programs from ALOn models.
 
-Serializes ALOn models to pyDatalog syntax for pure-Python reasoning.
+Uses the new transformer approach (ExpanderTransformer + DatalogSerializer) for TBox.
+Generates ABox facts directly from the model.
 """
 
 from typing import Dict, List, Set, Tuple, Optional
-from ..model.core import ALOModel, GroupAction, Result, Query
-from ..model.formula import (
-    FormulaNode, Prop, DoAction, FreeDoAction, NamedFormula,
-    Next, Box, Diamond, Conjunction, Disjunction, Negation, Implication
-)
+from pathlib import Path
+from lark import Lark
+
 from .base import Serializer
+from ..model.core import ALOModel, GroupAction, Result
+from .datalog_serializer import DatalogSerializer
+from ..parsers.pydatalog_expander_transformer import PyDatalogExpanderTransformer
 
 
-class DatalogFormulaVisitor:
+class DatalogIndexSerializer(Serializer):
     """
-    Translates FormulaNode AST to pyDatalog rule bodies.
+    Serializes ALOn models to complete pyDatalog programs.
 
-    Key differences from OWL visitor:
-    - Produces Datalog predicate calls instead of XML
-    - Uses variable bindings (uppercase: I, J, K, ...)
-    - Translates quantification to explicit variables
-    """
-
-    def __init__(self, model: ALOModel, registry=None):
-        self.model = model
-        self.registry = registry
-        self.var_counter = 0
-
-    def translate(self, formula: FormulaNode, index_var: str = "I") -> str:
-        """
-        Translate formula to Datalog rule body.
-
-        Args:
-            formula: The formula to translate
-            index_var: Variable name for current index (default: "I")
-
-        Returns:
-            Datalog expression string
-        """
-        self.var_counter = 0  # Reset for each formula
-        return self.visit(formula, index_var)
-
-    def visit(self, node: FormulaNode, index_var: str) -> str:
-        """Dispatch to appropriate visitor method."""
-        if isinstance(node, NamedFormula):
-            # Reference to registered predicate
-            predicate_name = self._owl_name_to_predicate(node.formula_key)
-            return f"{predicate_name}({index_var})"
-
-        elif isinstance(node, Prop):
-            return f"prop({index_var}, '{node.symbol}')"
-
-        elif isinstance(node, DoAction):
-            action_name = str(node.action)
-            return f"action({index_var}, '{action_name}')"
-
-        elif isinstance(node, FreeDoAction):
-            action_name = str(node.action)
-            # free_do(a) = action(I, a) & ~opposing_a(I)
-            opp_pred = f"opposing_{action_name}"
-            return f"(action({index_var}, '{action_name}') & ~{opp_pred}({index_var}))"
-
-        elif isinstance(node, Next):
-            # Xφ: exists successor J where φ(J)
-            succ_var = self._fresh_var()
-            inner = self.visit(node.formula, succ_var)
-            return f"(succ({index_var}, {succ_var}) & {inner})"
-
-        elif isinstance(node, Box):
-            # []φ: forall J at same moment, φ(J)
-            # In Datalog: ~(exists J: same_moment(I,J) & ~φ(J))
-            alt_var = self._fresh_var()
-            inner = self.visit(node.formula, alt_var)
-            return f"~(same_moment({index_var}, {alt_var}) & ~({inner}))"
-
-        elif isinstance(node, Diamond):
-            # <>φ: exists J at same moment where φ(J)
-            alt_var = self._fresh_var()
-            inner = self.visit(node.formula, alt_var)
-            return f"(same_moment({index_var}, {alt_var}) & {inner})"
-
-        elif isinstance(node, Negation):
-            inner = self.visit(node.formula, index_var)
-            return f"~({inner})"
-
-        elif isinstance(node, Conjunction):
-            left = self.visit(node.left, index_var)
-            right = self.visit(node.right, index_var)
-            return f"({left} & {right})"
-
-        elif isinstance(node, Disjunction):
-            left = self.visit(node.left, index_var)
-            right = self.visit(node.right, index_var)
-            return f"({left} | {right})"
-
-        elif isinstance(node, Implication):
-            # φ → ψ ≡ ~φ | ψ
-            ante = self.visit(node.antecedent, index_var)
-            cons = self.visit(node.consequent, index_var)
-            return f"(~({ante}) | {cons})"
-
-        else:
-            raise NotImplementedError(
-                f"Datalog visitor doesn't support {type(node).__name__}"
-            )
-
-    def _fresh_var(self) -> str:
-        """Generate fresh variable name (J, K, L, ...)."""
-        var_name = chr(ord('J') + self.var_counter)
-        self.var_counter += 1
-        return var_name
-
-    def _owl_name_to_predicate(self, owl_name: str) -> str:
-        """
-        Convert OWL class name to valid Datalog predicate name.
-
-        Rules:
-        - Handle numeric prefix: "1_pres_q" -> "agent1_pres_q"
-        - Lowercase first letter if uppercase
-        - Replace invalid characters with underscores
-
-        Examples:
-            "Xq" -> "xq"
-            "1_pres_q" -> "agent1_pres_q"
-            "expected_sd1_q" -> "expected_sd1_q"
-        """
-        # Handle numeric prefix
-        if owl_name and owl_name[0].isdigit():
-            predicate = f"agent{owl_name}"
-        else:
-            predicate = owl_name
-
-        # Lowercase first char
-        if predicate:
-            predicate = predicate[0].lower() + predicate[1:]
-
-        # Replace invalid chars
-        predicate = predicate.replace('-', '_').replace(' ', '_')
-
-        return predicate
-
-
-class DatalogSerializer(Serializer):
-    """
-    Serializes ALOn models to pyDatalog syntax.
-
-    Translation approach:
-    - Facts: Ground assertions for indices, actions, propositions, structural relations
-    - Rules: Datalog rules for query definitions using registry-based predicates
-    - Same-moment: Explicit base facts + transitive closure rule
+    Architecture:
+    - ABox: Generates facts for indices, actions, propositions, structural relations
+    - TBox: Uses ExpanderTransformer + DatalogSerializer for query rules
+    - Combines into executable pyDatalog program
     """
 
-    def __init__(self, model: ALOModel,
-                 evaluation_history: str = "h1",
-                 enable_evaluation: bool = False):
+    def __init__(self, model: ALOModel, evaluation_history: str = "h1",
+                 enable_evaluation: bool = True):
         """
-        Initialize the serializer.
+        Initialize serializer.
 
         Args:
             model: The ALOn model to serialize
-            evaluation_history: Root history for query evaluation (default: h1)
-            enable_evaluation: If True, include evaluation queries in output
+            evaluation_history: History to evaluate queries at (default: "h1")
+            enable_evaluation: Whether to include evaluation code in output
         """
         super().__init__(model)
         self.evaluation_history = evaluation_history
         self.enable_evaluation = enable_evaluation
-        self.cga_to_history: Dict[tuple, str] = {}
-        self.history_to_cga: Dict[str, GroupAction] = {}
-        self._term_names: Set[str] = set()
 
-    def serialize(self) -> str:
-        """
-        Serialize to pyDatalog string.
-
-        Returns:
-            Complete pyDatalog program with facts and rules
-        """
-        # Build CGA mappings
+        # Build CGA mappings (history name -> GroupAction)
         self._build_cga_mappings()
 
-        # Collect all term names
-        self._collect_terms()
+        # Load grammar for expander (resolved relative to this file so it works
+        # regardless of the working directory)
+        grammar_path = Path(__file__).parent.parent / "parsers" / "alon_grammar_clean.lark"
+        with open(grammar_path) as f:
+            grammar = f.read()
+        self.parser = Lark(grammar, start='start', parser='lalr')
 
-        sections = []
-        sections.append("# PyDatalog program generated from ALOn model")
-        sections.append("# Import pyDatalog")
-        sections.append("from pyDatalog import pyDatalog")
-        sections.append("")
+        # Will be created during serialization
+        self.expander = None
+        self.datalog_serializer = None
 
-        # Term declarations
-        sections.append(self._generate_term_declarations())
-        sections.append("")
-
-        # Structural facts
-        sections.append(self._generate_structural_facts())
-        sections.append("")
-
-        # Action facts
-        sections.append(self._generate_action_facts())
-        sections.append("")
-
-        # Proposition facts
-        sections.append(self._generate_proposition_facts())
-        sections.append("")
-
-        # Opposing rules
-        sections.append(self._generate_opposing_rules())
-        sections.append("")
-
-        # Query rules
-        sections.append(self._generate_query_rules())
-
-        # Evaluation queries (if enabled)
-        if self.enable_evaluation:
-            sections.append("")
-            sections.append(self._generate_evaluation_queries())
-
-        return "\n".join(sections)
+        # Track all terms for create_terms()
+        self._terms: Set[str] = set()
 
     def _build_cga_mappings(self):
-        """Build mappings between CGAs and history names (same as OWL)."""
+        """Build mappings between CGAs and history names."""
+        self.cga_to_history: Dict[tuple, str] = {}
+        self.history_to_cga: Dict[str, GroupAction] = {}
+
+        # Get all complete group actions
         complete_gas = self.model.generate_complete_group_actions()
         history_counter = 1
 
         for cga in complete_gas:
+            # Create hashable key
             cga_key = tuple(sorted(cga.actions.items()))
 
-            # Check for named history
+            # Check if this CGA has a named history
             hist_name = None
             for name, named_cga in self.model.named_histories.items():
                 if named_cga.actions == cga.actions:
                     hist_name = name
                     break
 
-            # Generate name if needed
+            # If no named history, generate h2, h3, etc.
             if hist_name is None:
                 while f"h{history_counter}" in self.model.named_histories:
                     history_counter += 1
@@ -244,356 +86,336 @@ class DatalogSerializer(Serializer):
             self.cga_to_history[cga_key] = hist_name
             self.history_to_cga[hist_name] = cga
 
-    def _get_all_indices(self) -> List[Tuple[str, str]]:
-        """
-        Get all (moment, history) index pairs.
-
-        Returns list like: [('m', 'h1'), ('m', 'h2'), ('m1', 'h1'), ('m2', 'h2')]
-        """
-        if not self.history_to_cga:
-            self._build_cga_mappings()
-
-        indices = []
-        history_names = list(self.history_to_cga.keys())
-
-        # Root indices
-        for history_name in history_names:
-            indices.append(('m', history_name))
-
-        # Successor indices - use result.moment_name!
-        for history_name in history_names:
-            result = self._find_result_for_history(history_name)
-            if result and result.moment_name:
-                successor_moment = result.moment_name
-            else:
-                # Fallback - shouldn't happen with fixed DBT parser
-                successor_moment = f"m{len([idx for idx in indices if idx[0] != 'm']) + 1}"
-            indices.append((successor_moment, history_name))
-
-        return indices
-
     def _index_name(self, moment: str, history: str) -> str:
         """Generate index name: m_h1, m1_h1, etc."""
         return f"{moment}_{history}"
 
+    def _get_all_indices(self) -> List[Tuple[str, str]]:
+        """
+        Get all indices (moment, history) pairs.
+
+        Returns list of (moment, history) tuples.
+        Uses result.moment_name to get actual moment names (not enumeration).
+        """
+        indices = []
+        history_names = sorted(self.history_to_cga.keys())
+
+        # Root indices (one per history)
+        for history_name in history_names:
+            indices.append(('m', history_name))
+
+        # Successor indices - one per history, always (even without an explicit Result)
+        for history_name in history_names:
+            successor_moment = self._get_successor_moment(history_name)
+            indices.append((successor_moment, history_name))
+
+        return indices
+
     def _find_result_for_history(self, history_name: str) -> Optional[Result]:
-        """Find the Result for a given history name."""
+        """Find the Result associated with a history."""
         for result in self.model.results:
             if result.history_name == history_name:
                 return result
         return None
 
-    def _collect_terms(self):
+    def _get_successor_moment(self, history_name: str) -> str:
         """
-        Collect all term names that need to be declared.
+        Return the successor moment name for a history.
 
-        Terms include:
-        - Variables: I, J, K, L, M, N (for quantification)
-        - Predicates: succ, same_moment, same_moment_base, action, prop, opposing_X
-        - Query predicates from registry
+        Uses result.moment_name if present, otherwise falls back to a
+        deterministic enumeration based on sorted history order.  This must
+        agree with the logic in _get_all_indices() so that succ facts and
+        same_moment groupings are consistent.
         """
-        # Variables for rules
-        self._term_names.update(['I', 'J', 'K', 'L', 'M', 'N'])
+        result = self._find_result_for_history(history_name)
+        if result and result.moment_name:
+            return result.moment_name
+        history_names = sorted(self.history_to_cga.keys())
+        rank = len([h for h in history_names if h <= history_name])
+        return f"m{rank}"
 
-        # Base predicates
-        self._term_names.update(['succ', 'same_moment', 'same_moment_base', 'action', 'prop'])
+    def _group_by_moment(self, indices: List[Tuple[str, str]]) -> Dict[str, List[str]]:
+        """Group indices by moment, returning {moment: [histories]}."""
+        moments: Dict[str, List[str]] = {}
+        for moment, history in indices:
+            if moment not in moments:
+                moments[moment] = []
+            moments[moment].append(history)
+        return moments
 
-        # Opposing predicates for each action
-        for action in self.model.get_all_actions():
-            action_str = str(action)
-            self._term_names.add(f"opposing_{action_str}")
+    def serialize(self) -> str:
+        """Generate complete pyDatalog program."""
+        # Generate query rules first so we can collect all predicates
+        query_rules = self._generate_query_rules()
 
-        # Query predicates from registry (if available)
-        if hasattr(self.model, 'formula_registry') and self.model.formula_registry:
-            visitor = DatalogFormulaVisitor(self.model)
-            for owl_name in self.model.formula_registry.formulas.keys():
-                predicate_name = visitor._owl_name_to_predicate(owl_name)
-                self._term_names.add(predicate_name)
+        # Now generate term declarations with all tracked predicates
+        sections = [
+            self._generate_imports(),
+            self._generate_term_declarations(),
+            self._generate_structural_facts(),
+            self._generate_structural_rules(),
+            self._generate_action_facts(),
+            self._generate_proposition_facts(),
+            self._generate_opposing_rules(),
+            query_rules,  # Use pre-generated query rules
+        ]
+
+        if self.enable_evaluation:
+            sections.append(self._generate_evaluation_code())
+
+        return "\n\n".join(sections)
+
+    def _generate_imports(self) -> str:
+        """Generate import statements."""
+        return "from pyDatalog import pyDatalog"
 
     def _generate_term_declarations(self) -> str:
-        """Generate pyDatalog.create_terms() call."""
-        term_list = ', '.join(sorted(self._term_names))
+        """Generate pyDatalog.create_terms() call with all terms."""
+        # Collect all terms
+        terms = set()
+
+        # Variables - declare exactly what _fresh_var() will generate
+        terms.update(['I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'])
+        # Generate all numbered variables up to the serializer's counter
+        max_counter = self.datalog_serializer.var_counter if self.datalog_serializer else 0
+        max_num = ((max_counter - 17) // 17) + 2 if max_counter >= 17 else 2
+        for letter in ['J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']:
+            for num in range(1, max_num + 1):
+                terms.add(f"{letter}{num}")
+
+        # Base predicates
+        terms.update(['succ', 'same_moment', 'same_moment_base', 'action', 'prop', 'top', 'bottom'])
+
+        # Action names (for opposing predicates)
+        for cga in self.history_to_cga.values():
+            for agent, action_type in cga.actions.items():
+                action_name = f"{action_type}{agent}"
+                terms.add(f"opposing_{action_name}")
+
+        # Predicates from query rules (will be populated by DatalogSerializer)
+        if self.datalog_serializer:
+            terms.update(self.datalog_serializer.predicates)
+
+        term_list = ', '.join(sorted(terms))
         return f"pyDatalog.create_terms('{term_list}')"
 
     def _generate_structural_facts(self) -> str:
-        """
-        Generate succ and same_moment facts.
+        """Generate structural facts (succ, same_moment)."""
+        facts = ["# Structural facts"]
+        indices = self._get_all_indices()
+        moments = self._group_by_moment(indices)
 
-        Strategy for same_moment:
-        1. Generate base facts (same_moment_base) for reflexive + symmetric pairs at each moment
-        2. Add transitive closure rule: same_moment(I,K) <= same_moment_base(I,K)
-        3. Add transitivity: same_moment(I,K) <= same_moment(I,J) & same_moment(J,K)
-        """
-        facts = []
-        facts.append("# Structural facts: succession and same-moment equivalence")
-        facts.append("")
+        # Successor facts: one succ edge per history (ALOnModel generates all
+        # histories, so every root moment needs an explicit successor even when
+        # no propositions are true there — this is required for correct NAF)
+        for history_name in sorted(self.history_to_cga.keys()):
+            root_idx = self._index_name('m', history_name)
+            successor_moment = self._get_successor_moment(history_name)
+            succ_idx = self._index_name(successor_moment, history_name)
+            facts.append(f"+ succ('{root_idx}', '{succ_idx}')")
 
-        all_indices = self._get_all_indices()
-
-        # Succ facts
-        facts.append("# Succession relation")
-        for history_name in self.history_to_cga.keys():
-            root_index = self._index_name('m', history_name)
-            result = self._find_result_for_history(history_name)
-            successor_moment = result.moment_name if result and result.moment_name else "m1"
-            succ_index = self._index_name(successor_moment, history_name)
-
-            facts.append(f"+ succ('{root_index}', '{succ_index}')")
-        facts.append("")
-
-        # Same-moment base facts (reflexive + symmetric at each moment)
-        facts.append("# Same-moment base relation (reflexive + symmetric)")
-        moment_groups: Dict[str, List[str]] = {}
-        for moment, history in all_indices:
-            if moment not in moment_groups:
-                moment_groups[moment] = []
-            moment_groups[moment].append(self._index_name(moment, history))
-
-        for moment, indices in sorted(moment_groups.items()):
-            facts.append(f"# Moment: {moment}")
-            for i, idx1 in enumerate(indices):
+        # Same-moment base facts (before transitive closure)
+        for moment, histories in moments.items():
+            # Generate minimal same_moment_base facts
+            for i, hist in enumerate(sorted(histories)):
+                idx = self._index_name(moment, hist)
                 # Reflexive
-                facts.append(f"+ same_moment_base('{idx1}', '{idx1}')")
-                # Symmetric pairs (only one direction needed for base)
-                for idx2 in indices[i+1:]:
-                    facts.append(f"+ same_moment_base('{idx1}', '{idx2}')")
-                    facts.append(f"+ same_moment_base('{idx2}', '{idx1}')")
-        facts.append("")
+                facts.append(f"+ same_moment_base('{idx}', '{idx}')")
+                # Chain to next (ensures transitivity will work)
+                if i < len(histories) - 1:
+                    next_hist = sorted(histories)[i + 1]
+                    next_idx = self._index_name(moment, next_hist)
+                    facts.append(f"+ same_moment_base('{idx}', '{next_idx}')")
+                    facts.append(f"+ same_moment_base('{next_idx}', '{idx}')")
 
-        # Transitive closure rules
-        facts.append("# Same-moment transitive closure")
-        facts.append("same_moment(I, J) <= same_moment_base(I, J)")
-        facts.append("same_moment(I, K) <= same_moment(I, J) & same_moment(J, K)")
+        return '\n'.join(facts)
 
-        return "\n".join(facts)
+    def _generate_structural_rules(self) -> str:
+        """Generate structural rules (same_moment transitive closure)."""
+        rules = ["# Structural rules - transitive closure for same_moment"]
+        rules.append("same_moment(I, J) <= same_moment_base(I, J)")
+        rules.append("same_moment(I, K) <= same_moment(I, J) & same_moment(J, K)")
+        # Define top/bottom so NAF works if they appear in rule bodies
+        rules.append("top(I) <= same_moment(I, I)")
+        rules.append("+ bottom('__never__')")
+        return '\n'.join(rules)
 
     def _generate_action_facts(self) -> str:
         """Generate action membership facts."""
-        facts = []
-        facts.append("# Action facts")
-        facts.append("")
+        facts = ["# Action facts"]
 
-        for history_name, group_action in self.history_to_cga.items():
-            root_index = self._index_name('m', history_name)
+        for history_name, cga in self.history_to_cga.items():
+            root_idx = self._index_name('m', history_name)
+            for agent, action_type in sorted(cga.actions.items()):
+                action_name = f"{action_type}{agent}"
+                facts.append(f"+ action('{root_idx}', '{action_name}')")
 
-            # Comment with human-readable CGA
-            action_desc = ', '.join(
-                f"{a}={t}" for a, t in sorted(group_action.actions.items())
-            )
-            facts.append(f"# History {history_name}: {{{action_desc}}}")
-
-            # Facts for each action
-            for action in group_action.to_action_list():
-                action_str = str(action)
-                facts.append(f"+ action('{root_index}', '{action_str}')")
-            facts.append("")
-
-        return "\n".join(facts)
+        return '\n'.join(facts)
 
     def _generate_proposition_facts(self) -> str:
-        """Generate proposition truth facts (closed-world assumption)."""
-        facts = []
-        facts.append("# Proposition facts (closed-world: unlisted = false)")
-        facts.append("")
-
-        all_props = set(self.model.get_all_propositions())
+        """Generate proposition truth facts (closed-world)."""
+        facts = ["# Proposition facts (closed-world: unlisted props are false)"]
 
         for history_name in self.history_to_cga.keys():
             result = self._find_result_for_history(history_name)
-            if not result:
-                continue
+            if result:
+                successor_moment = self._get_successor_moment(history_name)
+                successor_idx = self._index_name(successor_moment, history_name)
+                for prop in result.true_propositions:
+                    facts.append(f"+ prop('{successor_idx}', '{prop}')")
 
-            successor_moment = result.moment_name if result.moment_name else "m1"
-            succ_index = self._index_name(successor_moment, history_name)
-
-            facts.append(f"# Propositions at {succ_index}")
-
-            # Add facts for true propositions
-            for prop in sorted(result.true_propositions):
-                facts.append(f"+ prop('{succ_index}', '{prop}')")
-
-            # Note false propositions (implicit, for documentation)
-            false_props = all_props - set(result.true_propositions)
-            if false_props:
-                facts.append(f"# False (implicit): {', '.join(sorted(false_props))}")
-            facts.append("")
-
-        return "\n".join(facts)
+        return '\n'.join(facts)
 
     def _generate_opposing_rules(self) -> str:
-        """
-        Generate opposing relation predicates for FreeDoAction support.
+        """Generate opposing predicates for FreeDoAction."""
+        rules = ["# Opposing action rules"]
 
-        For each action X with opposings, creates:
-            opposing_X(I) <= action(I, Y) for each Y that opposes X
+        # Collect all actions used in the model
+        all_actions = set()
+        for cga in self.history_to_cga.values():
+            for agent, action_type in cga.actions.items():
+                all_actions.add(f"{action_type}{agent}")
 
-        For actions with no opposings, no rule needed (closed-world = always false).
-        """
-        rules = []
-        rules.append("# Opposing relations for FreeDoAction")
-        rules.append("")
+        # For each action, generate opposing rules
+        for action_name in sorted(all_actions):
+            # Find which actions oppose this one
+            opposing_actions = []
 
-        # Group opposings by opposed action
-        opposing_map: Dict[str, List[str]] = {}
-        for opp in self.model.opposings:
-            opposed_str = str(opp.opposed_action)
-            if opposed_str not in opposing_map:
-                opposing_map[opposed_str] = []
-            opposing_map[opposed_str].append(str(opp.opposing_action))
+            # Check model's opposing relations
+            for opp_rel in self.model.opposings:
+                # OpposingRelation: opposing_action opposes opposed_action
+                # If action_name is the opposed_action, then opposing_action opposes it
+                if str(opp_rel.opposed_action) == action_name:
+                    opposing_actions.append(str(opp_rel.opposing_action))
 
-        # Generate predicate for each opposed action
-        for opposed_str, opposing_actions in sorted(opposing_map.items()):
-            predicate_name = f"opposing_{opposed_str}"
+            if opposing_actions:
+                # Generate rule for each opposing action
+                for opp_action_name in opposing_actions:
+                    rules.append(f"opposing_{action_name}(I) <= action(I, '{opp_action_name}')")
+            else:
+                # No opposing actions - must still declare predicate so NAF works.
+                # pyDatalog throws "Predicate without definition" if ~opposing_X(I)
+                # is evaluated and opposing_X has never been asserted.
+                # A dummy fact on a sentinel index defines the predicate as always-false
+                # for real indices (closed-world assumption).
+                rules.append(f"+ opposing_{action_name}('__never__')")
 
-            rules.append(f"# {predicate_name}: actions opposing {opposed_str}")
-            for opposing_str in opposing_actions:
-                rules.append(f"{predicate_name}(I) <= action(I, '{opposing_str}')")
-            rules.append("")
-
-        # Note: actions with no opposings don't need rules (closed-world)
-        # The visitor checks ~opposing_X(I) which is always true if no rule exists
-
-        return "\n".join(rules)
+        return '\n'.join(rules)
 
     def _generate_query_rules(self) -> str:
-        """
-        Generate Datalog rules for all queries using registry.
+        """Generate query rules using PyDatalogExpanderTransformer + DatalogSerializer."""
+        rules = ["# Query predicate definitions"]
 
-        Returns:
-            String with rule definitions
-        """
-        # Check if we have a formula registry
-        if not (hasattr(self.model, 'formula_registry') and self.model.formula_registry):
-            return "# No formula registry - queries not expanded"
+        # Create pyDatalog-compatible expander (shared across all queries)
+        self.expander = PyDatalogExpanderTransformer(self.parser, self.model)
 
-        registry = self.model.formula_registry
-        visitor = DatalogFormulaVisitor(self.model, registry)
-
-        rules = []
-        rules.append("# Query predicate definitions (registry-based)")
-        rules.append("")
-
-        # Generate rule for each registered formula
-        for owl_name, expansion_tree in sorted(registry.formulas.items()):
-            # Skip primitive atoms (they're just facts)
-            if isinstance(expansion_tree, (Prop, DoAction)):
-                continue
-
-            # Generate predicate definition
-            predicate_name = visitor._owl_name_to_predicate(owl_name)
+        # Expand all queries
+        for query in self.model.queries:
+            query_id = query.query_id or f"q{len(rules)}"
+            formula_str = query.formula_string
 
             try:
-                rule_body = visitor.translate(expansion_tree, "I")
-
-                # Add rule: predicate(I) <= rule_body
-                rules.append(f"# {owl_name}")
-                label = registry.labels.get(owl_name)
-                if label:
-                    rules.append(f"# Label: {label}")
-                rules.append(f"{predicate_name}(I) <= {rule_body}")
-                rules.append("")
-
+                tree = self.parser.parse(formula_str)
+                result_name = self.expander.transform(tree)
             except Exception as e:
-                rules.append(f"# ERROR translating {owl_name}: {e}")
-                rules.append("")
+                rules.append(f"# ERROR expanding {query_id}: {e}")
 
-        return "\n".join(rules)
+        # Create Datalog serializer with name_to_formula mapping
+        self.datalog_serializer = DatalogSerializer(
+            name_to_formula=self.expander.name_to_formula
+        )
 
-    def _generate_evaluation_queries(self) -> str:
-        """
-        Generate query evaluation code for debugging/testing.
+        # Serialize all expansion axioms
+        for axiom_str in self.expander.axioms:
+            try:
+                # Skip trivial axioms
+                if '=>' in axiom_str:
+                    parts = axiom_str.split('=>')
+                    if len(parts) == 2:
+                        lhs = parts[0].strip()
+                        rhs = parts[1].strip()
+                        if not lhs or not rhs or lhs == rhs or lhs == '()':
+                            continue
 
-        Returns:
-            String with print statements for query results
-        """
-        queries = []
-        queries.append("# Query evaluation at root index")
-        queries.append("")
+                axiom_tree = self.parser.parse(axiom_str)
+                self.datalog_serializer.transform(axiom_tree)
+            except Exception as e:
+                rules.append(f"# ERROR serializing axiom: {e}")
 
-        root_index = self._index_name('m', self.evaluation_history)
-        visitor = DatalogFormulaVisitor(self.model)
+        # Get generated rules
+        rules.append(self.datalog_serializer.generate_rules())
+
+        return '\n'.join(rules)
+
+    def _generate_evaluation_code(self) -> str:
+        """Generate code to evaluate queries at evaluation_history."""
+        code = ["# Evaluation code"]
+        code.append("if __name__ == '__main__':")
+        code.append("    # Evaluate queries")
+
+        root_idx = self._index_name('m', self.evaluation_history)
 
         for query in self.model.queries:
-            query_id = query.query_id or "unnamed"
-
-            # Get predicate name
-            if hasattr(self.model, 'formula_registry') and self.model.formula_registry:
-                owl_name = query.expanded_ast.to_owl_name() if query.expanded_ast else query.formula_string
-                predicate_name = visitor._owl_name_to_predicate(owl_name)
+            query_id = query.query_id or "unknown"
+            # Get the predicate name from the expander
+            if self.expander and query.formula_string in self.expander.formula_to_name:
+                predicate_name = self.expander.formula_to_name[query.formula_string]
+                # Convert to Datalog predicate name
+                predicate_name = self.datalog_serializer._sanitize_predicate(predicate_name)
             else:
-                predicate_name = visitor._owl_name_to_predicate(query_id)
+                predicate_name = query_id
 
-            queries.append(f"# Query {query_id}: {query.formula_string}")
-            queries.append(f"print('{query_id} at {root_index}:', {predicate_name}('{root_index}'))")
-            queries.append(f"print('  All witnesses:', {predicate_name}(I))")
-            queries.append("")
+            code.append(f"    result = {predicate_name}('{root_idx}')")
+            code.append(f"    print(f'{query_id}: {{bool(result)}}')")
 
-        return "\n".join(queries)
+        return '\n'.join(code)
 
     def evaluate(self) -> Dict[str, Dict]:
         """
-        Execute pyDatalog program and return evaluation results.
+        Execute pyDatalog program and return query results.
 
         Returns:
-            Dict mapping query_id to:
-                - 'result': bool (True/False for root index)
-                - 'witnesses': List[str] (all indices satisfying query)
+            Dict mapping query_id to {'result': bool, 'witnesses': List[str]}
         """
-        try:
-            # Import pyDatalog (lazy import for optional dependency)
-            from pyDatalog import pyDatalog as pdl
-        except ImportError:
-            raise ImportError(
-                "pyDatalog is required for evaluation. "
-                "Install with: pip install pyDatalog"
-            )
+        # Generate program
+        program = self.serialize()
 
-        # Clear previous state
+        # Clear pyDatalog state
+        from pyDatalog import pyDatalog as pdl
         pdl.clear()
 
-        # Generate program without evaluation queries
-        old_eval = self.enable_evaluation
-        self.enable_evaluation = False
-        program = self.serialize()
-        self.enable_evaluation = old_eval
-
-        # Execute the program
-        exec(program, globals())
+        # Execute program (excluding evaluation code).
+        # Must exec into globals() so pyDatalog Terms created by create_terms()
+        # persist in the module-level namespace — without this they are
+        # garbage-collected when the exec local scope is discarded and all
+        # subsequent pdl.ask() calls return None.
+        sections = program.split("# Evaluation code")[0]
+        exec(sections, globals())
 
         # Evaluate each query
         results = {}
-        root_index = self._index_name('m', self.evaluation_history)
-        visitor = DatalogFormulaVisitor(self.model)
+        root_idx = self._index_name('m', self.evaluation_history)
 
         for query in self.model.queries:
-            query_id = query.query_id or f"q{len(results)+1:02d}"
+            query_id = query.query_id or f"q{len(results)}"
 
             # Get predicate name
-            if hasattr(self.model, 'formula_registry') and self.model.formula_registry:
-                owl_name = query.expanded_ast.to_owl_name() if query.expanded_ast else query.formula_string
-                predicate_name = visitor._owl_name_to_predicate(owl_name)
+            if self.expander and query.formula_string in self.expander.formula_to_name:
+                predicate_name = self.expander.formula_to_name[query.formula_string]
+                predicate_name = self.datalog_serializer._sanitize_predicate(predicate_name)
             else:
-                predicate_name = visitor._owl_name_to_predicate(query_id)
+                predicate_name = query_id
 
-            # Check if root index satisfies query
             try:
-                # Use pyDatalog's ask() to query
-                root_result = pdl.ask(f"{predicate_name}('{root_index}')")
-
-                # Get all witnesses
-                all_witnesses = pdl.ask(f"{predicate_name}(I)")
-                witness_list = [str(w[0]) for w in all_witnesses] if all_witnesses else []
-
+                root_result = pdl.ask(f"{predicate_name}('{root_idx}')")
                 results[query_id] = {
                     'result': bool(root_result),
-                    'witnesses': witness_list,
-                    'formula': query.formula_string
+                    'witnesses': []
                 }
             except Exception as e:
                 results[query_id] = {
                     'result': False,
                     'witnesses': [],
-                    'formula': query.formula_string,
                     'error': str(e)
                 }
 

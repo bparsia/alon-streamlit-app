@@ -255,7 +255,7 @@ class ExpanderTransformer(AlonTransformer):
         Recursively expands xstit and the negation.
         """
         agent, formula = items
-        name = self._name_for(f"[{agent} dxstit]{formula}")
+        name = self._name_for(f"[{agent} DXSTIT]{formula}")
 
         # Recursively expand: [I XSTIT]φ
         xstit_expr = f"[{agent} XSTIT]{formula}"

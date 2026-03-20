@@ -16,14 +16,43 @@ from typing import Optional, Set
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from alo_translator.parsers.dbt_parser import parse_dbt_diagram
-from alo_translator.parsers.builder import parse_queries, expand_queries
+from alo_translator.parsers.builder import parse_queries
 from alo_translator.query_generation import ResponsibilityConfig, generate_queries
 from alo_translator.serializers.index_mermaid import serialize_index
-from alo_translator.serializers.owl_index_new_expander import OWLIndexNewExpanderSerializer
-from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
-from alo_translator.reasoners.konclude import KoncludeAdapter
-from alo_translator.reasoners.base import ReasoningMode
-from alo_translator.reasoners.config import load_config
+from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+
+# Konclude imports — only available when running locally with the binary present
+try:
+    from alo_translator.serializers.owl_index_new_expander import OWLIndexNewExpanderSerializer
+    from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
+    from alo_translator.reasoners.konclude import KoncludeAdapter
+    from alo_translator.reasoners.base import ReasoningMode
+    from alo_translator.reasoners.config import load_config
+    _KONCLUDE_IMPORTS_OK = True
+except ImportError:
+    _KONCLUDE_IMPORTS_OK = False
+
+
+def _konclude_path() -> Optional[Path]:
+    """Return Konclude binary path if available, else None."""
+    if not _KONCLUDE_IMPORTS_OK:
+        return None
+    # Try reasoner_config.toml (relative to CWD, then relative to this file)
+    for config_path in [
+        Path("reasoner_config.toml"),
+        Path(__file__).parent / "reasoner_config.toml",
+        Path(__file__).parent.parent / "reasoner_config.toml",
+    ]:
+        try:
+            config = load_config(config_path)
+            p = Path(config.reasoners["konclude"].path)
+            if not p.is_absolute():
+                p = config_path.parent / p
+            if p.exists():
+                return p
+        except Exception:
+            continue
+    return None
 
 
 # Page config
@@ -106,53 +135,61 @@ def format_model_overview(model):
     return '\n'.join(lines)
 
 
-def run_responsibility_analysis(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
-    """Run responsibility analysis and return satisfied query IDs."""
+def _setup_queries(model, result_prop: str, eval_history: str):
+    """Attach responsibility config, generate and parse queries. Mutates model."""
+    model.responsibility_config = ResponsibilityConfig(
+        target_proposition=result_prop,
+        agents="all",
+        groups="all",
+        responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
+        history=eval_history,
+    )
+    queries = generate_queries(model)
+    model.queries.extend(queries)
+    return parse_queries(model)
+
+
+def run_analysis_datalog(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
+    """Run responsibility analysis using pyDatalog. Returns satisfied query IDs."""
     try:
-        # Create responsibility config
-        resp_config = ResponsibilityConfig(
-            target_proposition=result_prop,
-            agents="all",
-            groups="all",
-            responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
-            history=eval_history
-        )
+        model = _setup_queries(model, result_prop, eval_history)
+        serializer = DatalogIndexSerializer(model, evaluation_history=eval_history)
+        results = serializer.evaluate()
+        return {qid for qid, r in results.items() if r.get('result')}
+    except Exception as e:
+        st.error(f"Analysis error: {str(e)}")
+        return None
 
-        model.responsibility_config = resp_config
 
-        # Generate and parse queries
-        queries = generate_queries(model)
-        model.queries.extend(queries)
-        model = parse_queries(model)
-        model = expand_queries(model, evaluation_history=eval_history)
+def run_analysis_konclude(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
+    """Run responsibility analysis using Konclude OWL reasoner. Returns satisfied query IDs."""
+    try:
+        model = _setup_queries(model, result_prop, eval_history)
 
-        # Serialize to OWL
         strategy = EquivFullCardinalityStrategy()
         serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
         owl_output = serializer.serialize()
 
-        # Run Konclude
-        config = load_config(Path("reasoner_config.toml"))
-        konclude_path = Path(config.reasoners["konclude"].path)
+        konclude_bin = _konclude_path()
+        if konclude_bin is None:
+            st.error("Konclude binary not found.")
+            return None
 
         with tempfile.NamedTemporaryFile(mode='w', suffix='.owl', delete=False) as f:
             f.write(owl_output)
             temp_owl_path = Path(f.name)
 
         try:
-            adapter = KoncludeAdapter(konclude_path)
+            adapter = KoncludeAdapter(konclude_bin)
             result = adapter.run(temp_owl_path, ReasoningMode.REALISATION, timeout=300, verbose=False)
 
             if not result.success:
                 st.error(f"Reasoner failed: {result.error_message}")
                 return None
 
-            # Extract satisfied queries
-            eval_individual = "m_h1"
+            eval_individual = f"m_{eval_history}"
             m_types = result.individual_types.get(eval_individual, set())
-            satisfied_query_ids = {q.query_id for q in model.queries if q.query_id in m_types}
-
-            return satisfied_query_ids
+            return {q.query_id for q in model.queries if q.query_id in m_types}
 
         finally:
             temp_owl_path.unlink()
@@ -266,6 +303,8 @@ def main():
 
             if selected_example and st.button("Load"):
                 st.session_state.mermaid_input = example_models[selected_example]
+                # Also update the editor's state
+                st.session_state.mermaid_editor = example_models[selected_example]
                 st.rerun()
 
         st.divider()
@@ -276,6 +315,7 @@ def main():
         if uploaded_file is not None:
             content = uploaded_file.read().decode("utf-8")
             st.session_state.mermaid_input = content
+            st.session_state.mermaid_editor = content
             st.success(f"Loaded {uploaded_file.name}")
 
         st.divider()
@@ -338,16 +378,8 @@ def main():
                 # Show complete Index diagram
                 st.subheader("Complete Index Structure")
                 index_diagram = serialize_index(model, partial_spec, mode="complete")
-
-                # Add tabs for viewing diagram vs source
-                tab1, tab2 = st.tabs(["Diagram", "Mermaid Source"])
-
-                with tab1:
-                    # Use full width for complete diagram
-                    st_mermaid(index_diagram, height=800)
-
-                with tab2:
-                    st.code(index_diagram, language="mermaid")
+                # Use full width for complete diagram
+                st_mermaid(index_diagram, height=800)
 
             except Exception as e:
                 st.error(f"Failed to parse model: {str(e)}")
@@ -359,98 +391,41 @@ def main():
         if mermaid_text.strip():
             st.markdown("""Analyze responsibility for outcomes using various operators.
 
-All formulae will be analysed at m/h1.
+All formulae will be analysed at m/h1.""")
 
-**Note:** Analysis on Streamlit Cloud may be slow due to resource constraints.
-For faster results, download the OWL file and run locally using `analyze_owl.py`.""")
+            # Backend selector — only shown when Konclude is locally available
+            konclude_bin = _konclude_path()
+            if konclude_bin:
+                backend = st.radio(
+                    "Reasoner",
+                    ["pyDatalog (fast)", "Konclude (OWL)"],
+                    horizontal=True,
+                )
+                use_konclude = backend == "Konclude (OWL)"
+            else:
+                use_konclude = False
 
-            col1, col2 = st.columns([1, 1])
-
-            with col1:
-                if st.button("▶️ Run Analysis (Cloud)"):
-                    with st.spinner("Running responsibility analysis..."):
-                        try:
-                            # Parse model
-                            model, partial_spec = parse_dbt_diagram(mermaid_text)
-
-                            # Get result prop and eval history
-                            result_prop = partial_spec.get("result", "q")
-                            eval_point = partial_spec.get("evaluation_point", "m/h1")
-                            eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
-
-                            # Run analysis
-                            satisfied_query_ids = run_responsibility_analysis(model, result_prop, eval_history)
-
-                            if satisfied_query_ids is not None:
-                                st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
-
-                                # Show results table
-                                results_md = format_results_table(model, satisfied_query_ids, result_prop)
-                                st.markdown(results_md)
-
-                        except Exception as e:
-                            st.error(f"Analysis failed: {str(e)}")
-
-            with col2:
-                st.markdown("**Download for Local Analysis:**")
-
-                # Download analyzer script
-                analyzer_path = Path(__file__).parent.parent / "analyze_owl.py"
-                if analyzer_path.exists():
-                    with open(analyzer_path, 'r') as f:
-                        analyzer_content = f.read()
-                    st.download_button(
-                        label="📥 Download Analyzer Script",
-                        data=analyzer_content,
-                        file_name="analyze_owl.py",
-                        mime="text/x-python",
-                        help="Standalone Python script (no dependencies)"
-                    )
-
-                if st.button("📥 Generate OWL File"):
+            if st.button("▶️ Run Analysis"):
+                with st.spinner("Running responsibility analysis..."):
                     try:
-                        # Parse model
                         model, partial_spec = parse_dbt_diagram(mermaid_text)
 
-                        # Get result prop and eval history
                         result_prop = partial_spec.get("result", "q")
                         eval_point = partial_spec.get("evaluation_point", "m/h1")
                         eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
 
-                        # Generate queries
-                        resp_config = ResponsibilityConfig(
-                            target_proposition=result_prop,
-                            agents="all",
-                            groups="all",
-                            responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
-                            history=eval_history
-                        )
-                        model.responsibility_config = resp_config
-                        queries = generate_queries(model)
-                        model.queries.extend(queries)
-                        model = parse_queries(model)
-                        model = expand_queries(model, evaluation_history=eval_history)
+                        if use_konclude:
+                            satisfied_query_ids = run_analysis_konclude(model, result_prop, eval_history)
+                        else:
+                            satisfied_query_ids = run_analysis_datalog(model, result_prop, eval_history)
 
-                        # Serialize to OWL
-                        strategy = EquivFullCardinalityStrategy()
-                        serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
-                        owl_output = serializer.serialize()
-
-                        # Offer download
-                        st.download_button(
-                            label="⬇️ Download OWL File",
-                            data=owl_output,
-                            file_name="model.owl",
-                            mime="application/rdf+xml",
-                            help="Download this file and analyze locally with analyze_owl.py",
-                            key="download_owl"
-                        )
-
-                        st.success(f"OWL file ready ({len(owl_output):,} bytes)")
-                        st.code("python analyze_owl.py model.owl", language="bash")
+                        if satisfied_query_ids is not None:
+                            st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
+                            results_md = format_results_table(model, satisfied_query_ids, result_prop)
+                            st.markdown(results_md)
 
                     except Exception as e:
-                        st.error(f"OWL generation failed: {str(e)}")
+                        st.error(f"Analysis failed: {str(e)}")
         else:
             st.info("Enter a Mermaid diagram in the Model Definition section")
 

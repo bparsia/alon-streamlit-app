@@ -196,43 +196,45 @@ class OwlSerializer(Transformer):
 
     # ========== Action Predicates ==========
 
+    def _free_do_individual(self, action_name):
+        """free_do(a) for a single action → Class(a) ∩ ¬Class(Opp2a)"""
+        action_class = self._class(action_name)
+        opp_class = self._class(f'Opp2{action_name}')
+        return f'<ObjectIntersectionOf>{action_class}<ObjectComplementOf>{opp_class}</ObjectComplementOf></ObjectIntersectionOf>'
+
+    def _intersect(self, owl_exprs):
+        """Combine a list of OWL class expressions with ObjectIntersectionOf."""
+        if len(owl_exprs) == 1:
+            return owl_exprs[0]
+        result = owl_exprs[0]
+        for expr in owl_exprs[1:]:
+            result = f'<ObjectIntersectionOf>{result}{expr}</ObjectIntersectionOf>'
+        return result
+
     def do_action(self, items):
-        """do(a)  →  Class(a) or complex OWL expression for group actions
+        """do(a)  →  Class(a) or ObjectIntersectionOf for group actions
 
         For individual actions: do(sd1) → Class(sd1)
         For group actions: do({1:sd, 2:ha}) → ObjectIntersectionOf(Class(sd1), Class(ha2))
         """
         action = items[0]
-        # Check if action is already OWL XML (from group_action)
-        if isinstance(action, str) and action.startswith('<'):
-            return action
-        # Otherwise, wrap in Class
+        if isinstance(action, list):
+            # Group action: list of composed action names
+            return self._intersect([self._class(a) for a in action])
         return self._class(action)
 
     def free_do_action(self, items):
-        """free_do(a)  →  ObjectIntersectionOf(Class(a), ObjectComplementOf(Class(Opp2a)))
+        """free_do(a)  →  Class(a) ∩ ¬Class(Opp2a)
 
-        For individual actions: free_do(sd1) → ObjectIntersectionOf(Class(sd1), ¬Class(Opp2sd1))
-        For group actions: free_do({1:sd, 2:ha}) →
-            ObjectIntersectionOf(
-                ObjectIntersectionOf(Class(sd1), Class(ha2)),
-                ObjectComplementOf(Class(Opp2{1:sd, 2:ha}))  # opposing class for the group
-            )
+        For individual: free_do(sd1) → Class(sd1) ∩ ¬Class(Opp2sd1)
+        For group: free_do({1:sd, 2:ha}) →
+            (Class(sd1) ∩ ¬Class(Opp2sd1)) ∩ (Class(ha2) ∩ ¬Class(Opp2ha2))
         """
         action = items[0]
-
-        # Get the action class (might be OWL XML for group actions)
-        if isinstance(action, str) and action.startswith('<'):
-            action_class = action
-            # For group actions, we need to track the original action string for opposing class
-            # Since we don't have it here, we'll use a sanitized version
-            # This is a limitation - group actions might not work correctly with free_do
-            # For now, skip the opposing class logic for complex OWL expressions
-            return action_class
-        else:
-            action_class = self._class(action)
-            opp_class = self._class(f'Opp2{action}')
-            return f'<ObjectIntersectionOf>{action_class}<ObjectComplementOf>{opp_class}</ObjectComplementOf></ObjectIntersectionOf>'
+        if isinstance(action, list):
+            # Group action: apply opposing check to each individual action, then intersect
+            return self._intersect([self._free_do_individual(a) for a in action])
+        return self._free_do_individual(action)
 
     # ========== Atoms ==========
 
@@ -259,37 +261,19 @@ class OwlSerializer(Transformer):
         return self._sanitize_name(str(items[0]))
 
     def group_action(self, items):
-        """{mappings} → conjunction of individual actions
+        """{mappings} → list of composed action names (e.g. ['sd1', 'ha2'])
 
-        Group actions like {1:sd, 2:ha} should expand to:
-        ObjectIntersectionOf(Class(sd1), Class(ha2))
-
-        NOT to a sanitized class name like _1_sd__2_ha_
+        Returns a list so that do_action and free_do_action can apply the
+        correct per-action logic (do vs free_do) before combining.
         """
-        # Items are action_mapping results (e.g., "1:sd", "2:ha")
-        # We need to parse each mapping and create Class elements for the composed actions
-        action_classes = []
+        composed = []
         for mapping in items:
-            # mapping is a string like "1:sd" or "2:ha"
             if ':' in mapping:
                 agent, action = mapping.split(':', 1)
-                # Create Class element for the composed action (e.g., sd1, ha2)
-                composed_action = f"{action}{agent}"
-                action_classes.append(self._class(composed_action))
+                composed.append(f"{action}{agent}")
             else:
-                # Single action without agent (shouldn't happen in group actions)
-                action_classes.append(self._class(mapping))
-
-        # If only one action, return it directly
-        if len(action_classes) == 1:
-            return action_classes[0]
-
-        # Multiple actions - create conjunction
-        # Build left-associatively
-        result = action_classes[0]
-        for action_class in action_classes[1:]:
-            result = f'<ObjectIntersectionOf>{result}{action_class}</ObjectIntersectionOf>'
-        return result
+                composed.append(mapping)
+        return composed
 
     def action_mapping(self, items):
         """num:action or action → mapping string"""

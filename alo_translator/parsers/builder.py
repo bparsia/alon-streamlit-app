@@ -21,7 +21,6 @@ Usage:
     toml_dict = load_toml("path/to/theory.toml")
     model = build_model(toml_dict)
     model = parse_queries(model)
-    model = expand_queries(model)
 """
 
 from typing import Dict, List, Any, Optional, Union
@@ -213,36 +212,26 @@ def expand_queries(model: ALOModel, expand_standard: bool = False,
 # Convenience function: Full pipeline
 # ============================================================================
 
-def parse_toml(file_path: str, expand_standard: bool = False) -> ALOModel:
+def parse_toml(file_path: str) -> ALOModel:
     """
-    Full pipeline: TOML file → ALOModel with expanded queries.
+    Full pipeline: TOML file → ALOModel with parsed queries.
 
     Runs all passes:
     1. Load TOML → dict
     2. Build model (semantic analysis)
     3. Parse queries (string → AST)
-    4. Expand queries (ALOn → primitives)
 
     Args:
         file_path: Path to TOML file
-        expand_standard: If True, expand standard operators too
 
     Returns:
         Complete ALOModel ready for serialization
-
-    Example:
-        >>> model = parse_toml("theories/3.1_auto.toml")
-        >>> model.queries[0].expanded_ast
-        Box(Implication(DoAction(...), Next(...)))
-        >>> model.max_modal_depth()
-        1
     """
     from .toml_parser import load_toml
 
     toml_dict = load_toml(file_path)
     model = build_model(toml_dict)
     model = parse_queries(model)
-    model = expand_queries(model, expand_standard=expand_standard)
     return model
 
 
