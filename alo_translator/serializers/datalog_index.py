@@ -390,19 +390,18 @@ class DatalogIndexSerializer(Serializer):
         # garbage-collected when the exec local scope is discarded and all
         # subsequent pdl.ask() calls return None.
         sections = program.split("# Evaluation code")[0]
+        self._last_sections = sections  # store for post-mortem debugging
         try:
             exec(sections, globals())
         except Exception as e:
-            # Re-raise with the offending line so the caller can display it
-            lines = sections.split("\n")
             import re as _re
+            lines = sections.split("\n")
             m = _re.search(r'line (\d+)', str(e))
-            if m:
-                lineno = int(m.group(1))
-                offending = lines[lineno - 1] if lineno <= len(lines) else "(out of range)"
-            else:
-                offending = "(unknown)"
-            raise type(e)(f"{e}\n  → line {m.group(1) if m else '?'}: {offending}") from None
+            lineno = int(m.group(1)) if m else None
+            offending = lines[lineno - 1] if lineno and lineno <= len(lines) else "(unknown)"
+            raise RuntimeError(
+                f"pyDatalog exec failed: {e}\n  → line {lineno}: {offending}"
+            ) from e
 
         # Evaluate each query
         results = {}
