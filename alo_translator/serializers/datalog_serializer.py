@@ -246,8 +246,15 @@ class DatalogSerializer(Transformer):
         Group actions must be wrapped in a helper so that ~do(group) becomes
         simple NAF (~do_group_N(I)) rather than ~(conjunction), which pyDatalog
         cannot handle correctly.
+
+        For single-agent group actions like {1:ss}, group_action() returns
+        "action(I, 'ss1')" directly (no '&'). We must detect and pass this
+        through rather than re-wrapping it.
         """
         action = items[0]
+        # Single-agent group action: group_action already returned "action(I, 'ss1')"
+        if isinstance(action, str) and action.startswith("action(I,"):
+            return action
         if not (isinstance(action, str) and ('&' in action or '|' in action)):
             return f"action(I, '{action}')"
 
@@ -277,6 +284,13 @@ class DatalogSerializer(Transformer):
         """
         import re
         action = items[0]
+
+        # Single-agent group action: group_action returned "action(I, 'ss1')" directly.
+        # Extract the action name so we can use the individual-action path below.
+        if isinstance(action, str) and action.startswith("action(I,") and '&' not in action:
+            match = re.search(r"action\(I, '(\w+)'\)", action)
+            if match:
+                action = match.group(1)  # e.g., "ss1"
 
         # Individual action — generate helper predicate once
         if not (isinstance(action, str) and ('&' in action or '|' in action)):
