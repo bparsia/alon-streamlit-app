@@ -19,6 +19,7 @@ from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 from alo_translator.parsers.builder import parse_queries
 from alo_translator.query_generation import ResponsibilityConfig, generate_queries
 from alo_translator.serializers.index_mermaid import serialize_index
+from alo_translator.serializers.dbt_mermaid import serialize_dbt
 from alo_translator.serializers.datalog_index import DatalogIndexSerializer
 
 # Konclude imports — only available when running locally with the binary present
@@ -128,6 +129,20 @@ def format_model_overview(model):
 
         lines.append(f"| {hist_name} | {actions_str} | {outcome_str} |")
 
+    return '\n'.join(lines)
+
+
+def format_history_table_md(model) -> str:
+    """Return just the history table as a copyable markdown string."""
+    lines = []
+    lines.append("| History | Actions | Outcome |")
+    lines.append("|---------|---------|---------|")
+    for hist_name in sorted(model.named_histories.keys()):
+        ga = model.named_histories[hist_name]
+        result = next((r for r in model.results if r.history_name == hist_name), None)
+        actions_str = ', '.join([f"{act}{ag}" for ag, act in sorted(ga.actions.items())])
+        outcome_str = ', '.join(sorted(result.true_propositions)) if result else ""
+        lines.append(f"| {hist_name} | {actions_str} | {outcome_str} |")
     return '\n'.join(lines)
 
 
@@ -372,8 +387,17 @@ def main():
                 # Show complete Index diagram
                 st.subheader("Complete Index Structure")
                 index_diagram = serialize_index(model, partial_spec, mode="complete")
-                # Use full width for complete diagram
                 st_mermaid(index_diagram, height=800)
+
+                st.divider()
+                st.subheader("📋 Copy")
+                tab1, tab2, tab3 = st.tabs(["History Table", "Index Diagram", "Complete DBT"])
+                with tab1:
+                    st.code(format_history_table_md(model), language="markdown")
+                with tab2:
+                    st.code(index_diagram, language="text")
+                with tab3:
+                    st.code(serialize_dbt(model, partial_spec, mode="complete"), language="text")
 
             except Exception as e:
                 st.error(f"Failed to parse model: {str(e)}")
@@ -417,6 +441,7 @@ All formulae will be analysed at m/h1.""")
                             st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
                             results_md = format_results_table(model, satisfied_query_ids, result_prop)
                             st.markdown(results_md)
+                            st.code(results_md, language="markdown")
 
                     except Exception as e:
                         st.error(f"Analysis failed: {str(e)}")
