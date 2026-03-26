@@ -49,14 +49,24 @@ with st.sidebar:
     example_models = load_example_models()
     if example_models:
         st.subheader("Example Models")
+
+        # Pre-select from URL query param if present
+        url_model = st.query_params.get("model", "")
+        default_idx = ([""] + list(example_models.keys())).index(url_model) \
+            if url_model in example_models else 0
+
         selected = st.selectbox(
             "Load example",
             [""] + list(example_models.keys()),
+            index=default_idx,
             format_func=lambda x: "Select an example..." if x == "" else x,
         )
         if selected:
             st.session_state.mermaid_input = example_models[selected]
             st.session_state.mermaid_editor = example_models[selected]
+            st.query_params["model"] = selected
+        else:
+            st.query_params.pop("model", None)
 
     st.divider()
 
@@ -88,7 +98,7 @@ if "mermaid_input" not in st.session_state:
 # Page
 # ---------------------------------------------------------------------------
 
-st.title("🌳 ALOn Model Explorer")
+st.title("ALOn Model Explorer")
 st.markdown(
     "Interactive tool for editing, visualizing, and reasoning over ALOn models"
 )
@@ -107,7 +117,7 @@ mermaid_text = st.session_state.mermaid_input  # may be updated below
 
 # ── Section 1: Model Definition ──────────────────────────────────────────────
 
-with st.expander("📝 Model Definition", expanded=True):
+with st.expander("Model Definition", expanded=True):
     st.markdown("Edit the Mermaid diagram below to define your model")
     col_edit, col_preview = st.columns([1, 2])
 
@@ -133,7 +143,7 @@ with st.expander("📝 Model Definition", expanded=True):
 
 # ── Section 2: Complete Model ─────────────────────────────────────────────────
 
-with st.expander("📊 Complete Model", expanded=True):
+with st.expander("Complete Model", expanded=True):
     if not mermaid_text.strip():
         st.info("Enter a Mermaid diagram in the Model Definition section")
     else:
@@ -167,7 +177,7 @@ with st.expander("📊 Complete Model", expanded=True):
 
 # ── Section 3: Responsibility Analysis ───────────────────────────────────────
 
-with st.expander("🧠 Responsibility Analysis", expanded=True):
+with st.expander("Responsibility Analysis", expanded=True):
     if not mermaid_text.strip():
         st.info("Enter a Mermaid diagram in the Model Definition section")
     else:
