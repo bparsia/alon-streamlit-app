@@ -132,6 +132,40 @@ def format_model_overview(model):
     return '\n'.join(lines)
 
 
+def copy_button(text: str, label: str = "📋 Copy") -> None:
+    """Render a small copy-to-clipboard button using browser JS."""
+    import streamlit.components.v1 as components
+    import json
+    safe = json.dumps(text)  # handles all escaping
+    components.html(f"""
+        <script>
+        function doCopy() {{
+            var btn = document.getElementById('cpbtn');
+            var text = {safe};
+            if (navigator.clipboard) {{
+                navigator.clipboard.writeText(text).then(function() {{
+                    btn.innerText = '✓ Copied';
+                    setTimeout(function() {{ btn.innerText = '{label}'; }}, 1800);
+                }});
+            }} else {{
+                var el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                btn.innerText = '✓ Copied';
+                setTimeout(function() {{ btn.innerText = '{label}'; }}, 1800);
+            }}
+        }}
+        </script>
+        <button id="cpbtn" onclick="doCopy()" style="
+            background:none; border:1px solid #ccc; border-radius:4px;
+            padding:3px 10px; cursor:pointer; font-size:13px; color:#555;
+        ">{label}</button>
+    """, height=32)
+
+
 def format_history_table_md(model) -> str:
     """Return just the history table as a copyable markdown string."""
     lines = []
@@ -385,19 +419,21 @@ def main():
                 st.divider()
 
                 # Show complete Index diagram
-                st.subheader("Complete Index Structure")
-                index_diagram = serialize_index(model, partial_spec, mode="complete")
+                col_hdr, col_btn = st.columns([6, 1])
+                with col_hdr:
+                    st.subheader("Complete Index Structure")
+                with col_btn:
+                    index_diagram = serialize_index(model, partial_spec, mode="complete")
+                    copy_button(index_diagram, "📋 Index")
                 st_mermaid(index_diagram, height=800)
 
-                st.divider()
-                st.subheader("📋 Copy")
-                tab1, tab2, tab3 = st.tabs(["History Table", "Index Diagram", "Complete DBT"])
-                with tab1:
-                    st.code(format_history_table_md(model), language="markdown")
-                with tab2:
-                    st.code(index_diagram, language="text")
-                with tab3:
-                    st.code(serialize_dbt(model, partial_spec, mode="complete"), language="text")
+                col_hdr2, col_btn2, col_btn3 = st.columns([6, 1, 1])
+                with col_hdr2:
+                    st.subheader("Histories")
+                with col_btn2:
+                    copy_button(format_history_table_md(model), "📋 Table")
+                with col_btn3:
+                    copy_button(serialize_dbt(model, partial_spec, mode="complete"), "📋 DBT")
 
             except Exception as e:
                 st.error(f"Failed to parse model: {str(e)}")
@@ -440,8 +476,11 @@ All formulae will be analysed at m/h1.""")
                         if satisfied_query_ids is not None:
                             st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
                             results_md = format_results_table(model, satisfied_query_ids, result_prop)
-                            st.markdown(results_md)
-                            st.code(results_md, language="markdown")
+                            col_r, col_rb = st.columns([8, 1])
+                            with col_r:
+                                st.markdown(results_md)
+                            with col_rb:
+                                copy_button(results_md, "📋 Copy")
 
                     except Exception as e:
                         st.error(f"Analysis failed: {str(e)}")
