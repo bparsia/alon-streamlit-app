@@ -1,492 +1,209 @@
-#!/usr/bin/env python3
 """
-ALOn Model Explorer - Streamlit App
+ALOn Model Explorer — main page.
+"""
 
-Interactive app for editing, visualizing, and reasoning over ALOn models.
-"""
+import sys
+from pathlib import Path
 
 import streamlit as st
 from streamlit_mermaid import st_mermaid
-import sys
-import tempfile
-from pathlib import Path
-from typing import Optional, Set
 
-# Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from alo_translator.parsers.dbt_parser import parse_dbt_diagram
-from alo_translator.parsers.builder import parse_queries
-from alo_translator.query_generation import ResponsibilityConfig, generate_queries
 from alo_translator.serializers.index_mermaid import serialize_index
 from alo_translator.serializers.dbt_mermaid import serialize_dbt
-from alo_translator.serializers.datalog_index import DatalogIndexSerializer
 
-# Konclude imports — only available when running locally with the binary present
-try:
-    from alo_translator.serializers.owl_index_new_expander import OWLIndexNewExpanderSerializer
-    from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
-    from alo_translator.reasoners.konclude import KoncludeAdapter
-    from alo_translator.reasoners.base import ReasoningMode
-    from alo_translator.reasoners.config import load_config
-    _KONCLUDE_IMPORTS_OK = True
-except ImportError:
-    _KONCLUDE_IMPORTS_OK = False
+from utils import (
+    copy_button,
+    format_model_overview,
+    format_history_table_md,
+    format_results_table,
+    konclude_path,
+    load_example_models,
+    run_analysis_datalog,
+    run_analysis_konclude,
+)
 
-
-def _konclude_path() -> Optional[Path]:
-    """Return Konclude binary path if explicitly configured via Streamlit secret, else None.
-
-    Add KONCLUDE_PATH to .streamlit/secrets.toml when running locally:
-        KONCLUDE_PATH = "/absolute/path/to/Konclude"
-    Leave it unset on Streamlit Cloud to disable the Konclude option.
-    """
-    if not _KONCLUDE_IMPORTS_OK:
-        return None
-    try:
-        p = Path(st.secrets["KONCLUDE_PATH"])
-        if p.exists():
-            return p
-    except (KeyError, Exception):
-        pass
-    return None
-
-
-# Page config
 st.set_page_config(
     page_title="ALOn Model Explorer",
     page_icon="🌳",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
 
-# Custom CSS for better styling
 st.markdown("""
 <style>
-    .stTextArea textarea {
-        font-family: monospace;
-        font-size: 12px;
-    }
-    .model-section {
-        margin-top: 2rem;
-    }
+    .stTextArea textarea { font-family: monospace; font-size: 12px; }
 </style>
 """, unsafe_allow_html=True)
 
 
-def load_example_models():
-    """Load example models from the models directory."""
-    models_dir = Path(__file__).parent / "models"
-    if not models_dir.exists():
-        return {}
+# ---------------------------------------------------------------------------
+# Sidebar — model repository
+# ---------------------------------------------------------------------------
 
-    models = {}
-    for model_file in sorted(models_dir.glob("*.mmd")):
-        with open(model_file, 'r') as f:
-            models[model_file.stem] = f.read()
-    return models
+with st.sidebar:
+    st.header("📚 Model Repository")
 
+    example_models = load_example_models()
+    if example_models:
+        st.subheader("Example Models")
+        selected = st.selectbox(
+            "Load example",
+            [""] + list(example_models.keys()),
+            format_func=lambda x: "Select an example..." if x == "" else x,
+        )
+        if selected:
+            st.session_state.mermaid_input = example_models[selected]
+            st.session_state.mermaid_editor = example_models[selected]
 
-def format_model_overview(model):
-    """Format model overview as markdown."""
-    lines = []
+    st.divider()
 
-    # Agents
-    lines.append("### Agents")
-    aliases = model.aliases
-    for agent_id in sorted(model.agents_actions.keys()):
-        agent_name = aliases.get(agent_id, f"Agent {agent_id}")
-        actions = model.agents_actions[agent_id]
-        action_strs = []
-        for a in actions:
-            if a in aliases:
-                action_strs.append(f"`{a}` ({aliases[a]})")
-            else:
-                action_strs.append(f"`{a}`")
-        lines.append(f"- **{agent_name}** (`{agent_id}`): {', '.join(action_strs)}")
+    st.subheader("Upload Model")
+    uploaded = st.file_uploader("Choose a .mmd file", type=["mmd", "mermaid"])
+    if uploaded:
+        content = uploaded.read().decode("utf-8")
+        st.session_state.mermaid_input = content
+        st.session_state.mermaid_editor = content
+        st.success(f"Loaded {uploaded.name}")
 
-    # Opposings
-    if model.opposings:
-        lines.append("\n### Opposing Relations")
-        for opp in model.opposings:
-            opposed = f"{opp.opposed_action.action_type}{opp.opposed_action.agent}"
-            opposing = f"{opp.opposing_action.action_type}{opp.opposing_action.agent}"
-            opposed_desc = aliases.get(opp.opposed_action.action_type, opp.opposed_action.action_type)
-            opposing_desc = aliases.get(opp.opposing_action.action_type, opp.opposing_action.action_type)
-            lines.append(f"- `{opposed}` ({opposed_desc}) opposed by `{opposing}` ({opposing_desc})")
+    st.divider()
 
-    # Histories
-    lines.append(f"\n### Histories")
-    lines.append(f"\nTotal histories: **{len(model.named_histories)}**\n")
-    lines.append("| History | Actions | Outcome |")
-    lines.append("|---------|---------|---------|")
-    for hist_name in sorted(model.named_histories.keys()):
-        ga = model.named_histories[hist_name]
-        result = next((r for r in model.results if r.history_name == hist_name), None)
-
-        actions_str = ', '.join([f"{act}{ag}" for ag, act in sorted(ga.actions.items())])
-        outcome_str = ', '.join(sorted(result.true_propositions)) if result else ""
-
-        lines.append(f"| {hist_name} | {actions_str} | {outcome_str} |")
-
-    return '\n'.join(lines)
+    st.subheader("Submit Model")
+    st.markdown("Share your model with the community")
+    if st.text_input("Model name") and st.button("Submit"):
+        st.info("Submission feature coming soon!")
 
 
-def copy_button(text: str, label: str = "📋 Copy") -> None:
-    """Render a small copy-to-clipboard button using browser JS."""
-    import streamlit.components.v1 as components
-    import json
-    safe = json.dumps(text)  # handles all escaping
-    components.html(f"""
-        <script>
-        function doCopy() {{
-            var btn = document.getElementById('cpbtn');
-            var text = {safe};
-            if (navigator.clipboard) {{
-                navigator.clipboard.writeText(text).then(function() {{
-                    btn.innerText = '✓ Copied';
-                    setTimeout(function() {{ btn.innerText = '{label}'; }}, 1800);
-                }});
-            }} else {{
-                var el = document.createElement('textarea');
-                el.value = text;
-                document.body.appendChild(el);
-                el.select();
-                document.execCommand('copy');
-                document.body.removeChild(el);
-                btn.innerText = '✓ Copied';
-                setTimeout(function() {{ btn.innerText = '{label}'; }}, 1800);
-            }}
-        }}
-        </script>
-        <button id="cpbtn" onclick="doCopy()" style="
-            background:none; border:1px solid #ccc; border-radius:4px;
-            padding:3px 10px; cursor:pointer; font-size:13px; color:#555;
-        ">{label}</button>
-    """, height=32)
+# ---------------------------------------------------------------------------
+# Session state
+# ---------------------------------------------------------------------------
+
+if "mermaid_input" not in st.session_state:
+    st.session_state.mermaid_input = list(example_models.values())[0] if example_models else ""
 
 
-def format_history_table_md(model) -> str:
-    """Return just the history table as a copyable markdown string."""
-    lines = []
-    lines.append("| History | Actions | Outcome |")
-    lines.append("|---------|---------|---------|")
-    for hist_name in sorted(model.named_histories.keys()):
-        ga = model.named_histories[hist_name]
-        result = next((r for r in model.results if r.history_name == hist_name), None)
-        actions_str = ', '.join([f"{act}{ag}" for ag, act in sorted(ga.actions.items())])
-        outcome_str = ', '.join(sorted(result.true_propositions)) if result else ""
-        lines.append(f"| {hist_name} | {actions_str} | {outcome_str} |")
-    return '\n'.join(lines)
+# ---------------------------------------------------------------------------
+# Page
+# ---------------------------------------------------------------------------
 
+st.title("🌳 ALOn Model Explorer")
+st.markdown(
+    "Interactive tool for editing, visualizing, and reasoning over ALOn models"
+)
+st.markdown("""
+You may load or enter either a Discrete Branching Time or an Index style model.
+The model can also be *partially* specified:
 
-def _setup_queries(model, result_prop: str, eval_history: str):
-    """Attach responsibility config, generate and parse queries. Mutates model."""
-    model.responsibility_config = ResponsibilityConfig(
-        target_proposition=result_prop,
-        agents="all",
-        groups="all",
-        responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
-        history=eval_history,
-    )
-    queries = generate_queries(model)
-    model.queries.extend(queries)
-    return parse_queries(model)
-
-
-def run_analysis_datalog(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
-    """Run responsibility analysis using pyDatalog. Returns satisfied query IDs."""
-    try:
-        model = _setup_queries(model, result_prop, eval_history)
-        serializer = DatalogIndexSerializer(model, evaluation_history=eval_history)
-        results = serializer.evaluate()
-        return {qid for qid, r in results.items() if r.get('result')}
-    except Exception as e:
-        st.error(f"Analysis error: {str(e)}")
-        return None
-
-
-def run_analysis_konclude(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
-    """Run responsibility analysis using Konclude OWL reasoner. Returns satisfied query IDs."""
-    try:
-        model = _setup_queries(model, result_prop, eval_history)
-
-        strategy = EquivFullCardinalityStrategy()
-        serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
-        owl_output = serializer.serialize()
-
-        konclude_bin = _konclude_path()
-        if konclude_bin is None:
-            st.error("Konclude binary not found.")
-            return None
-
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.owl', delete=False) as f:
-            f.write(owl_output)
-            temp_owl_path = Path(f.name)
-
-        try:
-            adapter = KoncludeAdapter(konclude_bin)
-            result = adapter.run(temp_owl_path, ReasoningMode.REALISATION, timeout=300, verbose=False)
-
-            if not result.success:
-                st.error(f"Reasoner failed: {result.error_message}")
-                return None
-
-            eval_individual = f"m_{eval_history}"
-            m_types = result.individual_types.get(eval_individual, set())
-            return {q.query_id for q in model.queries if q.query_id in m_types}
-
-        finally:
-            temp_owl_path.unlink()
-
-    except Exception as e:
-        st.error(f"Analysis error: {str(e)}")
-        return None
-
-
-def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str):
-    """Format responsibility results as markdown table."""
-    import re
-    from collections import defaultdict
-
-    agent_results = defaultdict(lambda: {
-        'pres': False, 'sres': False, 'res': False,
-        'dxstit': False, 'but': False, 'ness': False
-    })
-
-    action_legend = {}
-
-    for query in model.queries:
-        query_id = query.query_id
-        satisfied = query_id in satisfied_query_ids
-
-        parts = query_id.split('_')
-        if len(parts) >= 3:
-            resp_type = parts[1]
-            agent_parts = parts[2:-1]
-            agent_str = '_'.join(agent_parts)
-
-            if resp_type in ('but', 'ness'):
-                m = re.match(r'^([a-zA-Z]+)(\d+)$', agent_str)
-                if m:
-                    action_id = agent_str
-                    agent_str = m.group(2)
-                    action_legend[agent_str] = action_id
-
-            if resp_type in agent_results[agent_str]:
-                agent_results[agent_str][resp_type] = satisfied
-
-    sorted_agents = sorted(agent_results.keys(), key=lambda x: (len(x.split('_')), x))
-
-    # Get result description
-    aliases = model.aliases
-    result_desc = aliases.get(result_prop, result_prop)
-
-    # Build markdown table
-    lines = []
-    lines.append(f"**Outcome**: `{result_prop}` ({result_desc})")
-    lines.append("")
-    lines.append("| Agent/Coalition | pres | sres | res | dxstit | but | ness |")
-    lines.append("|----------------|------|------|-----|--------|-----|------|")
-
-    for agent in sorted_agents:
-        r = agent_results[agent]
-
-        # Format agent name with aliases
-        if '_' in agent:
-            agent_ids = agent.split('_')
-            agent_names = [aliases.get(aid, aid) for aid in agent_ids]
-            agent_display = '{' + ', '.join(agent_names) + '}'
-        else:
-            agent_display = aliases.get(agent, agent)
-
-        pres = "✓" if r['pres'] else " "
-        sres = "✓" if r['sres'] else " "
-        res = "✓" if r['res'] else " "
-        dxstit = "✓" if r['dxstit'] else " "
-        but = "✓" if r['but'] else " "
-        ness = "✓" if r['ness'] else " "
-
-        lines.append(f"| {agent_display} | {pres} | {sres} | {res} | {dxstit} | {but} | {ness} |")
-
-    # Add legend
-    if action_legend:
-        lines.append("")
-        legend_parts = []
-        for ag, act in sorted(action_legend.items()):
-            agent_name = aliases.get(ag, ag)
-            action_name = aliases.get(act[:len(act)-len(ag)], act[:len(act)-len(ag)])
-            legend_parts.append(f"{agent_name} → {action_name}")
-        lines.append(f"Note: but/ness causation evaluated for individual or group actions done at the evaluation point. Thus, while a tick in the pres cell for 1 should be read as `[1 pres]outcome`, a tick in the but cell should be read as `but(actionDoneBy1, outcome)`.")
-
-    return '\n'.join(lines)
-
-
-def main():
-    st.title("🌳 ALOn Model Explorer")
-    st.markdown("Interactive tool for editing, visualizing, and reasoning over ALOn models")
-
-    st.markdown("""You may load an enter either a Discrete Branching Time or and Index style model. The model can also be *partially* specified in the following ways:
-
-1. One can omit some complete group actions and thus associated histories. You must always designate h1 (the history where responsibility will be evaluated) and any additional ones you wish to specify should be consecutatively numbered.
-2. If some successor moment is omited, it will get the negation of the target outcome by default.
+1. You can omit some complete group actions (and their associated histories).
+   You must always designate h1 (the evaluation history); additional ones
+   should be consecutively numbered.
+2. If a successor moment is omitted, it defaults to the negation of the target outcome.
 """)
-    # Sidebar - Model Repository
-    with st.sidebar:
-        st.header("📚 Model Repository")
 
-        # Load examples
-        example_models = load_example_models()
+mermaid_text = st.session_state.mermaid_input  # may be updated below
 
-        if example_models:
-            st.subheader("Example Models")
-            selected_example = st.selectbox(
-                "Load example",
-                [""] + list(example_models.keys()),
-                format_func=lambda x: "Select an example..." if x == "" else x
-            )
 
-            if selected_example:
-                st.session_state.mermaid_input = example_models[selected_example]
-                st.session_state.mermaid_editor = example_models[selected_example]
+# ── Section 1: Model Definition ──────────────────────────────────────────────
 
-        st.divider()
+with st.expander("📝 Model Definition", expanded=True):
+    st.markdown("Edit the Mermaid diagram below to define your model")
+    col_edit, col_preview = st.columns([1, 2])
 
-        # Upload model
-        st.subheader("Upload Model")
-        uploaded_file = st.file_uploader("Choose a .mmd file", type=["mmd", "mermaid"])
-        if uploaded_file is not None:
-            content = uploaded_file.read().decode("utf-8")
-            st.session_state.mermaid_input = content
-            st.session_state.mermaid_editor = content
-            st.success(f"Loaded {uploaded_file.name}")
+    with col_edit:
+        st.subheader("Mermaid Text")
+        mermaid_text = st.text_area(
+            "Enter Mermaid diagram",
+            value=st.session_state.mermaid_input,
+            height=400,
+            key="mermaid_editor",
+            label_visibility="collapsed",
+        )
+        if st.button("🔄 Refresh Preview"):
+            st.session_state.mermaid_input = mermaid_text
 
-        st.divider()
-
-        # Submit new model
-        st.subheader("Submit Model")
-        st.markdown("Share your model with the community")
-        new_model_name = st.text_input("Model name")
-        if st.button("Submit") and new_model_name:
-            st.info("Submission feature coming soon!")
-
-    # Initialize session state
-    if 'mermaid_input' not in st.session_state:
-        if example_models:
-            st.session_state.mermaid_input = list(example_models.values())[0]
-        else:
-            st.session_state.mermaid_input = ""
-
-    # Main content area
-
-    # Section 1: Model Definition
-    with st.expander("📝 Model Definition", expanded=True):
-        st.markdown("Edit the Mermaid diagram below to define your model")
-
-        col1, col2 = st.columns([1, 2])
-
-        with col1:
-            st.subheader("Mermaid Text")
-            mermaid_text = st.text_area(
-                "Enter Mermaid diagram",
-                value=st.session_state.mermaid_input,
-                height=400,
-                key="mermaid_editor",
-                label_visibility="collapsed"
-            )
-
-            if st.button("🔄 Refresh Preview"):
-                st.session_state.mermaid_input = mermaid_text
-
-        with col2:
-            st.subheader("Partial Diagram")
-            if mermaid_text.strip():
-                # Render using streamlit-mermaid
-                st_mermaid(mermaid_text, height=600)
-            else:
-                st.info("Enter a Mermaid diagram to see preview")
-
-    # Section 2: Complete Model
-    with st.expander("📊 Complete Model", expanded=True):
+    with col_preview:
+        st.subheader("Partial Diagram")
         if mermaid_text.strip():
-            try:
-                # Parse the diagram
-                model, partial_spec = parse_dbt_diagram(mermaid_text)
-
-                # Show overview
-                st.markdown(format_model_overview(model))
-
-                st.divider()
-
-                # Show complete Index diagram
-                col_hdr, col_btn = st.columns([6, 1])
-                with col_hdr:
-                    st.subheader("Complete Index Structure")
-                with col_btn:
-                    index_diagram = serialize_index(model, partial_spec, mode="complete")
-                    copy_button(index_diagram, "📋 Index")
-                st_mermaid(index_diagram, height=800)
-
-                col_hdr2, col_btn2, col_btn3 = st.columns([6, 1, 1])
-                with col_hdr2:
-                    st.subheader("Histories")
-                with col_btn2:
-                    copy_button(format_history_table_md(model), "📋 Table")
-                with col_btn3:
-                    copy_button(serialize_dbt(model, partial_spec, mode="complete"), "📋 DBT")
-
-            except Exception as e:
-                st.error(f"Failed to parse model: {str(e)}")
+            st_mermaid(mermaid_text, height=600)
         else:
-            st.info("Enter a Mermaid diagram in the Model Definition section")
+            st.info("Enter a Mermaid diagram to see preview")
 
-    # Section 3: Responsibility Analysis
-    with st.expander("🧠 Responsibility Analysis", expanded=True):
-        if mermaid_text.strip():
-            st.markdown("""Analyze responsibility for outcomes using various operators.
 
-All formulae will be analysed at m/h1.""")
+# ── Section 2: Complete Model ─────────────────────────────────────────────────
 
-            # Backend selector — only shown when Konclude is locally available
-            konclude_bin = _konclude_path()
-            if konclude_bin:
-                backend = st.radio(
-                    "Reasoner",
-                    ["pyDatalog", "Konclude (OWL)"],
-                    horizontal=True,
-                )
-                use_konclude = backend == "Konclude (OWL)"
-            else:
-                use_konclude = False
+with st.expander("📊 Complete Model", expanded=True):
+    if not mermaid_text.strip():
+        st.info("Enter a Mermaid diagram in the Model Definition section")
+    else:
+        try:
+            model, partial_spec = parse_dbt_diagram(mermaid_text)
 
-            if st.button("▶️ Run Analysis"):
-                with st.spinner("Running responsibility analysis..."):
-                    try:
-                        model, partial_spec = parse_dbt_diagram(mermaid_text)
+            st.markdown(format_model_overview(model))
+            st.divider()
 
-                        result_prop = partial_spec.get("result", "q")
-                        eval_point = partial_spec.get("evaluation_point", "m/h1")
-                        eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
+            # Index diagram
+            index_diagram = serialize_index(model, partial_spec, mode="complete")
+            col_hdr, col_btn = st.columns([6, 1])
+            with col_hdr:
+                st.subheader("Complete Index Structure")
+            with col_btn:
+                copy_button(index_diagram, "📋 Index")
+            st_mermaid(index_diagram, height=800)
 
-                        if use_konclude:
-                            satisfied_query_ids = run_analysis_konclude(model, result_prop, eval_history)
-                        else:
-                            satisfied_query_ids = run_analysis_datalog(model, result_prop, eval_history)
+            # History / export copy buttons
+            col_hdr2, col_btn2, col_btn3 = st.columns([6, 1, 1])
+            with col_hdr2:
+                st.subheader("Histories")
+            with col_btn2:
+                copy_button(format_history_table_md(model), "📋 Table")
+            with col_btn3:
+                copy_button(serialize_dbt(model, partial_spec, mode="complete"), "📋 DBT")
 
-                        if satisfied_query_ids is not None:
-                            st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
-                            results_md = format_results_table(model, satisfied_query_ids, result_prop)
-                            col_r, col_rb = st.columns([8, 1])
-                            with col_r:
-                                st.markdown(results_md)
-                            with col_rb:
-                                copy_button(results_md, "📋 Copy")
+        except Exception as e:
+            st.error(f"Failed to parse model: {e}")
 
-                    except Exception as e:
-                        st.error(f"Analysis failed: {str(e)}")
+
+# ── Section 3: Responsibility Analysis ───────────────────────────────────────
+
+with st.expander("🧠 Responsibility Analysis", expanded=True):
+    if not mermaid_text.strip():
+        st.info("Enter a Mermaid diagram in the Model Definition section")
+    else:
+        st.markdown("Analyse responsibility for outcomes using various operators.\n\n"
+                    "All formulae are evaluated at m/h1.")
+
+        konclude_bin = konclude_path()
+        if konclude_bin:
+            backend = st.radio("Reasoner", ["pyDatalog", "Konclude (OWL)"], horizontal=True)
+            use_konclude = backend == "Konclude (OWL)"
         else:
-            st.info("Enter a Mermaid diagram in the Model Definition section")
+            use_konclude = False
 
+        if st.button("▶️ Run Analysis"):
+            with st.spinner("Running responsibility analysis..."):
+                try:
+                    model, partial_spec = parse_dbt_diagram(mermaid_text)
 
-if __name__ == "__main__":
-    main()
+                    result_prop  = partial_spec.get("result", "q")
+                    eval_point   = partial_spec.get("evaluation_point", "m/h1")
+                    eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
+
+                    run = run_analysis_konclude if use_konclude else run_analysis_datalog
+                    satisfied_query_ids = run(model, result_prop, eval_history)
+
+                    if satisfied_query_ids is not None:
+                        st.success(
+                            f"Analysis complete! "
+                            f"Found {len(satisfied_query_ids)} satisfied queries"
+                        )
+                        results_md = format_results_table(model, satisfied_query_ids, result_prop)
+                        col_r, col_rb = st.columns([8, 1])
+                        with col_r:
+                            st.markdown(results_md)
+                        with col_rb:
+                            copy_button(results_md, "📋 Copy")
+
+                except Exception as e:
+                    st.error(f"Analysis failed: {e}")
