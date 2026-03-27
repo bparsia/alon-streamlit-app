@@ -18,4 +18,5 @@ We abuse Mermaid class diagrams to specify ALOn Models. While you can edit model
 
 There are two structural approaches you can use for your model specs: One based on discrete branching time (DBT) structures and one based on "indicies" (which are closer to what we translate too; these use a more traditional relational semantics where each world represents a moment/history pair).
 
+(Still under construction :))
 """)

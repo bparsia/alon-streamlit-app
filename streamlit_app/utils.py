@@ -66,6 +66,37 @@ def setup_queries(model, result_prop: str, eval_history: str):
     return parse_queries(model)
 
 
+def analysis_button(key: str, model, partial_spec: dict, label: str = "▶️ Run Analysis",
+                    show_legend: bool = True) -> None:
+    """
+    Render a self-contained analysis button that persists results across reruns.
+
+    Args:
+        key: Unique session_state key for this analysis (e.g. "tut_analysis_1").
+        model: Parsed ALOn model.
+        partial_spec: Spec dict from parse_dbt_diagram (provides result/eval_point).
+        label: Button label text.
+    """
+    if st.button(label, key=f"btn_{key}"):
+        with st.spinner("Running…"):
+            result_prop  = partial_spec.get("result", "q")
+            eval_point   = partial_spec.get("evaluation_point", "m/h1")
+            eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
+            satisfied    = run_analysis_datalog(model, result_prop, eval_history)
+            if satisfied is not None:
+                # Store the rendered markdown — model.queries won't survive the rerun
+                st.session_state[key] = format_results_table(model, satisfied, result_prop,
+                                                              show_legend=show_legend)
+
+    if key in st.session_state:
+        results_md = st.session_state[key]
+        col_r, col_rb = st.columns([8, 1])
+        with col_r:
+            st.markdown(results_md)
+        with col_rb:
+            copy_button(results_md, "📋 Copy")
+
+
 def run_analysis_datalog(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
     """Run responsibility analysis using pyDatalog. Returns satisfied query IDs."""
     try:
@@ -176,7 +207,8 @@ def format_history_table_md(model) -> str:
     return "\n".join(lines)
 
 
-def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str) -> str:
+def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
+                         show_legend: bool = True) -> str:
     """Format responsibility results as a markdown table."""
     agent_results = defaultdict(lambda: {
         "pres": False, "sres": False, "res": False,
@@ -222,7 +254,7 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str)
         row = [display] + ["✓" if r[k] else " " for k in ("pres", "sres", "res", "dxstit", "but", "ness")]
         lines.append("| " + " | ".join(row) + " |")
 
-    if action_legend:
+    if action_legend and show_legend:
         lines.append(
             "\nNote: but/ness causation evaluated for individual or group actions done at the "
             "evaluation point. Thus, while a tick in the pres cell for 1 should be read as "

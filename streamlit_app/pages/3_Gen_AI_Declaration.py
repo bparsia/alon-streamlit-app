@@ -14,4 +14,6 @@ I started by hand crafting some translations into OWL from "Where Responsibility
 It definitely did not end up the quick hack and have something I can use for a paper project. This was in part because my translations needed some work and OWL reasoners were flakier than I liked. But also because of weird turns and deadends from how I used Claude (and how Claude works).
 
 I'll be writing up some of my experiences in the future. 
+
+* 26 March 2026: I asked Claude to add some Streamlit features to the Tutorial and it *rewrote all my text* (and made it worse). We reverted that nonsense. It also clearly didn't understand where I wanted to put things, but I figured I'd tweak that manually.
 """)
