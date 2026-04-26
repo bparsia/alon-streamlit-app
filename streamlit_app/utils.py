@@ -73,10 +73,13 @@ def konclude_path() -> Optional[Path]:
         ]:
             try:
                 config = load_config(config_path)
-                p = Path(config.reasoners["konclude"].path)
+                raw = config.reasoners["konclude"].path
+                if not raw:
+                    continue
+                p = Path(raw)
                 if not p.is_absolute():
                     p = config_path.parent / p
-                if p.exists():
+                if p.is_file():
                     return p
             except Exception:
                 continue
