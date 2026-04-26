@@ -186,10 +186,15 @@ class DatalogIndexSerializer(Serializer):
         # Base predicates
         terms.update(['succ', 'same_moment', 'same_moment_base', 'action', 'prop', 'top', 'bottom'])
 
-        # Action names (for opposing predicates)
+        # Action names (for opposing predicates) — CGA actions + do(X) prop labels
         for cga in self.history_to_cga.values():
             for agent, action_type in cga.actions.items():
                 action_name = f"{action_type}{agent}"
+                terms.add(f"opposing_{action_name}")
+        for action_name in (self._do_prop_action(p)
+                            for r in self.model.results
+                            for p in r.true_propositions):
+            if action_name:
                 terms.add(f"opposing_{action_name}")
 
         # Predicates from query rules (will be populated by DatalogSerializer)
@@ -241,19 +246,38 @@ class DatalogIndexSerializer(Serializer):
         return '\n'.join(rules)
 
     def _generate_action_facts(self) -> str:
-        """Generate action membership facts."""
+        """Generate action membership facts.
+
+        Actions are asserted at both root-moment indices (for do/free_do queries)
+        and successor indices (so that X(do(a)) works when do(a) is used as a
+        target proposition).
+        """
         facts = ["# Action facts"]
 
         for history_name, cga in self.history_to_cga.items():
             root_idx = self._index_name('m', history_name)
+            successor_moment = self._get_successor_moment(history_name)
+            succ_idx = self._index_name(successor_moment, history_name)
             for agent, action_type in sorted(cga.actions.items()):
                 action_name = f"{action_type}{agent}"
                 facts.append(f"+ action('{root_idx}', '{action_name}')")
+                facts.append(f"+ action('{succ_idx}', '{action_name}')")
 
         return '\n'.join(facts)
 
+    def _do_prop_action(self, prop: str) -> Optional[str]:
+        """If prop is of the form do(X), return X; otherwise return None."""
+        import re
+        m = re.match(r'^do\((.+)\)$', prop.strip())
+        return m.group(1) if m else None
+
     def _generate_proposition_facts(self) -> str:
-        """Generate proposition truth facts (closed-world)."""
+        """Generate proposition truth facts (closed-world).
+
+        Propositions of the form do(X) are emitted as action facts rather than
+        prop facts, because the Datalog serializer expands X(do(a)) as
+        succ(I, J) & action(J, 'a'), not as succ(I, J) & prop(J, 'do(a)').
+        """
         facts = ["# Proposition facts (closed-world: unlisted props are false)"]
 
         for history_name in self.history_to_cga.keys():
@@ -262,7 +286,11 @@ class DatalogIndexSerializer(Serializer):
                 successor_moment = self._get_successor_moment(history_name)
                 successor_idx = self._index_name(successor_moment, history_name)
                 for prop in result.true_propositions:
-                    facts.append(f"+ prop('{successor_idx}', '{prop}')")
+                    action_name = self._do_prop_action(prop)
+                    if action_name:
+                        facts.append(f"+ action('{successor_idx}', '{action_name}')")
+                    else:
+                        facts.append(f"+ prop('{successor_idx}', '{prop}')")
 
         return '\n'.join(facts)
 
@@ -270,11 +298,16 @@ class DatalogIndexSerializer(Serializer):
         """Generate opposing predicates for FreeDoAction."""
         rules = ["# Opposing action rules"]
 
-        # Collect all actions used in the model
+        # Collect all actions used in the model (CGA actions + do(X) proposition labels)
         all_actions = set()
         for cga in self.history_to_cga.values():
             for agent, action_type in cga.actions.items():
                 all_actions.add(f"{action_type}{agent}")
+        for result in self.model.results:
+            for prop in result.true_propositions:
+                action_name = self._do_prop_action(prop)
+                if action_name:
+                    all_actions.add(action_name)
 
         # For each action, generate opposing rules
         for action_name in sorted(all_actions):

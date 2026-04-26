@@ -41,6 +41,11 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
         self.query_name_map: Dict[str, str] = {}  # formula_string -> query_id
         self.query_expansions: Dict[str, str] = {}  # query_id -> expansion_name
 
+    def _make_expander(self) -> ExpanderTransformer:
+        """Factory for the ExpanderTransformer.  Subclasses can override to
+        inject evaluation_moment or use a different transformer class."""
+        return ExpanderTransformer(self.parser, self.model)
+
     def _add_query_classes(self, ontology: Element):
         """
         Add query class definitions using NEW ExpanderTransformer + OwlSerializer.
@@ -53,7 +58,7 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
         5. Add rdfs:label annotation assertions
         """
         # Step 1: Create a single expander for all queries (shares q-name counter)
-        self.expander = ExpanderTransformer(self.parser, self.model)
+        self.expander = self._make_expander()
 
         # Step 2: Process each query
         for query in self.model.queries:

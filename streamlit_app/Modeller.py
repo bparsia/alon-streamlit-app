@@ -14,15 +14,22 @@ from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 from alo_translator.serializers.index_mermaid import serialize_index
 from alo_translator.serializers.dbt_mermaid import serialize_dbt
 
+from alo_translator.model.core import LayeredALOModel
+
 from utils import (
     copy_button,
     format_model_overview,
     format_history_table_md,
     format_results_table,
+    format_layered_model_overview,
+    format_layered_results_table,
     konclude_path,
     load_example_models,
+    parse_model,
     run_analysis_datalog,
+    run_analysis_datalog_layered,
     run_analysis_konclude,
+    run_analysis_konclude_layered,
 )
 
 st.set_page_config(
@@ -61,11 +68,13 @@ with st.sidebar:
             index=default_idx,
             format_func=lambda x: "Select an example..." if x == "" else x,
         )
-        if selected:
+        if selected and selected != st.session_state.get("_loaded_model"):
             st.session_state.mermaid_input = example_models[selected]
             st.session_state.mermaid_editor = example_models[selected]
+            st.session_state._loaded_model = selected
             st.query_params["model"] = selected
-        else:
+        elif not selected:
+            st.session_state.pop("_loaded_model", None)
             st.query_params.pop("model", None)
 
     st.divider()
@@ -148,28 +157,32 @@ with st.expander("Complete Model", expanded=True):
         st.info("Enter a Mermaid diagram in the Model Definition section")
     else:
         try:
-            model, partial_spec = parse_dbt_diagram(mermaid_text)
+            model, partial_spec = parse_model(mermaid_text)
 
-            st.markdown(format_model_overview(model))
-            st.divider()
+            if isinstance(model, LayeredALOModel):
+                st.markdown(f"**Temporal depth**: {model.depth()} (TD>1 model)")
+                st.markdown(format_layered_model_overview(model))
+            else:
+                st.markdown(format_model_overview(model))
+                st.divider()
 
-            # Index diagram
-            index_diagram = serialize_index(model, partial_spec, mode="complete")
-            col_hdr, col_btn = st.columns([6, 1])
-            with col_hdr:
-                st.subheader("Complete Index Structure")
-            with col_btn:
-                copy_button(index_diagram, "📋 Index")
-            st_mermaid(index_diagram, height=800)
+                # Index diagram
+                index_diagram = serialize_index(model, partial_spec, mode="complete")
+                col_hdr, col_btn = st.columns([6, 1])
+                with col_hdr:
+                    st.subheader("Complete Index Structure")
+                with col_btn:
+                    copy_button(index_diagram, "📋 Index")
+                st_mermaid(index_diagram, height=800)
 
-            # History / export copy buttons
-            col_hdr2, col_btn2, col_btn3 = st.columns([6, 1, 1])
-            with col_hdr2:
-                st.subheader("Histories")
-            with col_btn2:
-                copy_button(format_history_table_md(model), "📋 Table")
-            with col_btn3:
-                copy_button(serialize_dbt(model, partial_spec, mode="complete"), "📋 DBT")
+                # History / export copy buttons
+                col_hdr2, col_btn2, col_btn3 = st.columns([6, 1, 1])
+                with col_hdr2:
+                    st.subheader("Histories")
+                with col_btn2:
+                    copy_button(format_history_table_md(model), "📋 Table")
+                with col_btn3:
+                    copy_button(serialize_dbt(model, partial_spec, mode="complete"), "📋 DBT")
 
         except Exception as e:
             st.error(f"Failed to parse model: {e}")
@@ -181,8 +194,41 @@ with st.expander("Responsibility Analysis", expanded=True):
     if not mermaid_text.strip():
         st.info("Enter a Mermaid diagram in the Model Definition section")
     else:
-        st.markdown("Analyse responsibility for outcomes using various operators.\n\n"
-                    "All formulae are evaluated at m/h1.")
+        st.markdown("Analyse responsibility for outcomes using various operators.")
+
+        # Parse model early to populate dropdowns (best-effort — errors handled below)
+        try:
+            _model_ra, _partial_spec_ra = parse_model(mermaid_text)
+            _is_layered_ra = isinstance(_model_ra, LayeredALOModel)
+            if _is_layered_ra:
+                _result_prop_default = _model_ra.target_proposition
+                _named_histories = sorted(_model_ra.histories.keys())
+            else:
+                _result_prop_default = _partial_spec_ra.get("result", "q")
+                _named_histories = sorted(_model_ra.named_histories.keys())
+        except Exception:
+            _model_ra = None
+            _is_layered_ra = False
+            _result_prop_default = "q"
+            _named_histories = ["h1"]
+
+        st.markdown(f"Outcome proposition: `{_result_prop_default}`")
+
+        if _is_layered_ra:
+            st.info(f"TD>1 model (depth {_model_ra.depth()}). "
+                    f"Evaluating at `{_model_ra.evaluation_moment}/{_model_ra.evaluation_history}`.")
+            _eval_history_sel = _model_ra.evaluation_history
+        else:
+            # History selection (dropdown only when multiple named histories exist)
+            if len(_named_histories) > 1:
+                _eval_history_sel = st.selectbox(
+                    "Evaluate at history",
+                    _named_histories,
+                    index=0,
+                )
+            else:
+                _eval_history_sel = _named_histories[0] if _named_histories else "h1"
+                st.markdown(f"Formulae are evaluated at m/{_eval_history_sel}.")
 
         konclude_bin = konclude_path()
         if konclude_bin:
@@ -194,26 +240,45 @@ with st.expander("Responsibility Analysis", expanded=True):
         if st.button("▶️ Run Analysis"):
             with st.spinner("Running responsibility analysis..."):
                 try:
-                    model, partial_spec = parse_dbt_diagram(mermaid_text)
+                    model, partial_spec = parse_model(mermaid_text)
+                    is_layered = isinstance(model, LayeredALOModel)
 
-                    result_prop  = partial_spec.get("result", "q")
-                    eval_point   = partial_spec.get("evaluation_point", "m/h1")
-                    eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
+                    if is_layered:
+                        run_layered = run_analysis_konclude_layered if use_konclude else run_analysis_datalog_layered
+                        satisfied_query_ids = run_layered(model)
+                        if satisfied_query_ids is not None:
+                            st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
+                            results_md = format_layered_results_table(model, satisfied_query_ids)
+                            col_r, col_rb = st.columns([8, 1])
+                            with col_r:
+                                st.markdown(results_md)
+                            with col_rb:
+                                copy_button(results_md, "📋 Copy")
+                    else:
+                        result_prop  = partial_spec.get("result", "q")
+                        eval_history = _eval_history_sel
 
-                    run = run_analysis_konclude if use_konclude else run_analysis_datalog
-                    satisfied_query_ids = run(model, result_prop, eval_history)
+                        run = run_analysis_konclude if use_konclude else run_analysis_datalog
+                        satisfied_query_ids = run(model, result_prop, eval_history)
 
-                    if satisfied_query_ids is not None:
-                        st.success(
-                            f"Analysis complete! "
-                            f"Found {len(satisfied_query_ids)} satisfied queries"
-                        )
-                        results_md = format_results_table(model, satisfied_query_ids, result_prop)
-                        col_r, col_rb = st.columns([8, 1])
-                        with col_r:
-                            st.markdown(results_md)
-                        with col_rb:
-                            copy_button(results_md, "📋 Copy")
+                        if satisfied_query_ids is not None:
+                            st.success(
+                                f"Analysis complete! "
+                                f"Found {len(satisfied_query_ids)} satisfied queries"
+                            )
+                            with st.expander("🔍 Debug", expanded=False):
+                                st.write(f"result_prop: `{result_prop}`")
+                                st.write(f"eval_history: `{eval_history}`")
+                                st.write(f"model.queries count: {len(model.queries)}")
+                                if model.queries:
+                                    st.write("Sample query IDs:", [q.query_id for q in model.queries[:5]])
+                                st.write(f"satisfied_query_ids: {sorted(satisfied_query_ids)[:5]}")
+                            results_md = format_results_table(model, satisfied_query_ids, result_prop)
+                            col_r, col_rb = st.columns([8, 1])
+                            with col_r:
+                                st.markdown(results_md)
+                            with col_rb:
+                                copy_button(results_md, "📋 Copy")
 
                 except Exception as e:
                     st.error(f"Analysis failed: {e}")

@@ -97,10 +97,30 @@ def yaml_to_partial_spec(yaml_data: Dict[str, Any]) -> Dict[str, Any]:
     if "result" in yaml_data:
         partial_spec["result"] = yaml_data["result"]
 
+    # Extract outcome proposition (takes precedence over result if both present)
+    # YAML format: outcome: "do(sd1)"
+    if "outcome" in yaml_data:
+        partial_spec["result"] = yaml_data["outcome"]
+
     # Extract evaluation point for queries
     # YAML format: evaluation_point: "m/h1"
     if "evaluation_point" in yaml_data:
         partial_spec["evaluation_point"] = yaml_data["evaluation_point"]
+
+    # Extract defaults block (TD>1)
+    # YAML format:
+    #   defaults:
+    #     result: ~q
+    if "defaults" in yaml_data:
+        partial_spec["defaults"] = yaml_data["defaults"]
+
+    # Extract multi-point evaluations (TD>1)
+    # YAML format:
+    #   evaluate:
+    #     - [m/h1, do(sd1)]
+    #     - [mm/h1, q]
+    if "evaluate" in yaml_data:
+        partial_spec["evaluate"] = yaml_data["evaluate"]
 
     return partial_spec
 

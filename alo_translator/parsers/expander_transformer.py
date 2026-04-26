@@ -14,23 +14,67 @@ class ExpanderTransformer(AlonTransformer):
     Overrides expansion operators to generate axioms.
     """
 
-    def __init__(self, parser, model=None):
+    def __init__(self, parser, model=None, evaluation_moment=None):
         """Initialize expander.
 
         Args:
             parser: Lark parser instance for recursive parsing
-            model: ALOModel instance (required for responsibility operators to look up actual actions)
+            model: ALOModel or LayeredALOModel (required for responsibility operators)
+            evaluation_moment: For LayeredALOModel, the moment name at which operators
+                are being evaluated. Determines which actions are available for xstit
+                and which history CGA to use for but_for/ness. Ignored for ALOModel.
         """
         super().__init__()
         self.parser = parser
         self.model = model
+        self.evaluation_moment = evaluation_moment
         self.axioms = set()  # Accumulate expansion axioms here (set for auto-deduplication)
+        self.always_false_names = set()  # Predicate names that are always False (bottom)
 
         # Systematic formula-name counter and bidirectional mapping
         # Uses 'f' prefix to avoid collision with user-defined query IDs ('q' prefix)
         self.q_counter = 0
         self.formula_to_name = {}  # formula_string -> fname
         self.name_to_formula = {}  # fname -> formula_string
+
+    # ========== Model abstraction helpers ==========
+
+    def _get_agent_actions(self, agent: str):
+        """Return the list of action types available to agent at the evaluation moment.
+
+        For LayeredALOModel: uses available_actions_at(evaluation_moment).
+        For ALOModel: uses the global agents_actions table.
+        """
+        from ..model.core import LayeredALOModel
+        if isinstance(self.model, LayeredALOModel):
+            if self.evaluation_moment is None:
+                raise ValueError("evaluation_moment required for LayeredALOModel")
+            return self.model.available_actions_at(self.evaluation_moment).get(agent, [])
+        return self.model.agents_actions.get(agent)
+
+    def _get_eval_history_cga(self) -> dict:
+        """Return the {agent: action_type} mapping for the evaluation history at the evaluation moment.
+
+        For LayeredALOModel: returns the stage actions of the evaluation history at
+            evaluation_moment (only the agents acting there).
+        For ALOModel: returns the full named_histories['h1'].actions.
+        """
+        from ..model.core import LayeredALOModel
+        if isinstance(self.model, LayeredALOModel):
+            if self.evaluation_moment is None:
+                raise ValueError("evaluation_moment required for LayeredALOModel")
+            hp = self.model.histories.get(self.model.evaluation_history)
+            if hp is None:
+                raise ValueError(f"Evaluation history '{self.model.evaluation_history}' not found")
+            return hp.actions_at.get(self.evaluation_moment, {})
+        h1 = self.model.named_histories.get("h1")
+        if h1 is None:
+            raise ValueError("History 'h1' not found in model")
+        return h1.actions
+
+    def _get_agent_groups(self) -> dict:
+        """Return the agent_groups dict (may be empty for LayeredALOModel)."""
+        return getattr(self.model, 'agent_groups', {})
 
     # ========== Name Generation ==========
 
@@ -141,7 +185,7 @@ class ExpanderTransformer(AlonTransformer):
         # Get action lists for each agent
         action_lists = []
         for agent in agents:
-            agent_actions = self.model.agents_actions.get(agent)
+            agent_actions = self._get_agent_actions(agent)
             if agent_actions is None:
                 raise ValueError(f"Agent {agent} not found in model")
             action_lists.append(agent_actions)
@@ -195,33 +239,37 @@ class ExpanderTransformer(AlonTransformer):
             return agents
 
         # Check if it's a named agent group
-        if agent_expr in self.model.agent_groups:
-            return self.model.agent_groups[agent_expr]
+        agent_groups = self._get_agent_groups()
+        if agent_expr in agent_groups:
+            return agent_groups[agent_expr]
 
         # Otherwise it's an individual agent
         return [agent_expr]
 
-    def _get_actual_action_str(self, agent_expr, h1):
-        """Get the actual action string for an agent or coalition from history h1.
+    def _get_actual_action_str(self, agent_expr, h1_cga: dict):
+        """Get the actual action string for an agent or coalition from h1_cga dict.
+
+        h1_cga: {agent: action_type} mapping for the evaluation history at the
+                evaluation moment (as returned by _get_eval_history_cga()).
 
         For individual agents returns e.g. "sd1".
         For coalitions returns e.g. "{1:sd, 2:ss}".
 
-        Raises ValueError if any agent in the coalition has no action in h1.
+        Raises ValueError if any agent in the coalition has no action in h1_cga.
         """
         agents = self._parse_agent_expr(agent_expr)
         if len(agents) == 1:
             agent = agents[0]
-            action_type = h1.actions.get(agent)
+            action_type = h1_cga.get(agent)
             if action_type is None:
-                raise ValueError(f"Agent {agent} not found in h1 complete group action")
+                return None  # Agent does not act at this evaluation moment
             return f"{action_type}{agent}"
         else:
             mappings = {}
             for agent in agents:
-                action_type = h1.actions.get(agent)
+                action_type = h1_cga.get(agent)
                 if action_type is None:
-                    raise ValueError(f"Agent {agent} not found in h1 complete group action")
+                    return None  # Some coalition member doesn't act at this moment
                 mappings[agent] = action_type
             return "{" + ", ".join(f"{a}:{act}" for a, act in sorted(mappings.items())) + "}"
 
@@ -291,9 +339,9 @@ class ExpanderTransformer(AlonTransformer):
         if self.model is None:
             raise ValueError("Model required for but_for operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA is empty — cannot expand but_for")
 
         # Parse action string to get {agent: action_type} mapping
         # Works for both individual ("sd1") and group ("{1:sd, 2:ss}")
@@ -304,7 +352,7 @@ class ExpanderTransformer(AlonTransformer):
         counterfactual_parts = []
         for ag, actual_action_type in parsed_actions.items():
             # Get all actions for this agent
-            agent_actions = self.model.agents_actions.get(ag)
+            agent_actions = self._get_agent_actions(ag)
             if agent_actions is None:
                 raise ValueError(f"Agent {ag} not found in model")
 
@@ -313,7 +361,7 @@ class ExpanderTransformer(AlonTransformer):
 
             for alt in alternatives:
                 # Build h1 with this agent's action replaced by alt
-                alt_actions = dict(h1.actions)
+                alt_actions = dict(h1_cga)
                 alt_actions[ag] = alt
 
                 # Format as group action: {1:alt, 2:action2, ...}
@@ -326,7 +374,7 @@ class ExpanderTransformer(AlonTransformer):
                 counterfactual_parts.append(cf_name)
 
         # Build do(h1) group action string
-        h1_str = "{" + ", ".join(f"{a}:{act}" for a, act in sorted(h1.actions.items())) + "}"
+        h1_str = "{" + ", ".join(f"{a}:{act}" for a, act in sorted(h1_cga.items())) + "}"
 
         # Build expansion: Xφ & do(h1) & counterfactual_parts
         parts = [f"X{formula}", f"do({h1_str})"] + counterfactual_parts
@@ -352,16 +400,16 @@ class ExpanderTransformer(AlonTransformer):
         if self.model is None:
             raise ValueError("Model required for ness operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA is empty — cannot expand ness")
 
         # Parse action string to get {agent: action_type} mapping
         # Works for both individual ("sd1") and group ("{1:sd, 2:ss}")
         parsed_actions = self._parse_action_str(action)
 
         # Get h1 CGA actions as set of (agent, action_type) tuples
-        h1_actions = set(h1.actions.items())  # {('1', 'sd'), ('2', 'ha')}
+        h1_actions = set(h1_cga.items())  # {('1', 'sd'), ('2', 'ha')}
         target_actions = set(parsed_actions.items())  # {('1', 'sd')} or {('1', 'sd'), ('2', 'ss')}
 
         # Generate powerset of h1 actions, filter to subsets containing ALL target actions
@@ -462,15 +510,14 @@ class ExpanderTransformer(AlonTransformer):
         agent, formula = items
         name = self._name_for(f"[{agent} pres]{formula}")
 
-        # Look up actual action from model's h1 history
         if self.model is None:
             raise ValueError("Model required for pres operator - cannot look up actual action")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
-
-        actual_action = self._get_actual_action_str(agent, h1)  # e.g., "sd1" or "{1:sd, 2:ss}"
+        h1_cga = self._get_eval_history_cga()
+        actual_action = self._get_actual_action_str(agent, h1_cga)  # e.g., "sd1" or "{1:sd, 2:ss}"
+        if actual_action is None:
+            self.always_false_names.add(name)  # Agent doesn't act at eval moment → always False
+            return name
 
         # Recursively expand: do(actual_action) [+]-> φ
         expected_expr = f"do({actual_action}) [+]-> {formula}"
@@ -483,12 +530,13 @@ class ExpanderTransformer(AlonTransformer):
         return name
 
     def sres(self, items):
-        """[I sres]φ  →  do(α_I) & (do(α_I) [+]-> φ) & but(α_I, φ)
+        """[I sres]φ  →  do(α_I) & (do(α_I) [+]-> φ) & but(α_I, φ) & ~[]Xφ & ~[]do(α_I)
 
         Strong responsibility: I did α, α's expected result includes φ,
-        and α is but-for cause of φ.
+        α is but-for cause of φ, φ was not inevitable, and α was not the
+        only action available (freedom condition).
 
-        Adds: (do(α_I) & expected_result_name & but_for_name) => sres_I_φ
+        Adds: (do(α_I) & expected_result_name & but_for_name & ~[]Xφ & ~[]do(α_I)) => sres_I_φ
         Returns: sres_I_φ
 
         Note: Uses α_I notation (actual action from evaluation history).
@@ -500,11 +548,11 @@ class ExpanderTransformer(AlonTransformer):
         if self.model is None:
             raise ValueError("Model required for sres operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
-
-        actual_action = self._get_actual_action_str(agent, h1)  # e.g., "sd1" or "{1:sd, 2:ss}"
+        h1_cga = self._get_eval_history_cga()
+        actual_action = self._get_actual_action_str(agent, h1_cga)  # e.g., "sd1" or "{1:sd, 2:ss}"
+        if actual_action is None:
+            self.always_false_names.add(name)  # Agent doesn't act at eval moment → always False
+            return name
 
         # Recursively expand: do(actual_action) [+]-> φ
         expected_expr = f"do({actual_action}) [+]-> {formula}"
@@ -516,18 +564,19 @@ class ExpanderTransformer(AlonTransformer):
         tree = self.parser.parse(but_expr)
         but_name = self.transform(tree)
 
-        # Build sres expansion
-        expansion = f"(do({actual_action}) & {expected_name} & {but_name})"
+        # Build sres expansion (Def 3.11: add contingency ~[]Xφ and freedom ~[]do(αI))
+        expansion = f"(do({actual_action}) & {expected_name} & {but_name} & ~[]X{formula} & ~[]do({actual_action}))"
         self.axioms.add(f"{expansion} => {name}")
         return name
 
     def res(self, items):
-        """[I res]φ  →  do(α_I) & (do(α_I) [+]-> φ) & ness(α_I, φ)
+        """[I res]φ  →  do(α_I) & (do(α_I) [+]-> φ) & ness(α_I, φ) & ~[]Xφ & ~[]do(α_I)
 
         Plain responsibility: I did α, α's expected result includes φ,
-        and α is NESS cause of φ.
+        α is NESS cause of φ, φ was not inevitable, and α was not the
+        only action available (freedom condition).
 
-        Adds: (do(α_I) & expected_result_name & ness_name) => res_I_φ
+        Adds: (do(α_I) & expected_result_name & ness_name & ~[]Xφ & ~[]do(α_I)) => res_I_φ
         Returns: res_I_φ
 
         Note: Uses α_I notation (actual action from evaluation history).
@@ -539,11 +588,11 @@ class ExpanderTransformer(AlonTransformer):
         if self.model is None:
             raise ValueError("Model required for res operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
-
-        actual_action = self._get_actual_action_str(agent, h1)  # e.g., "sd1" or "{1:sd, 2:ss}"
+        h1_cga = self._get_eval_history_cga()
+        actual_action = self._get_actual_action_str(agent, h1_cga)  # e.g., "sd1" or "{1:sd, 2:ss}"
+        if actual_action is None:
+            self.always_false_names.add(name)  # Agent doesn't act at eval moment → always False
+            return name
 
         # Recursively expand: do(actual_action) [+]-> φ
         expected_expr = f"do({actual_action}) [+]-> {formula}"
@@ -555,7 +604,7 @@ class ExpanderTransformer(AlonTransformer):
         tree = self.parser.parse(ness_expr)
         ness_name = self.transform(tree)
 
-        # Build res expansion
-        expansion = f"(do({actual_action}) & {expected_name} & {ness_name})"
+        # Build res expansion (Def 3.11: add contingency ~[]Xφ and freedom ~[]do(αI))
+        expansion = f"(do({actual_action}) & {expected_name} & {ness_name} & ~[]X{formula} & ~[]do({actual_action}))"
         self.axioms.add(f"{expansion} => {name}")
         return name

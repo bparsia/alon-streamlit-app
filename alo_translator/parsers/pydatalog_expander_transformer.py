@@ -104,7 +104,7 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         from itertools import product
         action_lists = []
         for agent in agents:
-            agent_actions = self.model.agents_actions.get(agent)
+            agent_actions = self._get_agent_actions(agent)
             if agent_actions is None:
                 raise ValueError(f"Agent {agent} not found in model")
             action_lists.append(agent_actions)
@@ -152,13 +152,13 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         if self.model is None:
             raise ValueError("Model required for ness operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA not found in model")
 
         # Parse action string to get {agent: action_type} mapping
         parsed_actions = self._parse_action_str(action)
-        h1_actions = set(h1.actions.items())
+        h1_actions = set(h1_cga.items())
         target_actions = set(parsed_actions.items())
 
         # Generate powerset of h1 actions, filter to subsets containing ALL target actions
@@ -241,11 +241,14 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         if self.model is None:
             raise ValueError("Model required for pres operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA not found in model")
 
-        actual_action = self._get_actual_action_str(agent, h1)
+        actual_action = self._get_actual_action_str(agent, h1_cga)
+        if actual_action is None:
+            self.always_false_names.add(name)  # Agent doesn't act at eval moment → always False
+            return name
 
         # Recursively expand: do(actual_action) [+]-> φ
         expected_expr = f"do({actual_action}) [+]-> {formula}"
@@ -268,9 +271,10 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         return name
 
     def sres(self, items):
-        """[I sres]φ  →  do(α_I) & expected_result & but_for
+        """[I sres]φ  →  do(α_I) & expected_result & but_for & ~[]Xφ & ~[]do(α_I)
 
         Recursively expands ALL subformulas.
+        Adds contingency (~[]Xφ) and freedom (~[]do(αI)) per Def 3.11.
         """
         agent, formula = items
         name = self._name_for(f"[{agent} sres]{formula}")
@@ -278,11 +282,14 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         if self.model is None:
             raise ValueError("Model required for sres operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA not found in model")
 
-        actual_action = self._get_actual_action_str(agent, h1)
+        actual_action = self._get_actual_action_str(agent, h1_cga)
+        if actual_action is None:
+            self.always_false_names.add(name)  # Agent doesn't act at eval moment → always False
+            return name
 
         # Recursively expand: do(actual_action) [+]-> φ
         expected_expr = f"do({actual_action}) [+]-> {formula}"
@@ -294,15 +301,26 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         tree = self.parser.parse(but_expr)
         but_name = self.transform(tree)
 
+        # Recursively expand: ~[]Xφ (contingency — φ was not inevitable)
+        not_settled_expr = f"~[]X{formula}"
+        tree = self.parser.parse(not_settled_expr)
+        not_settled_name = self.transform(tree)
+
+        # Recursively expand: ~[]do(actual_action) (freedom — action was not the only option)
+        freedom_expr = f"~[]do({actual_action})"
+        tree = self.parser.parse(freedom_expr)
+        freedom_name = self.transform(tree)
+
         # Build sres expansion
-        expansion = f"(do({actual_action}) & {expected_name} & {but_name})"
+        expansion = f"(do({actual_action}) & {expected_name} & {but_name} & {not_settled_name} & {freedom_name})"
         self.axioms.add(f"{expansion} => {name}")
         return name
 
     def res(self, items):
-        """[I res]φ  →  do(α_I) & expected_result & ness
+        """[I res]φ  →  do(α_I) & expected_result & ness & ~[]Xφ & ~[]do(α_I)
 
         Recursively expands ALL subformulas.
+        Adds contingency (~[]Xφ) and freedom (~[]do(αI)) per Def 3.11.
         """
         agent, formula = items
         name = self._name_for(f"[{agent} res]{formula}")
@@ -310,11 +328,14 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         if self.model is None:
             raise ValueError("Model required for res operator")
 
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA not found in model")
 
-        actual_action = self._get_actual_action_str(agent, h1)
+        actual_action = self._get_actual_action_str(agent, h1_cga)
+        if actual_action is None:
+            self.always_false_names.add(name)  # Agent doesn't act at eval moment → always False
+            return name
 
         # Recursively expand: do(actual_action) [+]-> φ
         expected_expr = f"do({actual_action}) [+]-> {formula}"
@@ -326,8 +347,18 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         tree = self.parser.parse(ness_expr)
         ness_name = self.transform(tree)
 
+        # Recursively expand: ~[]Xφ (contingency — φ was not inevitable)
+        not_settled_expr = f"~[]X{formula}"
+        tree = self.parser.parse(not_settled_expr)
+        not_settled_name = self.transform(tree)
+
+        # Recursively expand: ~[]do(actual_action) (freedom — action was not the only option)
+        freedom_expr = f"~[]do({actual_action})"
+        tree = self.parser.parse(freedom_expr)
+        freedom_name = self.transform(tree)
+
         # Build res expansion
-        expansion = f"(do({actual_action}) & {expected_name} & {ness_name})"
+        expansion = f"(do({actual_action}) & {expected_name} & {ness_name} & {not_settled_name} & {freedom_name})"
         self.axioms.add(f"{expansion} => {name}")
         return name
 

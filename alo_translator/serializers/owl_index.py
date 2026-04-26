@@ -18,12 +18,12 @@ Example for 2 histories:
     m_h2 memberOf CGA_h2
 """
 
+import re as _re
 from typing import List, Set, Dict, Tuple, Optional
 from xml.etree.ElementTree import Element, SubElement, tostring
 from xml.dom import minidom
 
 from .base import Serializer
-from .index_formula_visitor import IndexFormulaToOWLVisitor
 from ..model.core import ALOModel, Action, GroupAction, OpposingRelation
 
 
@@ -144,6 +144,21 @@ class OWLIndexSerializer(Serializer):
         """Generate full IRI for a name."""
         return f"{self.BASE_IRI}{name}"
 
+    def _do_prop_action(self, prop: str) -> Optional[str]:
+        """If prop is of the form do(X), return X; otherwise return None."""
+        m = _re.match(r'^do\((.+)\)$', prop.strip())
+        return m.group(1) if m else None
+
+    def _collect_do_prop_actions(self) -> Set[str]:
+        """Return the set of action names derived from do(X) proposition labels."""
+        actions = set()
+        for result in self.model.results:
+            for prop in result.true_propositions:
+                a = self._do_prop_action(prop)
+                if a:
+                    actions.add(a)
+        return actions
+
     def _declare_class(self, ontology: Element, class_name: str, label: str = None):
         """Declare an OWL class (idempotent: skips if already declared)."""
         if class_name in self._declared_classes:
@@ -182,12 +197,18 @@ class OWLIndexSerializer(Serializer):
                 action_name = f"{action_type}{agent_id}"
                 self._declare_class(ontology, action_name, f"Action {action_name}")
 
-        # Declare proposition classes
+        # Declare proposition classes (skip do(X) props — those are action classes)
         all_props = set()
         for result in self.model.results:
             all_props.update(result.true_propositions)
         for prop in all_props:
-            self._declare_class(ontology, prop, f"Proposition {prop}")
+            if self._do_prop_action(prop) is None:
+                self._declare_class(ontology, prop, f"Proposition {prop}")
+
+        # Declare action classes for do(X) proposition labels (virtual actions)
+        for action_name in self._collect_do_prop_actions():
+            self._declare_class(ontology, action_name, f"Action {action_name}")
+            self._declare_class(ontology, f"Opp2{action_name}", f"Opposing to {action_name}")
 
         # Declare opposing classes for ALL actions (needed for closed-world on opposing)
         # Even actions with no explicit opposings need Opp2X classes for query evaluation
@@ -247,23 +268,9 @@ class OWLIndexSerializer(Serializer):
         for history_name in history_names:
             indices.append(('m', history_name))
 
-        # Successor moments: use moment_name from Result if available
-        for history_name in history_names:
-            # Find the result for this history to get its moment name
-            result = None
-            for r in self.model.results:
-                if r.history_name == history_name:
-                    result = r
-                    break
-
-            # Use moment_name from result, or fall back to enumeration
-            if result and result.moment_name:
-                successor_moment = result.moment_name
-            else:
-                # Fallback: enumerate (shouldn't happen with fixed DBT parser)
-                successor_moment = f"m{len([idx for idx in indices if idx[0] != 'm']) + 1}"
-
-            indices.append((successor_moment, history_name))
+        # Successor moments: use same enumeration as _add_succ_assertions()
+        for i, history_name in enumerate(history_names, 1):
+            indices.append((f'm{i}', history_name))
 
         return indices
 
@@ -359,22 +366,25 @@ class OWLIndexSerializer(Serializer):
         """
         Add action class assertions for indices.
 
-        Each index at the root moment is a member of the action classes
-        corresponding to the complete group action for that history.
+        Actions are asserted at both root-moment indices (for do/free_do queries)
+        and successor indices (so that X(do(a)) works when do(a) is used as a
+        target proposition).
         """
         if not self.history_to_cga:
             self._build_cga_mappings()
 
-        for history_name, group_action in self.history_to_cga.items():
+        for i, (history_name, group_action) in enumerate(self.history_to_cga.items(), 1):
             root_index = self._index_name('m', history_name)
+            succ_index = self._index_name(f'm{i}', history_name)
 
-            # Add assertion for each action in the group action
+            # Add assertion for each action at root and successor indices
             for action in group_action.to_action_list():
                 action_class = str(action)  # e.g., "sd1"
 
-                assertion = SubElement(ontology, "ClassAssertion")
-                SubElement(assertion, "Class", {"IRI": self._iri(action_class)})
-                SubElement(assertion, "NamedIndividual", {"IRI": self._iri(root_index)})
+                for index in (root_index, succ_index):
+                    assertion = SubElement(ontology, "ClassAssertion")
+                    SubElement(assertion, "Class", {"IRI": self._iri(action_class)})
+                    SubElement(assertion, "NamedIndividual", {"IRI": self._iri(index)})
 
             # Add negative assertions for Opp2 classes (closed-world assumption)
             self._add_opposing_negative_assertions(ontology, root_index, group_action)
@@ -402,9 +412,15 @@ class OWLIndexSerializer(Serializer):
             opposing_str = str(opp.opposing_action)
             opp_class_members[opp_class].add(opposing_str)
 
-        # Also include Opp2X classes for all actions
+        # Also include Opp2X classes for all model actions
         for action in self.model.get_all_actions():
             opp_class = f"Opp2{action}"
+            if opp_class not in opp_class_members:
+                opp_class_members[opp_class] = set()
+
+        # Also include Opp2X classes for virtual actions from do(X) proposition labels
+        for action_name in self._collect_do_prop_actions():
+            opp_class = f"Opp2{action_name}"
             if opp_class not in opp_class_members:
                 opp_class_members[opp_class] = set()
 
@@ -431,64 +447,70 @@ class OWLIndexSerializer(Serializer):
         Each successor index is a member of the proposition classes
         that are true in that history's result, and explicitly NOT a member
         of propositions that are false (closed-world assumption).
+
+        Propositions of the form do(X) are treated as action class assertions
+        (ClassAssertion(X, succ_idx)) rather than proposition class assertions,
+        because the OWL query expansion for X(do(a)) uses succ some (action class a).
         """
         if not self.history_to_cga:
             self._build_cga_mappings()
 
-        # Get all propositions in the model
-        all_props = set(self.model.get_all_propositions())
+        # Partition all propositions into regular props and do(X) action-props
+        all_raw_props = set(self.model.get_all_propositions())
+        all_regular_props = {p for p in all_raw_props if self._do_prop_action(p) is None}
+        all_action_props = {p for p in all_raw_props if self._do_prop_action(p) is not None}
+        # Maps do(X) prop string -> action class name X
+        all_action_prop_map = {p: self._do_prop_action(p) for p in all_action_props}
 
-        for history_name in self.history_to_cga.keys():
-            # Find the result for this history to get moment name
-            result = None
-            for r in self.model.results:
-                if r.history_name == history_name:
-                    result = r
+        for i, history_name in enumerate(self.history_to_cga.keys(), 1):
+            # Use same enumeration as _add_succ_assertions() for consistency
+            succ_index = self._index_name(f'm{i}', history_name)
+
+            # Find the result for this history (may be None for unnamed histories)
+            true_props = set()
+            for result in self.model.results:
+                if result.history_name == history_name:
+                    true_props = set(result.true_propositions)
+                    # Add positive assertions
+                    for prop in result.true_propositions:
+                        action_name = self._do_prop_action(prop)
+                        if action_name:
+                            # do(X) prop → assert as action class membership
+                            assertion = SubElement(ontology, "ClassAssertion")
+                            SubElement(assertion, "Class", {"IRI": self._iri(action_name)})
+                            SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
+                        else:
+                            assertion = SubElement(ontology, "ClassAssertion")
+                            SubElement(assertion, "Class", {"IRI": self._iri(prop)})
+                            SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
                     break
 
-            if not result:
-                continue  # No result for this history, skip
-
-            # Use moment_name from result
-            successor_moment = result.moment_name if result.moment_name else "m1"
-            succ_index = self._index_name(successor_moment, history_name)
-
-            # Get true propositions
-            true_props = set(result.true_propositions)
-            # Add positive assertions
-            for prop in result.true_propositions:
-                assertion = SubElement(ontology, "ClassAssertion")
-                SubElement(assertion, "Class", {"IRI": self._iri(prop)})
-                SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
-
-            # Add negative assertions for propositions that are NOT true
-            false_props = all_props - true_props
-            for prop in false_props:
+            # Closed-world: negative assertions for regular props not true here
+            false_regular_props = all_regular_props - true_props
+            for prop in false_regular_props:
                 neg_assertion = SubElement(ontology, "ClassAssertion")
                 obj_compl = SubElement(neg_assertion, "ObjectComplementOf")
                 SubElement(obj_compl, "Class", {"IRI": self._iri(prop)})
                 SubElement(neg_assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
 
-    def _add_query_classes(self, ontology: Element):
-        """Add query class definitions using index-based semantics."""
-        # Build query ID map
-        query_id_map: Dict[str, str] = {}
-        for query in self.model.queries:
-            if query.query_id:
-                query_id = query.query_id
-            else:
-                self.query_counter += 1
-                query_id = f"q{self.query_counter:02d}"
-            query_id_map[query.formula_string] = query_id
+            # Closed-world: negative assertions for do(X) action-props not true here
+            false_action_props = all_action_props - true_props
+            for prop in false_action_props:
+                action_name = all_action_prop_map[prop]
+                neg_assertion = SubElement(ontology, "ClassAssertion")
+                obj_compl = SubElement(neg_assertion, "ObjectComplementOf")
+                SubElement(obj_compl, "Class", {"IRI": self._iri(action_name)})
+                SubElement(neg_assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
 
-        # Create visitor for index-based translation (strategy-specific)
-        # If model has a registry, pass it to the visitor so it can resolve NamedFormula references
-        registry = getattr(self.model, 'formula_registry', None)
-        visitor = self.strategy.get_formula_visitor(
-            self.BASE_IRI,
-            self.model,
-            query_id_map=query_id_map,
-            registry=registry
+    def _add_query_classes(self, ontology: Element):
+        """Add query class definitions using index-based semantics.
+
+        NOTE: This method is obsolete. Use OWLIndexNewExpanderSerializer which overrides
+        this method with the new transformer-based approach.
+        """
+        raise NotImplementedError(
+            "OWLIndexSerializer._add_query_classes is obsolete. "
+            "Use OWLIndexNewExpanderSerializer instead."
         )
 
         # Translate each query
@@ -542,90 +564,12 @@ class OWLIndexSerializer(Serializer):
                           text=f"Translation failed: {str(e)}")
 
     def _add_expansion_axioms(self, ontology: Element):
+        """Add SubClassOf axioms for formula expansions.
+
+        NOTE: This method is obsolete. Use OWLIndexNewExpanderSerializer which overrides
+        this method with the new transformer-based approach.
         """
-        Add SubClassOf axioms for formula expansions.
-
-        For each expanded formula in the registry, generates:
-        - Declaration for the formula class (if not already declared)
-        - SubClassOf axiom: expansion ⊑ name (correct direction!)
-        - rdfs:label annotation with human-readable source formula
-
-        Only generates axioms if model has formula_registry.
-        """
-        # Check if model has registry
-        if not hasattr(self.model, 'formula_registry'):
-            return  # No expansions to add
-
-        registry = self.model.formula_registry
-
-        # Build query ID map for visitor context
-        query_id_map: Dict[str, str] = {}
-        for query in self.model.queries:
-            if query.query_id:
-                query_id = query.query_id
-            else:
-                self.query_counter += 1
-                query_id = f"q{self.query_counter:02d}"
-            query_id_map[query.formula_string] = query_id
-
-        # Create visitor for translating expansions to OWL
-        # Pass registry so it can resolve NamedFormula references
-        expansion_visitor = self.strategy.get_formula_visitor(
-            self.BASE_IRI,
-            self.model,
-            query_id_map=query_id_map,
-            registry=registry
+        raise NotImplementedError(
+            "OWLIndexSerializer._add_expansion_axioms is obsolete. "
+            "Use OWLIndexNewExpanderSerializer instead."
         )
-
-        # Iterate through all expanded formulas in registry
-        # registry.formulas is now Dict[str, FormulaNode] where:
-        # - key: OWL name (e.g., "expected_sd1_q", "Xq", "free_do_sd1")
-        # - value: processed expansion tree with NamedFormula references
-        for owl_name, expansion_tree in registry.formulas.items():
-            # Declare the formula class (if not already declared as a query)
-            # Check if this name is already a query class
-            is_query = any(
-                (q.query_id and q.query_id == owl_name) or
-                query_id_map.get(q.formula_string) == owl_name
-                for q in self.model.queries
-            )
-            if not is_query:
-                label = registry.labels.get(owl_name)
-                self._declare_class(ontology, owl_name, label or owl_name)
-
-            # Check if this is a true primitive (no expansion axiom needed)
-            from ..model.formula import Prop, DoAction
-            if isinstance(expansion_tree, (Prop, DoAction)):
-                # True primitives don't get expansion axioms
-                # They are already declared and used directly
-                continue
-
-            # Translate the expansion tree to OWL
-            try:
-                # The expansion_tree contains NamedFormula references for subformulas
-                # and structural connectives as actual nodes (to be inlined)
-                owl_expansion = expansion_visitor.translate(expansion_tree)
-
-                # Add SubClassOf axiom: expansion ⊑ name
-                # This means: "Everything satisfying the expansion is in the named class"
-                # So when reasoner proves m_h1 : expansion, it infers m_h1 : name (the query)
-                subclass = SubElement(ontology, "SubClassOf")
-                subclass.append(owl_expansion)  # Left side: expansion (subclass)
-                SubElement(subclass, "Class", {"IRI": self._iri(owl_name)})  # Right side: name (superclass)
-
-            except NotImplementedError as e:
-                # Some formula types not yet supported
-                annotation = SubElement(ontology, "AnnotationAssertion")
-                SubElement(annotation, "AnnotationProperty",
-                          {"IRI": f"{self.RDFS_NS}comment"})
-                SubElement(annotation, "IRI", text=self._iri(owl_name))
-                SubElement(annotation, "Literal",
-                          text=f"Expansion not yet supported: {str(e)}")
-            except Exception as e:
-                print(f"Warning: Could not translate expansion for '{owl_name}': {e}")
-                annotation = SubElement(ontology, "AnnotationAssertion")
-                SubElement(annotation, "AnnotationProperty",
-                          {"IRI": f"{self.RDFS_NS}comment"})
-                SubElement(annotation, "IRI", text=self._iri(owl_name))
-                SubElement(annotation, "Literal",
-                          text=f"Expansion translation failed: {str(e)}")

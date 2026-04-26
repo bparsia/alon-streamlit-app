@@ -1,10 +1,7 @@
 ---
-title: First Temporal Depth=2 Example
+title: Isabella Manipulation Example (TD=2)
+description: Isabella manipulates Alice into shooting Dan. Chained responsibility across two temporal stages.
 type: DBT
-config:
-    class:
-      hideEmptyMembersBox: true
-    theme: neutral
 actions:
   1:
     - sd
@@ -29,30 +26,30 @@ aliases:
   q: Dan dies
 result: q
 evaluation_point: m/h1
+evaluate:
+  - - m/h1
+    - do(sd1)
+  - - mm/h1
+    - q
 ---
 classDiagram
 direction BT
 
-  class m0 {
-    }
-  m0 --> m : h1/h2/h3({masd3}+{sd1|ss1}+{ss2|ha2})
-  m0 --> mm : h4/h5/h6({ss3}+{sd1|ss1}+{ss2|ha2})
+  m --> mm : h1/h2({masd3})
+  m --> mmm : h3/h4/h5/h6({ss3})
 
-  class m {
-  }
-  m --> m1 : h1({sd1, ss2}+{ss3|masd3})
-  m --> m2 : h2({sd1, ha2}+{ss3|masd3})
-  m --> m3 : h3({ss1}+{ss2|ha2}+{ss3|masd3})
+  mm --> m1 : h1({sd1, ss2})
+  mm --> m2 : h2({sd1, ha2})
 
-  class mm {
-  }
-  mm --> m4 : h4({sd1, ss2}+{ss3|masd3})
-  mm --> m5 : h5({sd1, ha2}+{ss3|masd3})
-  mm --> m6 : h6({ss1}+{ss2|ha2}+{ss3|masd3})
+  mmm --> m3 : h3({sd1, ss2})
+  mmm --> m4 : h4({sd1, ha2})
+  mmm --> m5 : h5({ss1, ss2})
+  mmm --> m6 : h6({ss1, ha2})
 
+  mm: do(sd1)
   m1: q
   m2: ~q
-  m3: ~q
-  m4: q
+  m3: q
+  m4: ~q
   m5: ~q
   m6: ~q

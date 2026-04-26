@@ -3,10 +3,15 @@ Core model classes for ALOn structures.
 
 This module defines the object model for ALOn (Action Logic with Opposing),
 providing a clean API for constructing and manipulating models programmatically.
+
+Two model classes are provided:
+- ALOModel: flat TD=1 model (one root moment, one successor per history)
+- LayeredALOModel: arbitrary temporal depth, with staged actions per moment.
+  LayeredALOModel is the intended long-term replacement for ALOModel.
 """
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Set, Optional, Union
+from typing import Dict, List, Set, Optional, Union, Tuple
 
 
 @dataclass
@@ -285,3 +290,123 @@ class ALOModel:
         if not self.queries:
             return 0
         return max(query.modal_depth for query in self.queries)
+
+
+# ---------------------------------------------------------------------------
+# Layered (TD>1) model
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MomentNode:
+    """
+    A node in the moment tree (root, intermediate, or leaf).
+
+    For TD=1 models there are only two layers: the root and leaves.
+    For TD>1 models there are intermediate nodes between root and leaves.
+
+    available_actions is inferred from the action labels on outgoing transitions
+    and maps each acting agent to the list of action types available to them at
+    this moment.  Agents that do not act at this moment are absent from the dict.
+    """
+    name: str
+    parent_name: Optional[str]                    # None for root
+    child_names: List[str]                        # empty for leaves
+    available_actions: Dict[str, List[str]]       # agent -> [action_types]
+    propositions: Set[str]                        # non-default props true here
+    depth: int                                    # 0 for root
+
+    @property
+    def is_leaf(self) -> bool:
+        return not self.child_names
+
+    @property
+    def is_root(self) -> bool:
+        return self.parent_name is None
+
+
+@dataclass
+class MomentTransition:
+    """
+    A single edge in the moment tree.
+
+    histories lists every history name that is undivided on this edge (i.e.,
+    passes through both from_moment and to_moment without branching).
+    actions contains only the agents who choose at this transition — agents
+    acting at other moments are absent.
+    """
+    from_moment: str
+    to_moment: str
+    histories: List[str]              # history names undivided on this edge
+    actions: Dict[str, str]           # agent -> action_type chosen here
+
+
+@dataclass
+class HistoryPath:
+    """
+    A complete history: a path from the root moment to a leaf moment.
+
+    actions_at maps each non-leaf moment on the path to the actions chosen
+    by the acting agents at that moment (only agents who act there).
+    """
+    name: str                                          # "h1", "h2", ...
+    path: List[str]                                    # moment names root → leaf
+    actions_at: Dict[str, Dict[str, str]]              # moment -> {agent: action_type}
+
+    @property
+    def leaf_moment(self) -> str:
+        return self.path[-1]
+
+    def complete_actions(self) -> Dict[str, str]:
+        """Merge all per-moment actions into a single flat CGA dict."""
+        result: Dict[str, str] = {}
+        for acts in self.actions_at.values():
+            result.update(acts)
+        return result
+
+
+@dataclass
+class LayeredALOModel:
+    """
+    ALOn model with arbitrary temporal depth.
+
+    At each non-leaf moment a subset of agents chooses actions; different
+    agents may act at different moments.  same-moment groups are built
+    per moment-node: all histories that pass through a given node share
+    that moment and are same-moment there.
+
+    This is the intended long-term replacement for ALOModel.  When depth()
+    returns 1 the model is behaviourally equivalent to ALOModel.
+    """
+
+    root_name: str
+    moments: Dict[str, MomentNode]        # name -> MomentNode
+    transitions: List[MomentTransition]
+    histories: Dict[str, HistoryPath]     # name -> HistoryPath
+    opposings: List[OpposingRelation]
+    aliases: Dict[str, str]
+    queries: List[Query]
+    evaluation_history: str               # e.g. "h1"
+    evaluation_moment: str                # e.g. "m" (typically root)
+    target_proposition: str              # e.g. "q" or "do(sd1)"
+    default_result: Optional[str] = None  # if set, labels matching this are not emitted as facts
+    evaluations: List[Tuple[str, str, str]] = field(default_factory=list)
+    # list of (moment, history, target_proposition) for multi-point evaluation
+
+    def histories_through(self, moment_name: str) -> List[str]:
+        """Return names of all histories whose path passes through moment_name."""
+        return [h for h, hp in self.histories.items() if moment_name in hp.path]
+
+    def get_all_agents(self) -> Set[str]:
+        """Return all agent identifiers across all moments."""
+        agents: Set[str] = set()
+        for node in self.moments.values():
+            agents.update(node.available_actions.keys())
+        return agents
+
+    def available_actions_at(self, moment_name: str) -> Dict[str, List[str]]:
+        """Return the per-agent available action lists at the given moment."""
+        return self.moments[moment_name].available_actions
+
+    def depth(self) -> int:
+        """Return the maximum depth of any node in the moment tree."""
+        return max(node.depth for node in self.moments.values())

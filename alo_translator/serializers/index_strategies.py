@@ -9,9 +9,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, List
 from xml.etree.ElementTree import Element, SubElement
 
-from .index_formula_visitor import IndexFormulaToOWLVisitor
-from .index_formula_visitor_reified import IndexFormulaToOWLVisitorReified
-
 
 class SameMomentStrategy(ABC):
     """Abstract base for same_moment representation strategies."""
@@ -46,23 +43,6 @@ class SameMomentStrategy(ABC):
         Args:
             ontology: The OWL ontology element
             serializer: The OWLIndexSerializer instance
-        """
-        pass
-
-    @abstractmethod
-    def get_formula_visitor(self, base_iri: str, model, query_id_map: Dict[str, str], registry=None):
-        """
-        Return appropriate formula visitor for this strategy.
-
-        Args:
-            base_iri: Base IRI for the ontology
-            model: The ALOn model
-            query_id_map: Mapping from formula strings to query IDs
-            registry: Optional FormulaRegistry for resolving NamedFormula references
-            
-
-        Returns:
-            IndexFormulaToOWLVisitor or subclass appropriate for this strategy
         """
         pass
 
@@ -138,10 +118,6 @@ class EquivChainedNominalStrategy(SameMomentStrategy):
                 # Apply to first index in the equivalence class
                 SubElement(closure_axiom, "NamedIndividual", {"IRI": serializer._iri(indices[0])})
 
-    def get_formula_visitor(self, base_iri: str, model, query_id_map: Dict[str, str], registry=None):
-        """Return standard index formula visitor (uses same_moment)."""
-        return IndexFormulaToOWLVisitor(base_iri, model, query_id_map, registry)
-
 
 class EquivFullCardinalityStrategy(SameMomentStrategy):
     """
@@ -211,10 +187,6 @@ class EquivFullCardinalityStrategy(SameMomentStrategy):
                 # Apply to this index
                 SubElement(cardinality_axiom, "NamedIndividual", {"IRI": serializer._iri(index)})
 
-    def get_formula_visitor(self, base_iri: str, model, query_id_map: Dict[str, str], registry=None):
-        """Return standard index formula visitor (uses same_moment)."""
-        return IndexFormulaToOWLVisitor(base_iri, model, query_id_map, registry)
-
 
 class EquivFullNominalStrategy(SameMomentStrategy):
     """
@@ -276,10 +248,6 @@ class EquivFullNominalStrategy(SameMomentStrategy):
 
                 # Apply to first index in the equivalence class
                 SubElement(closure_axiom, "NamedIndividual", {"IRI": serializer._iri(indices[0])})
-
-    def get_formula_visitor(self, base_iri: str, model, query_id_map: Dict[str, str], registry=None):
-        """Return standard index formula visitor (uses same_moment)."""
-        return IndexFormulaToOWLVisitor(base_iri, model, query_id_map, registry)
 
 
 class EquivFocusedCardinalityStrategy(SameMomentStrategy):
@@ -367,10 +335,6 @@ class EquivFocusedCardinalityStrategy(SameMomentStrategy):
 
                 SubElement(cardinality_axiom, "NamedIndividual", {"IRI": serializer._iri(eval_idx)})
 
-    def get_formula_visitor(self, base_iri: str, model, query_id_map: Dict[str, str], registry=None):
-        """Return standard index formula visitor (uses same_moment)."""
-        return IndexFormulaToOWLVisitor(base_iri, model, query_id_map, registry)
-
 
 class ReifiedMomentsNominalStrategy(SameMomentStrategy):
     """
@@ -456,10 +420,6 @@ class ReifiedMomentsNominalStrategy(SameMomentStrategy):
                 # Apply to moment
                 SubElement(closure_axiom, "NamedIndividual", {"IRI": serializer._iri(moment)})
 
-    def get_formula_visitor(self, base_iri: str, model, query_id_map: Dict[str, str], registry=None):
-        """Return reified moments formula visitor (uses index_of/has_index)."""
-        return IndexFormulaToOWLVisitorReified(base_iri, model, query_id_map, registry)
-
 
 class ReifiedMomentsCardinalityStrategy(SameMomentStrategy):
     """
@@ -542,7 +502,3 @@ class ReifiedMomentsCardinalityStrategy(SameMomentStrategy):
 
             # Apply to moment
             SubElement(cardinality_axiom, "NamedIndividual", {"IRI": serializer._iri(moment)})
-
-    def get_formula_visitor(self, base_iri: str, model, query_id_map: Dict[str, str], registry=None):
-        """Return reified moments formula visitor (uses index_of/has_index)."""
-        return IndexFormulaToOWLVisitorReified(base_iri, model, query_id_map, registry)

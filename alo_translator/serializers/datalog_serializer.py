@@ -246,10 +246,6 @@ class DatalogSerializer(Transformer):
         Group actions must be wrapped in a helper so that ~do(group) becomes
         simple NAF (~do_group_N(I)) rather than ~(conjunction), which pyDatalog
         cannot handle correctly.
-
-        For single-agent group actions like {1:ss}, group_action() returns
-        "action(I, 'ss1')" directly (no '&'). We must detect and pass this
-        through rather than re-wrapping it.
         """
         action = items[0]
         # Single-agent group action: group_action already returned "action(I, 'ss1')"
