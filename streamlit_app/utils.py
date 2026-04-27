@@ -166,8 +166,12 @@ def _target_x_count(model: LayeredALOModel) -> int:
     For do(α) targets the action is performed one step ahead of the eval moment.
     For propositional atoms the target lives at the leaves.
     """
-    if model.target_proposition.startswith('do('):
+    tgt = model.target_proposition
+    if tgt.startswith('do('):
         return 1
+    m = re.match(r'^(X+)do\(', tgt)
+    if m:
+        return len(m.group(1))
     eval_depth = model.moments[model.evaluation_moment].depth
     return model.depth() - eval_depth
 
@@ -378,7 +382,12 @@ def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]
 
     sections = []
     for emom, ehist, etgt in eval_points:
-        x_count = 1 if etgt.startswith('do(') else model.depth() - model.moments[emom].depth
+        if etgt.startswith('do('):
+            x_count = 1
+        elif re.match(r'^X+do\(', etgt):
+            x_count = len(re.match(r'^(X+)', etgt).group(1))
+        else:
+            x_count = model.depth() - model.moments[emom].depth
         outcome = 'X' * x_count + etgt
         prop_id = _sanitize_id(outcome)
         suffix = f"_{prop_id}"
