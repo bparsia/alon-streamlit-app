@@ -172,8 +172,7 @@ def _target_x_count(model: LayeredALOModel) -> int:
     m = re.match(r'^(X+)do\(', tgt)
     if m:
         return len(m.group(1))
-    eval_depth = model.moments[model.evaluation_moment].depth
-    return model.depth() - eval_depth
+    return 1
 
 
 def _outcome_formula(model: LayeredALOModel) -> str:
@@ -387,7 +386,7 @@ def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]
         elif re.match(r'^X+do\(', etgt):
             x_count = len(re.match(r'^(X+)', etgt).group(1))
         else:
-            x_count = model.depth() - model.moments[emom].depth
+            x_count = 1
         outcome = 'X' * x_count + etgt
         prop_id = _sanitize_id(outcome)
         suffix = f"_{prop_id}"
