@@ -257,6 +257,7 @@ with st.expander("Responsibility Analysis", expanded=True):
                     else:
                         result_prop  = partial_spec.get("result", "q")
                         eval_history = _eval_history_sel
+                        eval_point   = partial_spec.get("evaluation_point", f"m/{eval_history}")
 
                         run = run_analysis_konclude if use_konclude else run_analysis_datalog
                         satisfied_query_ids = run(model, result_prop, eval_history)
@@ -273,7 +274,8 @@ with st.expander("Responsibility Analysis", expanded=True):
                                 if model.queries:
                                     st.write("Sample query IDs:", [q.query_id for q in model.queries[:5]])
                                 st.write(f"satisfied_query_ids: {sorted(satisfied_query_ids)[:5]}")
-                            results_md = format_results_table(model, satisfied_query_ids, result_prop)
+                            results_md = format_results_table(model, satisfied_query_ids, result_prop,
+                                                              eval_point=eval_point)
                             col_r, col_rb = st.columns([8, 1])
                             with col_r:
                                 st.markdown(results_md)
