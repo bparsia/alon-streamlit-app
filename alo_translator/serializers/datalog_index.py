@@ -340,7 +340,8 @@ class DatalogIndexSerializer(Serializer):
         rules = ["# Query predicate definitions"]
 
         # Create pyDatalog-compatible expander (shared across all queries)
-        self.expander = PyDatalogExpanderTransformer(self.parser, self.model)
+        self.expander = PyDatalogExpanderTransformer(self.parser, self.model,
+                                                     evaluation_history=self.evaluation_history)
 
         # Expand all queries
         for query in self.model.queries:

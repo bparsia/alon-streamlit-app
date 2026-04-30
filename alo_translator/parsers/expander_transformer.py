@@ -14,7 +14,7 @@ class ExpanderTransformer(AlonTransformer):
     Overrides expansion operators to generate axioms.
     """
 
-    def __init__(self, parser, model=None, evaluation_moment=None):
+    def __init__(self, parser, model=None, evaluation_moment=None, evaluation_history=None):
         """Initialize expander.
 
         Args:
@@ -23,11 +23,14 @@ class ExpanderTransformer(AlonTransformer):
             evaluation_moment: For LayeredALOModel, the moment name at which operators
                 are being evaluated. Determines which actions are available for xstit
                 and which history CGA to use for but_for/ness. Ignored for ALOModel.
+            evaluation_history: For ALOModel, the history name to use for CGA lookup
+                in but_for/ness expansions. Defaults to "h1" if not provided.
         """
         super().__init__()
         self.parser = parser
         self.model = model
         self.evaluation_moment = evaluation_moment
+        self.evaluation_history = evaluation_history
         self.axioms = set()  # Accumulate expansion axioms here (set for auto-deduplication)
         self.always_false_names = set()  # Predicate names that are always False (bottom)
 
@@ -67,10 +70,11 @@ class ExpanderTransformer(AlonTransformer):
             if hp is None:
                 raise ValueError(f"Evaluation history '{self.model.evaluation_history}' not found")
             return hp.actions_at.get(self.evaluation_moment, {})
-        h1 = self.model.named_histories.get("h1")
-        if h1 is None:
-            raise ValueError("History 'h1' not found in model")
-        return h1.actions
+        hist_key = self.evaluation_history or "h1"
+        h = self.model.named_histories.get(hist_key)
+        if h is None:
+            raise ValueError(f"History '{hist_key}' not found in model")
+        return h.actions
 
     def _get_agent_groups(self) -> dict:
         """Return the agent_groups dict (may be empty for LayeredALOModel)."""
