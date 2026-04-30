@@ -47,15 +47,18 @@ class OWLIndexSerializer(Serializer):
 
     def __init__(self, model: ALOModel,
                  strategy: Optional['SameMomentStrategy'] = None,
-                 use_subclass_axioms: bool = True):
+                 use_subclass_axioms: bool = True,
+                 evaluation_history: str = "h1"):
         """Initialize the serializer.
 
         Args:
             model: The ALOn model to serialize
             strategy: Strategy for same_moment representation (default: EquivChainedNominalStrategy)
             use_subclass_axioms: If True (default), use SubClassOf axioms for queries
+            evaluation_history: History name used for CGA lookup in but/ness expansion
         """
         super().__init__(model)
+        self.evaluation_history = evaluation_history
         # Import here to avoid circular dependency
         if strategy is None:
             from .index_strategies import EquivChainedNominalStrategy

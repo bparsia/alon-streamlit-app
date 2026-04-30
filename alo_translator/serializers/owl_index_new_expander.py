@@ -44,7 +44,8 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
     def _make_expander(self) -> ExpanderTransformer:
         """Factory for the ExpanderTransformer.  Subclasses can override to
         inject evaluation_moment or use a different transformer class."""
-        return ExpanderTransformer(self.parser, self.model)
+        return ExpanderTransformer(self.parser, self.model,
+                                   evaluation_history=self.evaluation_history)
 
     def _add_query_classes(self, ontology: Element):
         """

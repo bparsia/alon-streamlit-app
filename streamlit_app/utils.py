@@ -480,7 +480,8 @@ def run_analysis_konclude(model, result_prop: str, eval_history: str) -> Optiona
         model = setup_queries(model, result_prop, eval_history)
 
         strategy = EquivFullCardinalityStrategy()
-        serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
+        serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy,
+                                                   evaluation_history=eval_history)
         owl_output = serializer.serialize()
 
         bin_path = konclude_path()
