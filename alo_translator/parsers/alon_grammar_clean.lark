@@ -66,13 +66,13 @@ but_for: "but" "(" action_expr "," formula ")"
 ness: "ness" "(" action_expr "," formula ")"
 
 // STIT operators
-xstit: "[" agent_expr "XSTIT" "]" primary
-dxstit: "[" agent_expr "DXSTIT" "]" primary
+xstit: "[" agent_expr "XSTIT" "]" formula
+dxstit: "[" agent_expr "DXSTIT" "]" formula
 
 // Responsibility operators
-pres: "[" agent_expr "pres" "]" primary
-sres: "[" agent_expr "sres" "]" primary
-res: "[" agent_expr "res" "]" primary
+pres: "[" agent_expr "pres" "]" formula
+sres: "[" agent_expr "sres" "]" formula
+res: "[" agent_expr "res" "]" formula
 
 // Atoms and parenthesized formulas
 ?atom: "(" formula ")"                             -> parens

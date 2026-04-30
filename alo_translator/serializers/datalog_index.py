@@ -355,7 +355,8 @@ class DatalogIndexSerializer(Serializer):
                 # inner sub-formulas were renamed (e.g. [1 pres]~q -> [1 pres]f1).
                 self.expander.formula_to_name[formula_str] = result_name
             except Exception as e:
-                rules.append(f"# ERROR expanding {query_id}: {e}")
+                error_msg = str(e).replace("\n", " | ")
+                rules.append(f"# ERROR expanding {query_id}: {error_msg}")
 
         # Create Datalog serializer with name_to_formula mapping
         self.datalog_serializer = DatalogSerializer(
