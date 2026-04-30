@@ -212,7 +212,7 @@ with st.expander("Responsibility Analysis", expanded=True):
             _result_prop_default = "q"
             _named_histories = ["h1"]
 
-        st.markdown(f"Outcome proposition: `{_result_prop_default}`")
+        _result_prop_sel = st.text_input("Outcome proposition", value=_result_prop_default)
 
         if _is_layered_ra:
             st.info(f"TD>1 model (depth {_model_ra.depth()}). "
@@ -255,7 +255,7 @@ with st.expander("Responsibility Analysis", expanded=True):
                             with col_rb:
                                 copy_button(results_md, "📋 Copy")
                     else:
-                        result_prop  = partial_spec.get("result", "q")
+                        result_prop  = _result_prop_sel.strip() or partial_spec.get("result", "q")
                         eval_history = _eval_history_sel
                         eval_point   = partial_spec.get("evaluation_point", f"m/{eval_history}")
 
