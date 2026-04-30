@@ -351,6 +351,9 @@ class DatalogIndexSerializer(Serializer):
             try:
                 tree = self.parser.parse(formula_str)
                 result_name = self.expander.transform(tree)
+                # Ensure the original formula string maps to the result name even when
+                # inner sub-formulas were renamed (e.g. [1 pres]~q -> [1 pres]f1).
+                self.expander.formula_to_name[formula_str] = result_name
             except Exception as e:
                 rules.append(f"# ERROR expanding {query_id}: {e}")
 

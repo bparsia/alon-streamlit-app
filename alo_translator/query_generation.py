@@ -19,7 +19,7 @@ def _sanitize_id(s: str) -> str:
     awkward in display (parentheses, spaces, braces, colons, commas) with
     underscores, then collapses runs of underscores.
     """
-    result = re.sub(r'[(){}\[\],: ]', '_', s)
+    result = re.sub(r'[(){}\[\],: ~]', '_', s)
     result = re.sub(r'_+', '_', result)
     return result.strip('_')
 
