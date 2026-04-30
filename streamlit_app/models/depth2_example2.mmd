@@ -1,0 +1,51 @@
+---
+title: Isabella Manipulation Example 2(TD=2)
+description: In this case, Alice doesn't shoot Dan *unless* Isabella manipulates her into it.
+type: DBT
+actions:
+  1:
+    - sd
+    - ss
+  2:
+    - ss
+    - ha
+  3:
+    - ss
+    - masd
+opposings:
+  sd1:
+    - ha2
+aliases:
+  1: Alice
+  2: Beth
+  3: Isabella
+  sd: shoots Dan
+  ss: stands still
+  ha: hits Alice
+  masd: manipulates Alice into shooting Dan
+  q: Dan dies
+result: q
+evaluation_point: m/h1
+evaluate:
+  - - m/h1
+    - do(sd1)
+  - - mm/h1
+    - q
+---
+classDiagram
+direction BT
+
+  m --> mm : h1/h2({masd3})
+  m --> mmm : h3/h4/h5/h6({ss3})
+
+  mm --> m1 : h1({sd1, ss2})
+  mm --> m2 : h2({sd1, ha2})
+
+  mmm --> m5 : h5({ss1, ss2})
+  mmm --> m6 : h6({ss1, ha2})
+
+  mm: do(sd1)
+  m1: q
+  m2: ~q
+  m5: ~q
+  m6: ~q

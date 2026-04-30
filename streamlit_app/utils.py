@@ -123,7 +123,8 @@ def analysis_button(key: str, model, partial_spec: dict, label: str = "▶️ Ru
             if satisfied is not None:
                 # Store the rendered markdown — model.queries won't survive the rerun
                 st.session_state[key] = format_results_table(model, satisfied, result_prop,
-                                                              show_legend=show_legend)
+                                                              show_legend=show_legend,
+                                                              eval_point=eval_point)
 
     if key in st.session_state:
         results_md = st.session_state[key]
@@ -367,6 +368,50 @@ def format_layered_model_overview(model: LayeredALOModel) -> str:
     return "\n".join(lines)
 
 
+def _cga_str(actions: Dict[str, str], aliases: Dict[str, str]) -> str:
+    """Format a {agent: action_type} dict as a CGA string like {masd3, sd1, ss2}."""
+    parts = sorted(f"{atype}{agent}" for agent, atype in actions.items())
+    return "{" + ", ".join(parts) + "}"
+
+
+def _outcome_index(model: LayeredALOModel, ehist: str, etgt: str):
+    """Return (holds: bool, index: str) for the target in the given history."""
+    hp = model.histories.get(ehist)
+    if hp is None:
+        return False, "?"
+
+    if etgt.startswith("do("):
+        inner = etgt[3:-1]          # e.g. "sd1"
+        m = re.match(r"^([a-zA-Z]+)(\d+)$", inner)
+        if m:
+            atype, agent = m.group(1), m.group(2)
+            for moment in hp.path[:-1]:
+                acts = hp.actions_at.get(moment, {})
+                if acts.get(agent) == atype:
+                    return True, f"{moment}/{ehist}"
+        return False, "?"
+    else:
+        leaf = hp.leaf_moment
+        node = model.moments.get(leaf)
+        holds = node is not None and etgt in node.propositions
+        return holds, f"{leaf}/{ehist}"
+
+
+def _section_header_layered(model: LayeredALOModel, emom: str, ehist: str, etgt: str) -> str:
+    aliases = model.aliases
+    hp = model.histories.get(ehist)
+    cga = _cga_str(hp.complete_actions(), aliases) if hp else "{}"
+    holds, index = _outcome_index(model, ehist, etgt)
+    tgt_desc = aliases.get(etgt, etgt)
+    holds_str = "holds" if holds else "does not hold"
+    outcome_label = f"`{etgt}`" + (f" ({tgt_desc})" if tgt_desc != etgt else "")
+    return (
+        f"**At:** `{emom}/{ehist}`  \n"
+        f"**CGA:** `{cga}`  \n"
+        f"**Outcome:** {outcome_label} — {holds_str} at `{index}`"
+    )
+
+
 def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]) -> str:
     """Format LayeredALOModel responsibility results as markdown.
 
@@ -413,9 +458,8 @@ def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]
             if resp_type in agent_results[agent_str]:
                 agent_results[agent_str][resp_type] = qid in satisfied_ids
 
-        tgt_desc = aliases.get(etgt, etgt)
         lines = [
-            f"**`{emom}/{ehist}`** → `{etgt}` ({tgt_desc})",
+            _section_header_layered(model, emom, ehist, etgt),
             "",
             "| Agent | pres | sres | res | but | ness |",
             "|-------|------|------|-----|-----|------|",
@@ -528,8 +572,43 @@ def format_history_table_md(model) -> str:
     return "\n".join(lines)
 
 
+def _section_header_flat(model, eval_point: str, result_prop: str) -> str:
+    """Build the At/CGA/Outcome header for a TD=1 results table."""
+    emom, _, ehist = eval_point.partition("/")
+    if not ehist:
+        ehist = eval_point
+        emom = "m"
+
+    aliases = model.aliases
+
+    # CGA from named_histories
+    ga = model.named_histories.get(ehist)
+    if ga is not None:
+        parts = sorted(f"{atype}{agent}" for agent, atype in ga.actions.items())
+        cga = "{" + ", ".join(parts) + "}"
+    else:
+        cga = "{}"
+
+    # Whether result_prop holds and where
+    result = next((r for r in model.results if r.history_name == ehist), None)
+    if result is not None:
+        holds = result_prop in result.true_propositions
+        index = f"{result.moment_name}/{ehist}"
+    else:
+        holds, index = False, "?"
+
+    holds_str = "holds" if holds else "does not hold"
+    prop_desc = aliases.get(result_prop, result_prop)
+    outcome_label = f"`{result_prop}`" + (f" ({prop_desc})" if prop_desc != result_prop else "")
+    return (
+        f"**At:** `{emom}/{ehist}`  \n"
+        f"**CGA:** `{cga}`  \n"
+        f"**Outcome:** {outcome_label} — {holds_str} at `{index}`"
+    )
+
+
 def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
-                         show_legend: bool = True) -> str:
+                         show_legend: bool = True, eval_point: str = "") -> str:
     """Format responsibility results as a markdown table."""
     agent_results = defaultdict(lambda: {
         "pres": False, "sres": False, "res": False,
@@ -567,10 +646,15 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
             agent_results[agent_str][resp_type] = qid in satisfied_query_ids
 
     aliases = model.aliases
-    result_desc = aliases.get(result_prop, result_prop)
+
+    if eval_point:
+        header = _section_header_flat(model, eval_point, result_prop)
+    else:
+        result_desc = aliases.get(result_prop, result_prop)
+        header = f"**Outcome**: `{result_prop}` ({result_desc})"
 
     lines = [
-        f"**Outcome**: `{result_prop}` ({result_desc})",
+        header,
         "",
         "| Agent/Coalition | pres | sres | res | dxstit | but | ness |",
         "|----------------|------|------|-----|--------|-----|------|",
