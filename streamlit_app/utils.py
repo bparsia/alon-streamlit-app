@@ -25,7 +25,7 @@ from alo_translator.serializers.layered_owl_index import LayeredOWLIndexSerializ
 
 def _sanitize_id(s: str) -> str:
     """Convert a formula string to a safe query-ID suffix (mirrors query_generation._sanitize_id)."""
-    result = re.sub(r'[(){}\[\],: ]', '_', s)
+    result = re.sub(r'[(){}\[\],: ~]', '_', s)
     result = re.sub(r'_+', '_', result)
     return result.strip('_')
 
