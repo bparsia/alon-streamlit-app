@@ -178,6 +178,18 @@ def expand(
         if name == "page_break":
             return '<div style="page-break-after: always; break-after: page;"></div>'
 
+        if name == "titleof":
+            ref = args.get("ref", "")
+            if ref:
+                found = doc.model_by_ref(ref)
+                if found is None:
+                    # Fall back to title lookup
+                    found = doc.model_by_title(ref)
+                if found:
+                    return found.title
+                return f"*[unknown model ref: {ref}]*"
+            return m.group(0)
+
         return m.group(0)  # unknown shortcode — leave as-is
 
     return _SHORTCODE_RE.sub(_replace, text)

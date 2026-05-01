@@ -81,16 +81,18 @@ def render(doc: ALOnDocument, title: str = "ALOn Document", analysis=None) -> st
             pass  # suppress
 
         elif isinstance(block, ModelBlock):
-            mmd_src = model_to_mmd(block)
-            escaped = _html.escape(mmd_src).replace("'", "&#39;")
-            parts.append(
-                f'<div class="alon-model-wrap">\n'
-                f'<button class="alon-copy-btn" '
-                f'data-mmd=\'{escaped}\' '
-                f'onclick="alonCopy(this)">Copy .mmd</button>\n'
-                f'<pre class="mermaid">\n{block.diagram}\n</pre>\n'
-                f'</div>'
-            )
+            if block.display:
+                mmd_src = model_to_mmd(block)
+                escaped = _html.escape(mmd_src).replace("'", "&#39;")
+                parts.append(
+                    f'<div class="alon-model-wrap">\n'
+                    f'<button class="alon-copy-btn" '
+                    f'data-mmd=\'{escaped}\' '
+                    f'onclick="alonCopy(this)">Copy .mmd</button>\n'
+                    f'<pre class="mermaid">\n{block.diagram}\n</pre>\n'
+                    f'</div>'
+                )
+            # else: hidden model — available for analysis/reference, not rendered
 
         elif isinstance(block, HeadingBlock):
             text = _html.escape(block.text)

@@ -23,8 +23,10 @@ def render(doc: ALOnDocument, show_context: bool = False, analysis=None) -> str:
             # else: suppress entirely
 
         elif isinstance(block, ModelBlock):
-            # Strip front matter — render as a clean diagram only
-            parts.append(f"```mermaid\n{block.diagram}\n```")
+            if block.display:
+                # Strip front matter — render as a clean diagram only
+                parts.append(f"```mermaid\n{block.diagram}\n```")
+            # else: model is available for analysis/reference but suppressed in output
 
         elif isinstance(block, (FenceBlock, HeadingBlock)):
             parts.append(block.raw)

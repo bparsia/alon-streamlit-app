@@ -40,6 +40,19 @@ class ModelBlock:
         return self.front_matter.get("title", "")
 
     @property
+    def ref(self) -> str:
+        """Short stable identifier for this model (optional front-matter field)."""
+        return self.front_matter.get("ref", "")
+
+    @property
+    def display(self) -> bool:
+        """Whether to render the diagram in output (default True)."""
+        val = self.front_matter.get("display", True)
+        if isinstance(val, str):
+            return val.lower() not in ("false", "no", "0")
+        return bool(val)
+
+    @property
     def aliases(self) -> Dict[str, str]:
         return self.resolved_fm.get("aliases", self.front_matter.get("aliases", {}))
 
@@ -91,6 +104,13 @@ class ALOnDocument:
     def model_by_title(self, title: str) -> Optional[ModelBlock]:
         for b in self.blocks:
             if isinstance(b, ModelBlock) and b.title == title:
+                return b
+        return None
+
+    def model_by_ref(self, ref: str) -> Optional[ModelBlock]:
+        """Look up a ModelBlock by its ``ref`` front-matter field."""
+        for b in self.blocks:
+            if isinstance(b, ModelBlock) and b.ref == ref:
                 return b
         return None
 
