@@ -3,6 +3,7 @@ ALOn Model Explorer — main page.
 """
 
 import sys
+import hashlib
 from pathlib import Path
 
 import streamlit as st
@@ -212,24 +213,6 @@ with st.expander("Responsibility Analysis", expanded=True):
             _result_prop_default = "q"
             _named_histories = ["h1"]
 
-        _result_prop_sel = st.text_input("Outcome proposition", value=_result_prop_default)
-
-        if _is_layered_ra:
-            st.info(f"TD>1 model (depth {_model_ra.depth()}). "
-                    f"Evaluating at `{_model_ra.evaluation_moment}/{_model_ra.evaluation_history}`.")
-            _eval_history_sel = _model_ra.evaluation_history
-        else:
-            # History selection (dropdown only when multiple named histories exist)
-            if len(_named_histories) > 1:
-                _eval_history_sel = st.selectbox(
-                    "Evaluate at history",
-                    _named_histories,
-                    index=0,
-                )
-            else:
-                _eval_history_sel = _named_histories[0] if _named_histories else "h1"
-                st.markdown(f"Formulae are evaluated at m/{_eval_history_sel}.")
-
         konclude_bin = konclude_path()
         if konclude_bin:
             backend = st.radio("Reasoner", ["pyDatalog", "Konclude (OWL)"], horizontal=True)
@@ -237,13 +220,14 @@ with st.expander("Responsibility Analysis", expanded=True):
         else:
             use_konclude = False
 
-        if st.button("▶️ Run Analysis"):
-            with st.spinner("Running responsibility analysis..."):
-                try:
-                    model, partial_spec = parse_model(mermaid_text)
-                    is_layered = isinstance(model, LayeredALOModel)
-
-                    if is_layered:
+        if _is_layered_ra:
+            # TD>1 — model.evaluations already handles multiple eval points
+            st.info(f"TD>1 model (depth {_model_ra.depth()}). "
+                    f"Evaluating at `{_model_ra.evaluation_moment}/{_model_ra.evaluation_history}`.")
+            if st.button("▶️ Run Analysis"):
+                with st.spinner("Running responsibility analysis..."):
+                    try:
+                        model, _ = parse_model(mermaid_text)
                         run_layered = run_analysis_konclude_layered if use_konclude else run_analysis_datalog_layered
                         satisfied_query_ids = run_layered(model)
                         if satisfied_query_ids is not None:
@@ -254,33 +238,111 @@ with st.expander("Responsibility Analysis", expanded=True):
                                 st.markdown(results_md)
                             with col_rb:
                                 copy_button(results_md, "📋 Copy")
+                    except Exception as e:
+                        st.error(f"Analysis failed: {e}")
+
+        else:
+            # TD=1 — multi-slot analysis
+            # Slots are keyed by model fingerprint so they reset when the model changes.
+            _model_hash = hashlib.md5(mermaid_text.encode()).hexdigest()[:8]
+            _slots_key  = f"ra_slots_{_model_hash}"
+
+            def _default_slot(hist: str, prop: str) -> dict:
+                return {"eval_history": hist, "result_prop": prop, "result_md": None}
+
+            # Initialise slots: from YAML evaluate if present, else one default
+            if _slots_key not in st.session_state:
+                _yaml_evals = _partial_spec_ra.get("evaluate", []) if _model_ra else []
+                if _yaml_evals:
+                    _slots = []
+                    for _item in _yaml_evals:
+                        if len(_item) >= 2:
+                            _ep, _tgt = str(_item[0]), str(_item[1])
+                            _hist = _ep.split("/")[-1] if "/" in _ep else _ep
+                            _slots.append(_default_slot(_hist, _tgt))
+                else:
+                    _slots = [_default_slot(
+                        _named_histories[0] if _named_histories else "h1",
+                        _result_prop_default,
+                    )]
+                st.session_state[_slots_key] = _slots
+
+            _slots = st.session_state[_slots_key]
+            _to_delete = None
+
+            for _i, _slot in enumerate(_slots):
+                if len(_slots) > 1:
+                    st.markdown(f"**Analysis {_i + 1}**")
+
+                _col_h, _col_p, _col_run, _col_del = st.columns([2, 2, 1, 1])
+
+                with _col_h:
+                    if len(_named_histories) > 1:
+                        try:
+                            _hist_idx = _named_histories.index(_slot["eval_history"])
+                        except ValueError:
+                            _hist_idx = 0
+                        _eval_history = st.selectbox(
+                            "History",
+                            _named_histories,
+                            index=_hist_idx,
+                            key=f"ra_hist_{_model_hash}_{_i}",
+                        )
                     else:
-                        result_prop  = _result_prop_sel.strip() or partial_spec.get("result", "q")
-                        eval_history = _eval_history_sel
-                        eval_point   = partial_spec.get("evaluation_point", f"m/{eval_history}")
+                        _eval_history = _named_histories[0] if _named_histories else "h1"
+                        st.markdown(f"History: `{_eval_history}`")
 
-                        run = run_analysis_konclude if use_konclude else run_analysis_datalog
-                        satisfied_query_ids = run(model, result_prop, eval_history)
+                with _col_p:
+                    _result_prop = st.text_input(
+                        "Proposition",
+                        value=_slot["result_prop"],
+                        key=f"ra_prop_{_model_hash}_{_i}",
+                    )
 
-                        if satisfied_query_ids is not None:
-                            st.success(
-                                f"Analysis complete! "
-                                f"Found {len(satisfied_query_ids)} satisfied queries"
-                            )
-                            with st.expander("🔍 Debug", expanded=False):
-                                st.write(f"result_prop: `{result_prop}`")
-                                st.write(f"eval_history: `{eval_history}`")
-                                st.write(f"model.queries count: {len(model.queries)}")
-                                if model.queries:
-                                    st.write("Sample query IDs:", [q.query_id for q in model.queries[:5]])
-                                st.write(f"satisfied_query_ids: {sorted(satisfied_query_ids)[:5]}")
-                            results_md = format_results_table(model, satisfied_query_ids, result_prop,
-                                                              eval_point=eval_point)
-                            col_r, col_rb = st.columns([8, 1])
-                            with col_r:
-                                st.markdown(results_md)
-                            with col_rb:
-                                copy_button(results_md, "📋 Copy")
+                with _col_run:
+                    st.markdown("&nbsp;", unsafe_allow_html=True)
+                    _run_clicked = st.button("▶️ Run", key=f"ra_run_{_model_hash}_{_i}")
 
-                except Exception as e:
-                    st.error(f"Analysis failed: {e}")
+                with _col_del:
+                    if len(_slots) > 1:
+                        st.markdown("&nbsp;", unsafe_allow_html=True)
+                        if st.button("✕", key=f"ra_del_{_model_hash}_{_i}"):
+                            _to_delete = _i
+
+                if _run_clicked:
+                    with st.spinner("Running…"):
+                        try:
+                            _m, _ps = parse_model(mermaid_text)
+                            _run = run_analysis_konclude if use_konclude else run_analysis_datalog
+                            _sat = _run(_m, _result_prop, _eval_history)
+                            if _sat is not None:
+                                _eval_point = f"m/{_eval_history}"
+                                _slot["result_md"] = format_results_table(
+                                    _m, _sat, _result_prop, eval_point=_eval_point
+                                )
+                                _slot["eval_history"] = _eval_history
+                                _slot["result_prop"] = _result_prop
+                        except Exception as _e:
+                            st.error(f"Analysis failed: {_e}")
+
+                if _slot.get("result_md"):
+                    _col_r, _col_rb = st.columns([8, 1])
+                    with _col_r:
+                        st.markdown(_slot["result_md"])
+                    with _col_rb:
+                        copy_button(_slot["result_md"], "📋 Copy")
+
+                if _i < len(_slots) - 1:
+                    st.divider()
+
+            if _to_delete is not None:
+                _slots.pop(_to_delete)
+                st.rerun()
+
+            def _add_slot():
+                st.session_state[_slots_key].append(_default_slot(
+                    _named_histories[0] if _named_histories else "h1",
+                    _result_prop_default,
+                ))
+
+            st.button("➕ Add analysis point", key=f"ra_add_{_model_hash}", on_click=_add_slot)
