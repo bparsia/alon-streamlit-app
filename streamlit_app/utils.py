@@ -135,8 +135,22 @@ def analysis_button(key: str, model, partial_spec: dict, label: str = "▶️ Ru
             copy_button(results_md, "📋 Copy")
 
 
+def _validate_formula(formula: str) -> Optional[str]:
+    """Return an error message if *formula* is not a valid ALOn formula, else None."""
+    from alo_translator.parsers.formula_parser import parse_formula
+    try:
+        parse_formula(formula)
+        return None
+    except Exception as e:
+        return str(e).splitlines()[0]  # First line of Lark error is most informative
+
+
 def run_analysis_datalog(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
     """Run responsibility analysis using pyDatalog. Returns satisfied query IDs."""
+    err = _validate_formula(result_prop)
+    if err:
+        st.error(f"Invalid outcome proposition `{result_prop}`: {err}")
+        return None
     try:
         model = setup_queries(model, result_prop, eval_history)
         serializer = DatalogIndexSerializer(model, evaluation_history=eval_history)
@@ -476,6 +490,10 @@ def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]
 
 def run_analysis_konclude(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
     """Run responsibility analysis using Konclude OWL reasoner. Returns satisfied query IDs."""
+    err = _validate_formula(result_prop)
+    if err:
+        st.error(f"Invalid outcome proposition `{result_prop}`: {err}")
+        return None
     try:
         model = setup_queries(model, result_prop, eval_history)
 
