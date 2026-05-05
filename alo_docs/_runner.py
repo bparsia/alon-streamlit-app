@@ -56,17 +56,41 @@ def _run_flat(model, partial_spec: dict) -> Tuple[object, Set[str], list]:
     """Run analysis on a TD=1 ALOModel. Returns (model, satisfied_ids, eval_points)."""
     from alo_translator.serializers.datalog_index import DatalogIndexSerializer
     from streamlit_app.utils import setup_queries
+    from alo_translator.query_generation import _sanitize_id as _qsanitize
 
-    result_prop = partial_spec.get("result", "q")
-    eval_point  = partial_spec.get("evaluation_point", "m/h1")
-    eval_mom    = eval_point.split("/")[0] if "/" in eval_point else eval_point
-    eval_hist   = eval_point.split("/")[1] if "/" in eval_point else "h1"
+    yaml_evals = partial_spec.get("evaluate", [])
+    if yaml_evals:
+        raw_eval_points = []
+        for item in yaml_evals:
+            if len(item) >= 2:
+                ep, tgt = str(item[0]), str(item[1])
+                em = ep.split("/")[0] if "/" in ep else "m"
+                eh = ep.split("/")[1] if "/" in ep else ep
+                raw_eval_points.append((em, eh, tgt))
+    else:
+        result_prop = partial_spec.get("result", "q")
+        eval_point  = partial_spec.get("evaluation_point", "m/h1")
+        eval_mom    = eval_point.split("/")[0] if "/" in eval_point else eval_point
+        eval_hist   = eval_point.split("/")[1] if "/" in eval_point else "h1"
+        raw_eval_points = [(eval_mom, eval_hist, result_prop)]
 
-    model = setup_queries(model, result_prop, eval_hist)
-    serializer = DatalogIndexSerializer(model, evaluation_history=eval_hist)
-    results = serializer.evaluate()
-    satisfied = {qid for qid, r in results.items() if r.get("result")}
-    return model, satisfied, [(eval_mom, eval_hist, result_prop)]
+    all_satisfied: Set[str] = set()
+    all_queries = []
+    for em, eh, tgt in raw_eval_points:
+        model.queries = []
+        model = setup_queries(model, tgt, eh)
+        # Scope query IDs with history to prevent collision across eval points
+        eh_tag = _qsanitize(eh)
+        for q in model.queries:
+            if q.query_id:
+                q.query_id = f"{q.query_id}_{eh_tag}"
+        all_queries.extend(model.queries)
+        serializer = DatalogIndexSerializer(model, evaluation_history=eh)
+        results = serializer.evaluate()
+        all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
+
+    model.queries = all_queries
+    return model, all_satisfied, raw_eval_points
 
 
 def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Tuple]:
@@ -154,9 +178,9 @@ def format_results(
             x_count = 1
         outcome = "X" * x_count + etgt
         if is_layered:
-            prop_id = _sanitize_id(f"{emom}_{outcome}")
+            prop_id = _sanitize_id(f"{emom}_{ehist}_{outcome}")
         else:
-            prop_id = _sanitize_id(etgt)
+            prop_id = _sanitize_id(f"{etgt}_{ehist}")
         suffix = f"_{prop_id}"
 
         agent_results = defaultdict(lambda: {
