@@ -212,7 +212,7 @@ def setup_layered_queries(model: LayeredALOModel) -> LayeredALOModel:
     from alo_translator.query_generation import _sanitize_id
     outcome = _outcome_formula(model)
     op_formula = _operator_formula(model)
-    prop_id = _sanitize_id(f"{model.evaluation_moment}_{outcome}")
+    prop_id = _sanitize_id(f"{model.evaluation_moment}_{model.evaluation_history}_{outcome}")
 
     agents_at_eval = sorted(model.available_actions_at(model.evaluation_moment).keys())
     resp_types = ["pres", "sres", "res"]
@@ -414,7 +414,8 @@ def _outcome_index(model: LayeredALOModel, ehist: str, etgt: str):
 def _section_header_layered(model: LayeredALOModel, emom: str, ehist: str, etgt: str) -> str:
     aliases = model.aliases
     hp = model.histories.get(ehist)
-    cga = _cga_str(hp.complete_actions(), aliases) if hp else "{}"
+    cga_dict = hp.actions_at.get(emom, {}) if hp else {}
+    cga = _cga_str(cga_dict, aliases) if cga_dict else "{}"
     holds, index = _outcome_index(model, ehist, etgt)
     tgt_desc = aliases.get(etgt, etgt)
     holds_str = "holds" if holds else "does not hold"
@@ -447,7 +448,7 @@ def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]
         else:
             x_count = 1
         outcome = 'X' * x_count + etgt
-        prop_id = _sanitize_id(f"{emom}_{outcome}")
+        prop_id = _sanitize_id(f"{emom}_{ehist}_{outcome}")
         suffix = f"_{prop_id}"
 
         agent_results = defaultdict(lambda: {
