@@ -145,7 +145,8 @@ def _validate_formula(formula: str) -> Optional[str]:
         return str(e).splitlines()[0]  # First line of Lark error is most informative
 
 
-def run_analysis_datalog(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
+def run_analysis_datalog(model, result_prop: str, eval_history: str,
+                         ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
     """Run responsibility analysis using pyDatalog. Returns satisfied query IDs."""
     err = _validate_formula(result_prop)
     if err:
@@ -153,7 +154,8 @@ def run_analysis_datalog(model, result_prop: str, eval_history: str) -> Optional
         return None
     try:
         model = setup_queries(model, result_prop, eval_history)
-        serializer = DatalogIndexSerializer(model, evaluation_history=eval_history)
+        serializer = DatalogIndexSerializer(model, evaluation_history=eval_history,
+                                            ness_empty_sufficient=ness_empty_sufficient)
         results = serializer.evaluate()
         return {qid for qid, r in results.items() if r.get("result")}
     except Exception as e:
@@ -237,7 +239,8 @@ def setup_layered_queries(model: LayeredALOModel) -> LayeredALOModel:
     return model
 
 
-def run_analysis_datalog_layered(model: LayeredALOModel) -> Optional[Set[str]]:
+def run_analysis_datalog_layered(model: LayeredALOModel,
+                                  ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
     """Run responsibility analysis on a LayeredALOModel using pyDatalog.
 
     If model.evaluations is set, runs each (moment, history, target) separately
@@ -259,7 +262,8 @@ def run_analysis_datalog_layered(model: LayeredALOModel) -> Optional[Set[str]]:
             all_queries.extend(model.queries)
             serializer = LayeredDatalogIndexSerializer(model,
                                                        evaluation_history=ehist,
-                                                       evaluation_moment=emom)
+                                                       evaluation_moment=emom,
+                                                       ness_empty_sufficient=ness_empty_sufficient)
             results = serializer.evaluate()
             all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
         model.queries = all_queries
@@ -269,7 +273,8 @@ def run_analysis_datalog_layered(model: LayeredALOModel) -> Optional[Set[str]]:
         return None
 
 
-def run_analysis_konclude_layered(model: LayeredALOModel) -> Optional[Set[str]]:
+def run_analysis_konclude_layered(model: LayeredALOModel,
+                                   ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
     """Run responsibility analysis on a LayeredALOModel using Konclude (OWL).
 
     Mirrors run_analysis_datalog_layered but uses LayeredOWLIndexSerializer

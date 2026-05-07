@@ -14,7 +14,8 @@ class ExpanderTransformer(AlonTransformer):
     Overrides expansion operators to generate axioms.
     """
 
-    def __init__(self, parser, model=None, evaluation_moment=None, evaluation_history=None):
+    def __init__(self, parser, model=None, evaluation_moment=None, evaluation_history=None,
+                 ness_empty_sufficient=True):
         """Initialize expander.
 
         Args:
@@ -25,12 +26,17 @@ class ExpanderTransformer(AlonTransformer):
                 and which history CGA to use for but_for/ness. Ignored for ALOModel.
             evaluation_history: For ALOModel, the history name to use for CGA lookup
                 in but_for/ness expansions. Defaults to "h1" if not provided.
+            ness_empty_sufficient: If True (default), the empty set counts as a potential
+                sufficient set in NESS minimality checks — matching the original semantics
+                where q inevitability blocks NESS. If False, only non-empty proper subsets
+                are tested, so a singleton action is trivially minimal.
         """
         super().__init__()
         self.parser = parser
         self.model = model
         self.evaluation_moment = evaluation_moment
         self.evaluation_history = evaluation_history
+        self.ness_empty_sufficient = ness_empty_sufficient
         self.axioms = set()  # Accumulate expansion axioms here (set for auto-deduplication)
         self.always_false_names = set()  # Predicate names that are always False (bottom)
 
@@ -451,15 +457,20 @@ class ExpanderTransformer(AlonTransformer):
             # Build minimality checks: ⋀K⊂J (~[K]φ)
             minimality_parts = []
 
-            # Get all proper subsets of J
+            # Get proper subsets of J for minimality checking.
+            # When ness_empty_sufficient is True (original semantics), include the
+            # empty set: if q is inevitable ([]Xφ), the empty set is sufficient and
+            # blocks minimality.  When False, only non-empty proper subsets are tested
+            # so a singleton action is trivially minimal regardless of inevitability.
+            min_k = 0 if self.ness_empty_sufficient else 1
             proper_subsets = [
                 list(subset) for subset in powerset(J)
-                if len(subset) < len(J)
+                if min_k <= len(subset) < len(J)
             ]
 
             for K in proper_subsets:
                 if len(K) == 0:
-                    # Empty set: positive form is []Xφ
+                    # Empty set: corresponds to "q is inevitable" ([]Xφ)
                     pos_sufficient_expr = f"[]X{formula}"
                 elif len(K) == 1:
                     a, act = K[0]

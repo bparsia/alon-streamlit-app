@@ -27,10 +27,11 @@ class LayeredDatalogIndexSerializer:
     """
 
     def __init__(self, model: LayeredALOModel, evaluation_history: Optional[str] = None,
-                 evaluation_moment: Optional[str] = None):
+                 evaluation_moment: Optional[str] = None, ness_empty_sufficient: bool = True):
         self.model = model
         self.evaluation_history = evaluation_history or model.evaluation_history
         self.evaluation_moment = evaluation_moment or model.evaluation_moment
+        self.ness_empty_sufficient = ness_empty_sufficient
 
         grammar_path = Path(__file__).parent.parent / "parsers" / "alon_grammar_clean.lark"
         with open(grammar_path) as f:
@@ -221,6 +222,7 @@ class LayeredDatalogIndexSerializer:
         self.expander = PyDatalogExpanderTransformer(
             self.parser, self.model,
             evaluation_moment=self.evaluation_moment,
+            ness_empty_sufficient=self.ness_empty_sufficient,
         )
         self._query_predicate_map: Dict[str, str] = {}  # query_id -> predicate_name
 

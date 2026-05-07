@@ -26,7 +26,7 @@ def _block_to_mermaid_text(block: ModelBlock) -> str:
 # Analysis
 # ──────────────────────────────────────────────────────────────────────────────
 
-def _run_layered(model) -> Tuple[object, Set[str], list]:
+def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set[str], list]:
     """Run analysis on a LayeredALOModel. Returns (model, satisfied_ids, eval_points)."""
     from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
     from streamlit_app.utils import setup_layered_queries
@@ -44,7 +44,8 @@ def _run_layered(model) -> Tuple[object, Set[str], list]:
         model = setup_layered_queries(model)
         all_queries.extend(model.queries)
         serializer = LayeredDatalogIndexSerializer(
-            model, evaluation_history=ehist, evaluation_moment=emom
+            model, evaluation_history=ehist, evaluation_moment=emom,
+            ness_empty_sufficient=ness_empty_sufficient,
         )
         results = serializer.evaluate()
         all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
@@ -74,6 +75,8 @@ def _run_flat(model, partial_spec: dict) -> Tuple[object, Set[str], list]:
         eval_hist   = eval_point.split("/")[1] if "/" in eval_point else "h1"
         raw_eval_points = [(eval_mom, eval_hist, result_prop)]
 
+    ness_empty_sufficient = partial_spec.get("ness_empty_sufficient", True)
+
     all_satisfied: Set[str] = set()
     all_queries = []
     for em, eh, tgt in raw_eval_points:
@@ -85,7 +88,8 @@ def _run_flat(model, partial_spec: dict) -> Tuple[object, Set[str], list]:
             if q.query_id:
                 q.query_id = f"{q.query_id}_{eh_tag}"
         all_queries.extend(model.queries)
-        serializer = DatalogIndexSerializer(model, evaluation_history=eh)
+        serializer = DatalogIndexSerializer(model, evaluation_history=eh,
+                                            ness_empty_sufficient=ness_empty_sufficient)
         results = serializer.evaluate()
         all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
 
@@ -119,8 +123,10 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Tuple]:
             try:
                 text = _block_to_mermaid_text(block)
                 parsed = parse_dbt_diagram(text)
+                fm_ness = block.resolved_fm.get("ness_empty_sufficient", True)
                 if isinstance(parsed, LayeredALOModel):
-                    model, satisfied, eval_pts = _run_layered(parsed)
+                    model, satisfied, eval_pts = _run_layered(parsed,
+                                                               ness_empty_sufficient=fm_ness)
                 else:
                     model, partial_spec = parsed
                     model, satisfied, eval_pts = _run_flat(model, partial_spec)

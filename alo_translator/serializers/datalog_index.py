@@ -26,7 +26,7 @@ class DatalogIndexSerializer(Serializer):
     """
 
     def __init__(self, model: ALOModel, evaluation_history: str = "h1",
-                 enable_evaluation: bool = True):
+                 enable_evaluation: bool = True, ness_empty_sufficient: bool = True):
         """
         Initialize serializer.
 
@@ -34,10 +34,14 @@ class DatalogIndexSerializer(Serializer):
             model: The ALOn model to serialize
             evaluation_history: History to evaluate queries at (default: "h1")
             enable_evaluation: Whether to include evaluation code in output
+            ness_empty_sufficient: Passed to the expander — see ExpanderTransformer
+                for full semantics. True = original (empty set may block NESS);
+                False = strict (only non-empty proper subsets tested for minimality).
         """
         super().__init__(model)
         self.evaluation_history = evaluation_history
         self.enable_evaluation = enable_evaluation
+        self.ness_empty_sufficient = ness_empty_sufficient
 
         # Build CGA mappings (history name -> GroupAction)
         self._build_cga_mappings()
@@ -341,7 +345,8 @@ class DatalogIndexSerializer(Serializer):
 
         # Create pyDatalog-compatible expander (shared across all queries)
         self.expander = PyDatalogExpanderTransformer(self.parser, self.model,
-                                                     evaluation_history=self.evaluation_history)
+                                                     evaluation_history=self.evaluation_history,
+                                                     ness_empty_sufficient=self.ness_empty_sufficient)
 
         # Expand all queries
         for query in self.model.queries:

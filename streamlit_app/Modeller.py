@@ -220,6 +220,15 @@ with st.expander("Responsibility Analysis", expanded=True):
         else:
             use_konclude = False
 
+        _ness_default = _partial_spec_ra.get("ness_empty_sufficient", True) if _model_ra else True
+        ness_empty_sufficient = st.checkbox(
+            "NESS: empty set counts as sufficient (original semantics)",
+            value=_ness_default,
+            help="When checked, q-inevitability ([]Xq) blocks NESS — matching the original "
+                 "semantics. Uncheck to require only non-empty proper subsets, so a singleton "
+                 "action is trivially minimal regardless of inevitability.",
+        )
+
         if _is_layered_ra:
             # TD>1 — model.evaluations already handles multiple eval points
             st.info(f"TD>1 model (depth {_model_ra.depth()}). "
@@ -229,7 +238,7 @@ with st.expander("Responsibility Analysis", expanded=True):
                     try:
                         model, _ = parse_model(mermaid_text)
                         run_layered = run_analysis_konclude_layered if use_konclude else run_analysis_datalog_layered
-                        satisfied_query_ids = run_layered(model)
+                        satisfied_query_ids = run_layered(model, ness_empty_sufficient=ness_empty_sufficient)
                         if satisfied_query_ids is not None:
                             st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
                             results_md = format_layered_results_table(model, satisfied_query_ids)
@@ -314,7 +323,8 @@ with st.expander("Responsibility Analysis", expanded=True):
                         try:
                             _m, _ps = parse_model(mermaid_text)
                             _run = run_analysis_konclude if use_konclude else run_analysis_datalog
-                            _sat = _run(_m, _result_prop, _eval_history)
+                            _sat = _run(_m, _result_prop, _eval_history,
+                                        ness_empty_sufficient=ness_empty_sufficient)
                             if _sat is not None:
                                 _eval_point = f"m/{_eval_history}"
                                 _slot["result_md"] = format_results_table(

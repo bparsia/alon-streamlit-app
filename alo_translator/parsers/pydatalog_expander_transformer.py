@@ -190,10 +190,13 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
             sufficient_name = self.transform(tree)
 
             # Build minimality checks: ⋀K⊂J (~[K]φ)
+            # Respects self.ness_empty_sufficient: when False, skip the empty set
+            # (i.e. do not treat q-inevitability as blocking minimality).
             minimality_parts = []
+            min_k = 0 if self.ness_empty_sufficient else 1
             proper_subsets = [
                 list(subset) for subset in powerset(J)
-                if len(subset) < len(J)
+                if min_k <= len(subset) < len(J)
             ]
 
             for K in proper_subsets:
