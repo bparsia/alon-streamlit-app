@@ -205,6 +205,16 @@ def _results_render(
 
     title = model.title or "unnamed"
 
+    # Resolve ness_empty_sufficient: shortcode arg > model front matter > True
+    ness_arg = args.get("ness_empty_sufficient", "").strip().lower()
+    if ness_arg in ("false", "no", "0"):
+        ness_val = False
+    elif ness_arg in ("true", "yes", "1"):
+        ness_val = True
+    else:
+        fm_val = model.resolved_fm.get("ness_empty_sufficient", True)
+        ness_val = bool(fm_val) if not isinstance(fm_val, bool) else fm_val
+
     if analysis is None or title not in analysis or analysis[title] is None:
         eval_pt = args.get("eval", "")
         target  = args.get("target", "")
@@ -213,10 +223,17 @@ def _results_render(
             spec += f" eval=`{eval_pt}`"
         if target:
             spec += f" target=`{target}`"
+        if ness_arg:
+            spec += f" ness_empty_sufficient=`{ness_arg}`"
         return (f"*[Results for **{title}**{spec} — "
                 f"run with `--run-analysis` to populate]*")
 
-    alo_model, satisfied_ids, eval_points = analysis[title]
+    # analysis[title] is {True: (model, sat, pts), False: (model, sat, pts)}
+    variant = analysis[title].get(ness_val)
+    if variant is None:
+        return f"*[No analysis variant for ness_empty_sufficient={ness_val}]*"
+
+    alo_model, satisfied_ids, eval_points = variant
     from ._runner import format_results
     return format_results(
         alo_model,

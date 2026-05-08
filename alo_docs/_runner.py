@@ -53,8 +53,12 @@ def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set
     return model, all_satisfied, eval_points
 
 
-def _run_flat(model, partial_spec: dict) -> Tuple[object, Set[str], list]:
-    """Run analysis on a TD=1 ALOModel. Returns (model, satisfied_ids, eval_points)."""
+def _run_flat(model, partial_spec: dict,
+              ness_empty_sufficient: Optional[bool] = None) -> Tuple[object, Set[str], list]:
+    """Run analysis on a TD=1 ALOModel. Returns (model, satisfied_ids, eval_points).
+
+    ness_empty_sufficient overrides the front-matter value when provided explicitly.
+    """
     from alo_translator.serializers.datalog_index import DatalogIndexSerializer
     from streamlit_app.utils import setup_queries
     from alo_translator.query_generation import _sanitize_id as _qsanitize
@@ -75,7 +79,8 @@ def _run_flat(model, partial_spec: dict) -> Tuple[object, Set[str], list]:
         eval_hist   = eval_point.split("/")[1] if "/" in eval_point else "h1"
         raw_eval_points = [(eval_mom, eval_hist, result_prop)]
 
-    ness_empty_sufficient = partial_spec.get("ness_empty_sufficient", True)
+    if ness_empty_sufficient is None:
+        ness_empty_sufficient = partial_spec.get("ness_empty_sufficient", True)
 
     all_satisfied: Set[str] = set()
     all_queries = []
@@ -97,11 +102,16 @@ def _run_flat(model, partial_spec: dict) -> Tuple[object, Set[str], list]:
     return model, all_satisfied, raw_eval_points
 
 
-def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Tuple]:
+def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]]:
     """Analyse every ModelBlock in *doc*.
 
-    Returns a dict keyed by model title (falling back to index):
-        { title: (alo_model, satisfied_ids) }
+    Returns a dict keyed by model title (falling back to index).
+    Each value is a dict keyed by the ness_empty_sufficient bool:
+        { title: { True: (alo_model, satisfied_ids, eval_pts),
+                   False: (alo_model, satisfied_ids, eval_pts) } }
+
+    Both semantics are always computed so that {{results ness_empty_sufficient="false"}}
+    can be used in shortcodes without needing a duplicate model block.
     """
     import os, sys
     # dbt_parser uses a relative path for the grammar; run from repo root
@@ -115,22 +125,26 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Tuple]:
     finally:
         os.chdir(old_cwd)
 
-    results: Dict[str, Tuple] = {}
+    results: Dict[str, Optional[Dict]] = {}
     os.chdir(repo_root)
     try:
         for idx, block in enumerate(doc.models()):
             key = block.title or f"model_{idx}"
             try:
                 text = _block_to_mermaid_text(block)
-                parsed = parse_dbt_diagram(text)
-                fm_ness = block.resolved_fm.get("ness_empty_sufficient", True)
-                if isinstance(parsed, LayeredALOModel):
-                    model, satisfied, eval_pts = _run_layered(parsed,
-                                                               ness_empty_sufficient=fm_ness)
-                else:
-                    model, partial_spec = parsed
-                    model, satisfied, eval_pts = _run_flat(model, partial_spec)
-                results[key] = (model, satisfied, eval_pts)
+                model_results: Dict[bool, Tuple] = {}
+                for ness_val in (True, False):
+                    # Re-parse for each variant: _run_* mutates the model
+                    parsed = parse_dbt_diagram(text)
+                    if isinstance(parsed, LayeredALOModel):
+                        m, satisfied, eval_pts = _run_layered(
+                            parsed, ness_empty_sufficient=ness_val)
+                    else:
+                        m, partial_spec = parsed
+                        m, satisfied, eval_pts = _run_flat(
+                            m, partial_spec, ness_empty_sufficient=ness_val)
+                    model_results[ness_val] = (m, satisfied, eval_pts)
+                results[key] = model_results
             except Exception as e:
                 print(f"[alo_docs] analysis failed for '{key}': {e}", file=sys.stderr)
                 results[key] = None
