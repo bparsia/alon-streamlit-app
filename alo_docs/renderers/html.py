@@ -123,6 +123,12 @@ def render(doc: ALOnDocument, title: str = "ALOn Document", analysis=None) -> st
         "<body>",
     ]
 
+    # Inject math preamble (\\newcommand definitions) as a hidden block so
+    # MathJax registers the macros before any visible math on the page.
+    preamble = doc.math_preamble()
+    if preamble:
+        parts.append(f'<div style="display:none">$${preamble}$$</div>')
+
     for idx, block in enumerate(doc.blocks):
 
         if isinstance(block, ContextBlock):

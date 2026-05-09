@@ -121,6 +121,16 @@ class ALOnDocument:
                 return self.blocks[i]
         return None
 
+    def math_preamble(self) -> str:
+        """Concatenate all math_preamble strings from ContextBlocks in document order."""
+        parts = []
+        for block in self.blocks:
+            if isinstance(block, ContextBlock):
+                preamble = block.data.get("math_preamble", "")
+                if preamble:
+                    parts.append(preamble.strip())
+        return "\n".join(parts)
+
     def all_aliases(self) -> Dict[str, str]:
         """Merge all aliases from every ContextBlock and ModelBlock in document order."""
         merged: Dict[str, str] = {}
