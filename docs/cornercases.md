@@ -12,28 +12,36 @@ aliases:
   masd: manipulates Alice into shooting Dan
   q: Dan dies
 math_preamble: |
+  % --- ALOn system names ---
   \newcommand{\alon}{\mathcal{ALO}_n}
-  \newcommand{\idx}[2]{#1/#2}
-  \newcommand{\mh}{m/h}
+  \newcommand{\alonm}{\mathcal{M}}
+  % --- Model components ---
   \newcommand{\dbt}{\mathcal{T}}
   \newcommand{\hists}{\mathcal{H}^T}
-  \newcommand{\moments}{M}
-  \newcommand{\alonm}{\mathcal{M}}
-  \newcommand{\actions}{\mathcal{A}}
   \newcommand{\mhists}[1]{\mathcal{H}^T_\mathrm{#1}}
+  \newcommand{\moments}{M}
+  \newcommand{\actions}{\mathcal{A}}
+  \newcommand{\prop}{\mathcal{P}}
+  % --- Indices and projections ---
+  \newcommand{\idx}[2]{#1/#2}
+  \newcommand{\mh}{m/h}
+  \newcommand{\proj}[2]{#1|_{#2}}
+  \newcommand{\wildcard}{{\star}}
+  % --- Action and agent functions ---
   \newcommand{\act}[1]{\mathsf{act}(#1)}
-  \newcommand{\unopp}[2]{\mathsf{UnOpp}(#1,#2)}
-  \newcommand{\opp}[1]{\mathsf{opp}(#1)}
   \newcommand{\agents}[1]{\mathsf{agents}(#1)}
   \newcommand{\sucs}[1]{\mathsf{succ}(#1)}
-  \newcommand{\prop}{\mathcal{P}}
+  \newcommand{\opp}[1]{\mathsf{opp}(#1)}
+  \newcommand{\unopp}[2]{\mathsf{UnOpp}(#1,#2)}
+  % --- Do operators ---
   \newcommand{\mydo}[2]{\mathsf{do}(#1,#2)}
   \newcommand{\mydos}[1]{\mathsf{do}(#1)}
   \newcommand{\myDo}[1]{\mathsf{Do}(#1)}
+  % --- Temporal operator ---
   \newcommand{\X}{\mathbf{X}}
-  \newcommand{\wildcard}{{\star}}
-  \newcommand{\proj}[2]{#1|_{#2}}
+  % --- Results-in relation ---
   \newcommand{\resultsin}{\mathrel{\raisebox{-0.23ex}{\boxplus}\!\!\!\!\rightarrow}}
+  % --- Causal notions ---
   \newcommand{\bfCause}[2]{\mathsf{bfC}(#1,#2)}
   \newcommand{\nessCause}[2]{\mathsf{nsC}(#1,#2)}
 ```
