@@ -4,6 +4,7 @@ and per-model copy buttons.
 
 from __future__ import annotations
 import html as _html
+import re as _re
 
 import markdown as _md
 
@@ -20,6 +21,22 @@ _MERMAID_SCRIPT = """\
     mermaid.run();
   });
 </script>"""
+
+_MATHJAX_SCRIPT = """\
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
+    displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],
+    processEscapes: true
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>"""
+
+# Matches $$...$$ (display, possibly multi-line) then $...$ (inline, single-line)
+_DISPLAY_MATH_RE = _re.compile(r'\$\$(.+?)\$\$', _re.DOTALL)
+_INLINE_MATH_RE  = _re.compile(r'(?<!\$)\$(?!\$)(.+?)(?<!\$)\$(?!\$)')
 
 _COPY_BUTTON_SCRIPT = """\
 <script>
@@ -51,14 +68,44 @@ pre { background: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
 }
 .alon-copy-btn:hover { background: #e0e0e0; }
 pre.mermaid { background: none; padding: 0; }
+.math-display { margin: 1em 0; overflow-x: auto; }
 </style>"""
 
 _MD = _md.Markdown(extensions=["tables", "fenced_code"])
 
 
 def _md_to_html(text: str) -> str:
+    """Convert markdown to HTML, protecting LaTeX math from the markdown parser.
+
+    The Python markdown library mangles LaTeX: underscores become emphasis,
+    backslashes get reduced, etc.  We extract all $...$ and $$...$$ spans
+    before processing and restore them verbatim afterwards so MathJax sees
+    the original source.
+    """
+    store: dict = {}
+    counter = [0]
+
+    def _save(raw: str, display: bool) -> str:
+        key = f'\x00MATH{"D" if display else "I"}{counter[0]}\x00'
+        store[key] = raw
+        counter[0] += 1
+        # Surround display tokens with blank lines so markdown treats them as blocks
+        return f'\n\n{key}\n\n' if display else key
+
+    text = _DISPLAY_MATH_RE.sub(lambda m: _save(m.group(0), True), text)
+    text = _INLINE_MATH_RE.sub(lambda m: _save(m.group(0), False), text)
+
     _MD.reset()
-    return _MD.convert(text)
+    html = _MD.convert(text)
+
+    for key, val in store.items():
+        if key[5] == 'D':  # display math token
+            # markdown wraps lone block tokens in <p>; replace that too
+            html = html.replace(f'<p>{key}</p>', f'<div class="math-display">{val}</div>')
+            html = html.replace(key, f'<div class="math-display">{val}</div>')
+        else:
+            html = html.replace(key, val)
+    return html
 
 
 def render(doc: ALOnDocument, title: str = "ALOn Document", analysis=None) -> str:
@@ -69,6 +116,7 @@ def render(doc: ALOnDocument, title: str = "ALOn Document", analysis=None) -> st
         f"<title>{_html.escape(title)}</title>",
         '<meta charset="utf-8">',
         _STYLE,
+        _MATHJAX_SCRIPT,
         _MERMAID_SCRIPT,
         _COPY_BUTTON_SCRIPT,
         "</head>",
