@@ -215,7 +215,9 @@ def _results_render(
         fm_val = model.resolved_fm.get("ness_empty_sufficient", True)
         ness_val = bool(fm_val) if not isinstance(fm_val, bool) else fm_val
 
-    if analysis is None or title not in analysis or analysis[title] is None:
+    # Analysis is keyed by id(block) to handle duplicate titles correctly.
+    model_key = id(model)
+    if analysis is None or model_key not in analysis or analysis[model_key] is None:
         eval_pt = args.get("eval", "")
         target  = args.get("target", "")
         spec    = ""
@@ -228,8 +230,8 @@ def _results_render(
         return (f"*[Results for **{title}**{spec} — "
                 f"run with `--run-analysis` to populate]*")
 
-    # analysis[title] is {True: (model, sat, pts), False: (model, sat, pts)}
-    variant = analysis[title].get(ness_val)
+    # analysis[model_key] is {True: (model, sat, pts), False: (model, sat, pts)}
+    variant = analysis[model_key].get(ness_val)
     if variant is None:
         return f"*[No analysis variant for ness_empty_sufficient={ness_val}]*"
 

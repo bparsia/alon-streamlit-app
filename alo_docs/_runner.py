@@ -125,11 +125,12 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
     finally:
         os.chdir(old_cwd)
 
-    results: Dict[str, Optional[Dict]] = {}
+    # Keyed by id(block) so duplicate titles don't collide.
+    results: Dict[int, Optional[Dict]] = {}
     os.chdir(repo_root)
     try:
         for idx, block in enumerate(doc.models()):
-            key = block.title or f"model_{idx}"
+            key = id(block)
             try:
                 text = _block_to_mermaid_text(block)
                 model_results: Dict[bool, Tuple] = {}
