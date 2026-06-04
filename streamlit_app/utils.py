@@ -494,7 +494,8 @@ def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]
     return "\n\n".join(sections)
 
 
-def run_analysis_konclude(model, result_prop: str, eval_history: str) -> Optional[Set[str]]:
+def run_analysis_konclude(model, result_prop: str, eval_history: str,
+                          ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
     """Run responsibility analysis using Konclude OWL reasoner. Returns satisfied query IDs."""
     err = _validate_formula(result_prop)
     if err:
