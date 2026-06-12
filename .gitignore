@@ -29,6 +29,8 @@ env/
 # Testing
 .pytest_cache/
 *.log
+.coverage
+htmlcov/
 
 # Reasoner binaries (large, platform-specific — see bin/README.md)
 bin/
