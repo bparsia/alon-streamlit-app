@@ -3,7 +3,6 @@ ALOn Model Explorer — main page.
 """
 
 import sys
-import hashlib
 from pathlib import Path
 
 import streamlit as st
@@ -11,25 +10,14 @@ from streamlit_mermaid import st_mermaid
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from alo_translator.parsers.dbt_parser import parse_dbt_diagram
-from alo_translator.serializers.index_mermaid import serialize_index
-from alo_translator.serializers.dbt_mermaid import serialize_dbt
-
-from alo_translator.model.core import LayeredALOModel
-
 from utils import (
     copy_button,
-    format_model_overview,
-    format_history_table_md,
-    format_results_table,
     format_layered_model_overview,
     format_layered_results_table,
     konclude_path,
     load_example_models,
     parse_model,
-    run_analysis_datalog,
     run_analysis_datalog_layered,
-    run_analysis_konclude,
     run_analysis_konclude_layered,
 )
 
@@ -160,30 +148,8 @@ with st.expander("Complete Model", expanded=True):
         try:
             model, partial_spec = parse_model(mermaid_text)
 
-            if isinstance(model, LayeredALOModel):
-                st.markdown(f"**Temporal depth**: {model.depth()} (TD>1 model)")
-                st.markdown(format_layered_model_overview(model))
-            else:
-                st.markdown(format_model_overview(model))
-                st.divider()
-
-                # Index diagram
-                index_diagram = serialize_index(model, partial_spec, mode="complete")
-                col_hdr, col_btn = st.columns([6, 1])
-                with col_hdr:
-                    st.subheader("Complete Index Structure")
-                with col_btn:
-                    copy_button(index_diagram, "📋 Index")
-                st_mermaid(index_diagram, height=800)
-
-                # History / export copy buttons
-                col_hdr2, col_btn2, col_btn3 = st.columns([6, 1, 1])
-                with col_hdr2:
-                    st.subheader("Histories")
-                with col_btn2:
-                    copy_button(format_history_table_md(model), "📋 Table")
-                with col_btn3:
-                    copy_button(serialize_dbt(model, partial_spec, mode="complete"), "📋 DBT")
+            st.markdown(f"**Temporal depth**: {model.depth()}")
+            st.markdown(format_layered_model_overview(model))
 
         except Exception as e:
             st.error(f"Failed to parse model: {e}")
@@ -200,16 +166,10 @@ with st.expander("Responsibility Analysis", expanded=True):
         # Parse model early to populate dropdowns (best-effort — errors handled below)
         try:
             _model_ra, _partial_spec_ra = parse_model(mermaid_text)
-            _is_layered_ra = isinstance(_model_ra, LayeredALOModel)
-            if _is_layered_ra:
-                _result_prop_default = _model_ra.target_proposition
-                _named_histories = sorted(_model_ra.histories.keys())
-            else:
-                _result_prop_default = _partial_spec_ra.get("result", "q")
-                _named_histories = sorted(_model_ra.named_histories.keys())
+            _result_prop_default = _model_ra.target_proposition
+            _named_histories = sorted(_model_ra.histories.keys())
         except Exception:
             _model_ra = None
-            _is_layered_ra = False
             _result_prop_default = "q"
             _named_histories = ["h1"]
 
@@ -229,133 +189,22 @@ with st.expander("Responsibility Analysis", expanded=True):
                  "action is trivially minimal regardless of inevitability.",
         )
 
-        if _is_layered_ra:
-            # TD>1 — model.evaluations already handles multiple eval points
-            st.info(f"TD>1 model (depth {_model_ra.depth()}). "
-                    f"Evaluating at `{_model_ra.evaluation_moment}/{_model_ra.evaluation_history}`.")
-            if st.button("▶️ Run Analysis"):
-                with st.spinner("Running responsibility analysis..."):
-                    try:
-                        model, _ = parse_model(mermaid_text)
-                        run_layered = run_analysis_konclude_layered if use_konclude else run_analysis_datalog_layered
-                        satisfied_query_ids = run_layered(model, ness_empty_sufficient=ness_empty_sufficient)
-                        if satisfied_query_ids is not None:
-                            st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
-                            results_md = format_layered_results_table(model, satisfied_query_ids)
-                            col_r, col_rb = st.columns([8, 1])
-                            with col_r:
-                                st.markdown(results_md)
-                            with col_rb:
-                                copy_button(results_md, "📋 Copy")
-                    except Exception as e:
-                        st.error(f"Analysis failed: {e}")
-
-        else:
-            # TD=1 — multi-slot analysis
-            # Slots are keyed by model fingerprint so they reset when the model changes.
-            _model_hash = hashlib.md5(mermaid_text.encode()).hexdigest()[:8]
-            _slots_key  = f"ra_slots_{_model_hash}"
-
-            def _default_slot(hist: str, prop: str) -> dict:
-                return {"eval_history": hist, "result_prop": prop, "result_md": None}
-
-            # Initialise slots: from YAML evaluate if present, else one default
-            if _slots_key not in st.session_state:
-                _yaml_evals = _partial_spec_ra.get("res_analyse", []) if _model_ra else []
-                if _yaml_evals:
-                    _slots = []
-                    for _item in _yaml_evals:
-                        if len(_item) >= 2:
-                            _ep, _tgt = str(_item[0]), str(_item[1])
-                            _hist = _ep.split("/")[-1] if "/" in _ep else _ep
-                            _slots.append(_default_slot(_hist, _tgt))
-                else:
-                    _slots = [_default_slot(
-                        _named_histories[0] if _named_histories else "h1",
-                        _result_prop_default,
-                    )]
-                st.session_state[_slots_key] = _slots
-
-            _slots = st.session_state[_slots_key]
-            _to_delete = None
-
-            for _i, _slot in enumerate(_slots):
-                if len(_slots) > 1:
-                    st.markdown(f"**Analysis {_i + 1}**")
-
-                _col_h, _col_p, _col_run, _col_del = st.columns([2, 2, 1, 1])
-
-                with _col_h:
-                    if len(_named_histories) > 1:
-                        try:
-                            _hist_idx = _named_histories.index(_slot["eval_history"])
-                        except ValueError:
-                            _hist_idx = 0
-                        _eval_history = st.selectbox(
-                            "History",
-                            _named_histories,
-                            index=_hist_idx,
-                            key=f"ra_hist_{_model_hash}_{_i}",
-                        )
-                    else:
-                        _eval_history = _named_histories[0] if _named_histories else "h1"
-                        st.markdown(f"History: `{_eval_history}`")
-
-                with _col_p:
-                    _result_prop = st.text_input(
-                        "Proposition",
-                        value=_slot["result_prop"],
-                        key=f"ra_prop_{_model_hash}_{_i}",
-                    )
-
-                with _col_run:
-                    st.markdown("&nbsp;", unsafe_allow_html=True)
-                    _run_clicked = st.button("▶️ Run", key=f"ra_run_{_model_hash}_{_i}")
-
-                with _col_del:
-                    if len(_slots) > 1:
-                        st.markdown("&nbsp;", unsafe_allow_html=True)
-                        if st.button("✕", key=f"ra_del_{_model_hash}_{_i}"):
-                            _to_delete = _i
-
-                if _run_clicked:
-                    with st.spinner("Running…"):
-                        try:
-                            _m, _ps = parse_model(mermaid_text)
-                            _run = run_analysis_konclude if use_konclude else run_analysis_datalog
-                            _sat = _run(_m, _result_prop, _eval_history,
-                                        ness_empty_sufficient=ness_empty_sufficient)
-                            if _sat is not None:
-                                _eval_point = f"m/{_eval_history}"
-                                _slot["result_md"] = format_results_table(
-                                    _m, _sat, _result_prop, eval_point=_eval_point
-                                )
-                                _slot["eval_history"] = _eval_history
-                                _slot["result_prop"] = _result_prop
-                        except Exception as _e:
-                            st.error(f"Analysis failed: {_e}")
-
-                if _slot.get("result_md"):
-                    _col_r, _col_rb = st.columns([8, 1])
-                    with _col_r:
-                        st.markdown(_slot["result_md"])
-                    with _col_rb:
-                        copy_button(_slot["result_md"], "📋 Copy")
-
-                if _i < len(_slots) - 1:
-                    st.divider()
-
-            if _to_delete is not None:
-                _slots.pop(_to_delete)
-                st.rerun()
-
-            def _add_slot():
-                st.session_state[_slots_key].append(_default_slot(
-                    _named_histories[0] if _named_histories else "h1",
-                    _result_prop_default,
-                ))
-
-            st.button("➕ Add analysis point", key=f"ra_add_{_model_hash}", on_click=_add_slot)
+        if st.button("▶️ Run Analysis"):
+            with st.spinner("Running responsibility analysis..."):
+                try:
+                    model, _ = parse_model(mermaid_text)
+                    run_layered = run_analysis_konclude_layered if use_konclude else run_analysis_datalog_layered
+                    satisfied_query_ids = run_layered(model, ness_empty_sufficient=ness_empty_sufficient)
+                    if satisfied_query_ids is not None:
+                        st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
+                        results_md = format_layered_results_table(model, satisfied_query_ids)
+                        col_r, col_rb = st.columns([8, 1])
+                        with col_r:
+                            st.markdown(results_md)
+                        with col_rb:
+                            copy_button(results_md, "📋 Copy")
+                except Exception as e:
+                    st.error(f"Analysis failed: {e}")
 
 
 # ── Section 4: Direct Formula Evaluation ─────────────────────────────────────
@@ -366,17 +215,13 @@ with st.expander("Formula Evaluation", expanded=True):
     else:
         try:
             _model_ev, _partial_spec_ev = parse_model(mermaid_text)
-            _is_layered_ev = isinstance(_model_ev, LayeredALOModel)
         except Exception:
             _model_ev = None
             _partial_spec_ev = {}
-            _is_layered_ev = False
 
-        _yaml_evaluate = (_partial_spec_ev or {}).get("evaluate", []) if not _is_layered_ev else []
+        _yaml_evaluate = (_partial_spec_ev or {}).get("evaluate", [])
 
-        if _is_layered_ev:
-            st.info("Direct formula evaluation is not yet supported for TD>1 models.")
-        elif not _yaml_evaluate:
+        if not _yaml_evaluate:
             st.info("Add an `evaluate` block to your frontmatter to check formulas directly at an index.\n\n"
                     "Example:\n```yaml\nevaluate:\n  - - m/h1\n    - \"do(sd1) [+]-> q\"\n```")
         else:

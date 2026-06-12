@@ -56,15 +56,13 @@ def run_theory(mmd_path: Path, timeout: int = 120):
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-    from alo_translator.serializers.owl_index_new_expander import OWLIndexNewExpanderSerializer
+    from alo_translator.serializers.layered_owl_index import LayeredOWLIndexSerializer
     from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
     from alo_translator.reasoners.konclude import KoncludeAdapter
     from alo_translator.reasoners.base import ReasoningMode
     import tempfile
 
-    mermaid = mmd_path.read_text()
-    parsed = parse_dbt_diagram(mermaid)
-    model = parsed[0] if isinstance(parsed, tuple) else parsed
+    model = parse_dbt_diagram(mmd_path.read_text())
 
     # Generate full responsibility analysis for target q at h1
     model.responsibility_config = ResponsibilityConfig(
@@ -79,8 +77,10 @@ def run_theory(mmd_path: Path, timeout: int = 120):
         if q.formula_ast is None:
             q.formula_ast = parse_formula(q.formula_string)
 
-    strategy = EquivFullCardinalityStrategy()
-    serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
+    serializer = LayeredOWLIndexSerializer(model,
+                                           evaluation_history=model.evaluation_history,
+                                           evaluation_moment=model.evaluation_moment,
+                                           strategy=EquivFullCardinalityStrategy())
     owl_str = serializer.serialize()
 
     with tempfile.NamedTemporaryFile(suffix=".owl", mode="w", delete=False) as f:

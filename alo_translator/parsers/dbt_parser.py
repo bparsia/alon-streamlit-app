@@ -1,10 +1,7 @@
 """
 DBT Mermaid diagram parser.
 
-Parses DBT (Deontic Branching Time) Mermaid diagrams into ALOn models.
-
-For TD=1 diagrams returns (ALOModel, partial_spec) to enable round-tripping.
-For TD>1 diagrams (intermediate moments detected) returns LayeredALOModel.
+Parses DBT (Deontic Branching Time) Mermaid diagrams into LayeredALOModel.
 """
 
 import re
@@ -13,12 +10,11 @@ from typing import Dict, Any, Tuple, Optional, List
 from lark import Lark
 
 from ..model.core import (
-    ALOModel, Result, Action, OpposingRelation,
+    Action, OpposingRelation,
     MomentNode, MomentTransition, HistoryPath, LayeredALOModel,
 )
 from .mermaid_transformer import MermaidTransformer
 from .yaml_helper import frontmatter_to_partial_spec
-from .builder import build_model
 
 
 # Load Mermaid grammar using path relative to this file (cwd-independent)
@@ -83,94 +79,6 @@ def parse_dbt_label(label: str) -> Tuple[List[str], Dict[str, str]]:
 
 
 # ---------------------------------------------------------------------------
-# TD=1 path (preserved)
-# ---------------------------------------------------------------------------
-
-def extract_histories_and_results(diagram: Dict[str, Any]) -> Tuple[Dict[str, Dict[str, str]], Dict[str, dict]]:
-    """
-    Extract histories and results from a TD=1 parsed Mermaid diagram.
-
-    Histories come from succession transitions (succs).
-    Results come from shorthand member declarations.
-    """
-    histories = {}
-    results = {}
-
-    # Accumulate propositions per outcome moment
-    outcome_props: Dict[str, List[str]] = {}
-    for shorthand in diagram.get("shorthand_members", []):
-        moment_id = shorthand["identifier"]
-        value = shorthand["value"]
-        props = [p.strip() for p in value.split(",")]
-        if moment_id not in outcome_props:
-            outcome_props[moment_id] = []
-        outcome_props[moment_id].extend(props)
-
-    # Extract histories from transitions
-    for succ in diagram.get("succs", []):
-        label = succ.get("label")
-        if not label:
-            continue
-
-        history_names, actions_dict = parse_dbt_label(label)
-        history_name = history_names[0]        # TD=1: one history per edge
-        histories[history_name] = actions_dict
-
-        outcome_moment = succ["to_moment"]
-        props = outcome_props.get(outcome_moment, [])
-        results[history_name] = {"moment": outcome_moment, "props": props}
-
-    return histories, results
-
-
-def _parse_flat(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> Tuple[ALOModel, Dict[str, Any]]:
-    """Build a TD=1 (ALOModel, partial_spec) pair — the existing pipeline."""
-    diagram_histories, diagram_results = extract_histories_and_results(diagram)
-
-    if "histories" not in partial_spec:
-        partial_spec["histories"] = {}
-    partial_spec["histories"].update(diagram_histories)
-
-    if "results" not in partial_spec:
-        partial_spec["results"] = {}
-    partial_spec["results"].update(diagram_results)
-
-    if "actions" not in partial_spec:
-        raise ValueError("DBT diagram must specify actions in frontmatter")
-
-    toml_dict = {"Actions": partial_spec["actions"]}
-    if "opposings" in partial_spec:
-        toml_dict["Opposings"] = partial_spec["opposings"]
-    if "aliases" in partial_spec:
-        toml_dict["Aliases"] = partial_spec["aliases"]
-    if "histories" in partial_spec:
-        toml_dict["Histories"] = partial_spec["histories"]
-    if "results" in partial_spec:
-        toml_dict["Results"] = partial_spec["results"]
-
-    model = build_model(toml_dict)
-
-    target_prop = partial_spec.get("result", "q")
-    eval_point = partial_spec.get("evaluation_point", "m/h1")
-    eval_history = eval_point.split("/")[-1] if "/" in eval_point else eval_point
-    model.complete(target_prop, eval_history)
-
-    return model, partial_spec
-
-
-# ---------------------------------------------------------------------------
-# TD>1 path
-# ---------------------------------------------------------------------------
-
-def _is_layered(diagram: Dict[str, Any]) -> bool:
-    """Return True if the diagram has intermediate moments (TD>1)."""
-    succs = diagram.get("succs", [])
-    to_moments = {s["to_moment"] for s in succs}
-    from_moments = {s["from_moment"] for s in succs}
-    # A moment that appears as both source and target is an intermediate node
-    return bool(to_moments & from_moments)
-
-
 def _parse_action_string(action_str: str) -> Action:
     """Parse 'sd1' -> Action('sd', '1')."""
     m = re.match(r'([a-zA-Z]+)(\d+)', action_str.strip())
@@ -341,12 +249,9 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'La
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def parse_dbt_diagram(mermaid_string: str):
+def parse_dbt_diagram(mermaid_string: str) -> LayeredALOModel:
     """
-    Parse a DBT Mermaid diagram into an ALOn model.
-
-    For TD=1 diagrams returns (ALOModel, partial_spec).
-    For TD>1 diagrams returns LayeredALOModel.
+    Parse a DBT Mermaid diagram into a LayeredALOModel.
     """
     tree = MERMAID_PARSER.parse(mermaid_string)
     transformer = MermaidTransformer()
@@ -359,8 +264,4 @@ def parse_dbt_diagram(mermaid_string: str):
         raise ValueError("No diagram found in Mermaid input")
 
     partial_spec = frontmatter_to_partial_spec(frontmatter_str)
-
-    if _is_layered(diagram):
-        return _parse_layered(diagram, partial_spec)
-    else:
-        return _parse_flat(diagram, partial_spec)
+    return _parse_layered(diagram, partial_spec)

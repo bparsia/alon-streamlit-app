@@ -29,15 +29,12 @@ ALL_TD1_MODELS = ["3.1", "3.5", "3.6", "3.7"]
 # ---------------------------------------------------------------------------
 
 def _setup_model(mmd_path: Path):
-    """Parse .mmd and attach responsibility config. Returns ALOModel."""
+    """Parse .mmd and attach responsibility config. Returns LayeredALOModel."""
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
 
-    mermaid = mmd_path.read_text()
-    parsed = parse_dbt_diagram(mermaid)
-    model = parsed[0] if isinstance(parsed, tuple) else parsed
-
+    model = parse_dbt_diagram(mmd_path.read_text())
     model.responsibility_config = ResponsibilityConfig(
         target_proposition="q",
         agents="all",
@@ -52,54 +49,10 @@ def _setup_model(mmd_path: Path):
     return model
 
 
-def _as_layered(mmd_path: Path):
-    """Force-parse a diagram through the layered pipeline (bypasses TD=1 check)."""
-    from lark import Lark
-    from pathlib import Path as _Path
-    from alo_translator.parsers.dbt_parser import (
-        MERMAID_PARSER, _parse_layered,
-    )
-    from alo_translator.parsers.mermaid_transformer import MermaidTransformer
-    from alo_translator.parsers.yaml_helper import frontmatter_to_partial_spec
-    from alo_translator.parsers.builder import parse_formula
-    from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-
-    mermaid = mmd_path.read_text()
-    tree = MERMAID_PARSER.parse(mermaid)
-    transformer = MermaidTransformer()
-    parsed = transformer.transform(tree)
-
-    partial_spec = frontmatter_to_partial_spec(parsed.get("frontmatter"))
-    diagram = parsed.get("diagram")
-
-    model = _parse_layered(diagram, partial_spec)
-
-    model.responsibility_config = ResponsibilityConfig(
-        target_proposition="q",
-        agents="all",
-        groups="all",
-        responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
-        history="h1",
-    )
-    model.queries = generate_queries(model)
-    for q in model.queries:
-        if q.formula_ast is None:
-            q.formula_ast = parse_formula(q.formula_string)
-    return model
-
-
-def _run_flat_datalog(mmd_path: Path):
-    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
-    model = _setup_model(mmd_path)
-    serializer = DatalogIndexSerializer(model, evaluation_history="h1")
-    results = serializer.evaluate()
-    return sorted(qid for qid, r in results.items() if r.get("result"))
-
-
-def _run_layered_datalog(mmd_path: Path):
+def _run_datalog(mmd_path: Path):
     from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
-    model = _as_layered(mmd_path)
-    serializer = LayeredDatalogIndexSerializer(model)
+    model = _setup_model(mmd_path)
+    serializer = LayeredDatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
     return sorted(qid for qid, r in results.items() if r.get("result"))
 
@@ -121,15 +74,17 @@ def find_konclude() -> Path | None:
 
 
 def _run_konclude(mmd_path: Path, timeout: int = 120):
-    from alo_translator.serializers.owl_index_new_expander import OWLIndexNewExpanderSerializer
+    from alo_translator.serializers.layered_owl_index import LayeredOWLIndexSerializer
     from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
     from alo_translator.reasoners.konclude import KoncludeAdapter
     from alo_translator.reasoners.base import ReasoningMode
     import tempfile
 
     model = _setup_model(mmd_path)
-    strategy = EquivFullCardinalityStrategy()
-    serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
+    serializer = LayeredOWLIndexSerializer(model,
+                                           evaluation_history=model.evaluation_history,
+                                           evaluation_moment=model.evaluation_moment,
+                                           strategy=EquivFullCardinalityStrategy())
     owl_str = serializer.serialize()
 
     with tempfile.NamedTemporaryFile(suffix=".owl", mode="w", delete=False) as f:
@@ -150,23 +105,17 @@ def _run_konclude(mmd_path: Path, timeout: int = 120):
 
 
 # ---------------------------------------------------------------------------
-# Tests: flat vs layered Datalog agreement (TD=1 models)
+# Tests: Datalog results against gold standard
 # ---------------------------------------------------------------------------
 
-class TestFlatVsLayeredDatalog:
+class TestDatalogBaselines:
 
     @pytest.mark.parametrize("theory_id", ALL_TD1_MODELS)
     def test_agreement(self, theory_id):
         mmd = MODELS_DIR / f"{theory_id}.mmd"
-        flat = _run_flat_datalog(mmd)
-        layered = _run_layered_datalog(mmd)
-        assert flat == layered, (
-            f"Theory {theory_id}: flat vs layered Datalog disagree\n"
-            f"  Flat    ({len(flat)}):    {flat}\n"
-            f"  Layered ({len(layered)}): {layered}\n"
-            f"  Only in flat:    {sorted(set(flat) - set(layered))}\n"
-            f"  Only in layered: {sorted(set(layered) - set(flat))}"
-        )
+        results = _run_datalog(mmd)
+        assert isinstance(results, list)
+        assert len(results) > 0, f"Theory {theory_id}: no satisfied queries"
 
 
 # ---------------------------------------------------------------------------
@@ -179,7 +128,7 @@ class TestDatalogVsKonclude:
     @pytest.mark.parametrize("theory_id", TD1_MODELS)
     def test_agreement(self, theory_id):
         mmd = MODELS_DIR / f"{theory_id}.mmd"
-        datalog = _run_flat_datalog(mmd)
+        datalog = _run_datalog(mmd)
         konclude = _run_konclude(mmd)
         assert datalog == konclude, (
             f"Theory {theory_id}: Datalog vs Konclude disagree\n"
@@ -191,24 +140,19 @@ class TestDatalogVsKonclude:
 
 
 # ---------------------------------------------------------------------------
-# Gold standard capture
+# Gold standard capture and stability
 # ---------------------------------------------------------------------------
 
 def capture_gold_standard():
     """
-    Run all models through flat Datalog and save results to fixtures/gold_standard.json.
+    Run all models through Datalog and save results to fixtures/gold_standard.json.
     Called directly (not as a test) to regenerate the gold standard.
     """
     gold = {}
     for theory_id in ALL_TD1_MODELS:
         mmd = MODELS_DIR / f"{theory_id}.mmd"
-        flat = _run_flat_datalog(mmd)
-        layered = _run_layered_datalog(mmd)
-        gold[theory_id] = {
-            "flat_datalog": flat,
-            "layered_datalog": layered,
-            "agreement": flat == layered,
-        }
+        results = _run_datalog(mmd)
+        gold[theory_id] = {"datalog": results}
 
     GOLD_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(GOLD_PATH, "w") as f:
@@ -221,17 +165,17 @@ class TestGoldStandard:
     """Verify current results match the saved gold standard (if it exists)."""
 
     @pytest.mark.parametrize("theory_id", ALL_TD1_MODELS)
-    def test_flat_datalog_stable(self, theory_id):
+    def test_datalog_stable(self, theory_id):
         if not GOLD_PATH.exists():
             pytest.skip("Gold standard not yet captured — run capture_gold_standard()")
         with open(GOLD_PATH) as f:
             gold = json.load(f)
         if theory_id not in gold:
             pytest.skip(f"No gold entry for {theory_id}")
-        current = _run_flat_datalog(MODELS_DIR / f"{theory_id}.mmd")
-        expected = gold[theory_id]["flat_datalog"]
+        current = _run_datalog(MODELS_DIR / f"{theory_id}.mmd")
+        expected = gold[theory_id].get("datalog") or gold[theory_id].get("flat_datalog")
         assert current == expected, (
-            f"Theory {theory_id} flat Datalog changed from gold standard\n"
+            f"Theory {theory_id} Datalog changed from gold standard\n"
             f"  Current  ({len(current)}):  {current}\n"
             f"  Expected ({len(expected)}): {expected}"
         )
@@ -241,5 +185,4 @@ if __name__ == "__main__":
     print("Capturing gold standard...")
     gold = capture_gold_standard()
     for theory_id, entry in gold.items():
-        status = "AGREE" if entry["agreement"] else "DISAGREE"
-        print(f"  {theory_id}: {status} — {len(entry['flat_datalog'])} satisfied")
+        print(f"  {theory_id}: {len(entry['datalog'])} satisfied")

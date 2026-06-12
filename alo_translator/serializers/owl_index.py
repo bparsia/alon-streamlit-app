@@ -531,7 +531,7 @@ class OWLIndexSerializer(Serializer):
             # Translate using IndexFormulaToOWLVisitor
             try:
                 if not hasattr(query, 'expanded_ast') or query.expanded_ast is None:
-                    raise ValueError(f"Query '{query_id}' missing expanded_ast - run parse_toml() from builder module")
+                    raise ValueError(f"Query '{query_id}' missing expanded_ast - run expand_queries() from builder module")
 
                 # If we have a registry, use NamedFormula reference for hierarchical expansion
                 if hasattr(self.model, 'formula_registry') and self.model.formula_registry is not None:

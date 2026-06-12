@@ -163,18 +163,9 @@ def run_analysis_datalog(model, result_prop: str, eval_history: str,
         return None
 
 
-def parse_model(mermaid_text: str) -> Tuple[Any, Dict]:
-    """
-    Parse a Mermaid diagram and return (model, partial_spec).
-
-    For TD=1 diagrams parse_dbt_diagram returns (ALOModel, dict).
-    For TD>1 diagrams it returns LayeredALOModel directly.
-    This normalizes both cases.
-    """
-    result = parse_dbt_diagram(mermaid_text)
-    if isinstance(result, LayeredALOModel):
-        return result, {}
-    return result  # (ALOModel, partial_spec) tuple
+def parse_model(mermaid_text: str) -> Tuple[LayeredALOModel, Dict]:
+    """Parse a Mermaid diagram and return (model, partial_spec)."""
+    return parse_dbt_diagram(mermaid_text), {}
 
 
 def _target_x_count(model: LayeredALOModel) -> int:

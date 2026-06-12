@@ -20,12 +20,12 @@ class ExpanderTransformer(AlonTransformer):
 
         Args:
             parser: Lark parser instance for recursive parsing
-            model: ALOModel or LayeredALOModel (required for responsibility operators)
-            evaluation_moment: For LayeredALOModel, the moment name at which operators
-                are being evaluated. Determines which actions are available for xstit
-                and which history CGA to use for but_for/ness. Ignored for ALOModel.
-            evaluation_history: For ALOModel, the history name to use for CGA lookup
-                in but_for/ness expansions. Defaults to "h1" if not provided.
+            model: LayeredALOModel (required for responsibility operators)
+            evaluation_moment: The moment name at which operators are evaluated.
+                Determines which actions are available for xstit and which
+                history CGA to use for but_for/ness.
+            evaluation_history: The history name to use for CGA lookup in
+                but_for/ness expansions. Defaults to model.evaluation_history.
             ness_empty_sufficient: If True (default), the empty set counts as a potential
                 sufficient set in NESS minimality checks — matching the original semantics
                 where q inevitability blocks NESS. If False, only non-empty proper subsets
@@ -49,38 +49,19 @@ class ExpanderTransformer(AlonTransformer):
     # ========== Model abstraction helpers ==========
 
     def _get_agent_actions(self, agent: str):
-        """Return the list of action types available to agent at the evaluation moment.
-
-        For LayeredALOModel: uses available_actions_at(evaluation_moment).
-        For ALOModel: uses the global agents_actions table.
-        """
-        from ..model.core import LayeredALOModel
-        if isinstance(self.model, LayeredALOModel):
-            if self.evaluation_moment is None:
-                raise ValueError("evaluation_moment required for LayeredALOModel")
-            return self.model.available_actions_at(self.evaluation_moment).get(agent, [])
-        return self.model.agents_actions.get(agent)
+        """Return the list of action types available to agent at the evaluation moment."""
+        if self.evaluation_moment is None:
+            raise ValueError("evaluation_moment required")
+        return self.model.available_actions_at(self.evaluation_moment).get(agent, [])
 
     def _get_eval_history_cga(self) -> dict:
-        """Return the {agent: action_type} mapping for the evaluation history at the evaluation moment.
-
-        For LayeredALOModel: returns the stage actions of the evaluation history at
-            evaluation_moment (only the agents acting there).
-        For ALOModel: returns the full named_histories['h1'].actions.
-        """
-        from ..model.core import LayeredALOModel
-        if isinstance(self.model, LayeredALOModel):
-            if self.evaluation_moment is None:
-                raise ValueError("evaluation_moment required for LayeredALOModel")
-            hp = self.model.histories.get(self.model.evaluation_history)
-            if hp is None:
-                raise ValueError(f"Evaluation history '{self.model.evaluation_history}' not found")
-            return hp.actions_at.get(self.evaluation_moment, {})
-        hist_key = self.evaluation_history or "h1"
-        h = self.model.named_histories.get(hist_key)
-        if h is None:
-            raise ValueError(f"History '{hist_key}' not found in model")
-        return h.actions
+        """Return the {agent: action_type} mapping for the evaluation history at the evaluation moment."""
+        if self.evaluation_moment is None:
+            raise ValueError("evaluation_moment required")
+        hp = self.model.histories.get(self.model.evaluation_history)
+        if hp is None:
+            raise ValueError(f"Evaluation history '{self.model.evaluation_history}' not found")
+        return hp.actions_at.get(self.evaluation_moment, {})
 
     def _get_agent_groups(self) -> dict:
         """Return the agent_groups dict (may be empty for LayeredALOModel)."""

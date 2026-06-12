@@ -32,7 +32,7 @@ def test_parse_dbt_label():
 
 
 def test_parse_simple_dbt():
-    """Test parsing a simple DBT diagram (partial specification)."""
+    """Test parsing a simple DBT diagram."""
 
     mermaid = """---
 type: DBT
@@ -57,35 +57,28 @@ direction BT
   m1: q
 """
 
-    model, partial_spec = parse_dbt_diagram(mermaid)
+    model = parse_dbt_diagram(mermaid)
 
-    # Verify partial_spec
-    assert partial_spec["diagram_type"] == "DBT"
-    assert partial_spec["actions"] == {1: ["sd", "ss"], 2: ["ss", "ha"]}
-    # Agent keys may be int or str depending on parser
-    h1_hist = partial_spec["histories"]["h1"]
-    assert h1_hist.get(1, h1_hist.get("1")) == "sd"
-    assert h1_hist.get(2, h1_hist.get("2")) == "ss"
-    assert partial_spec["opposings"] == {"sd1": ["ha2"]}
+    # Model has h1 (the one explicitly declared in the diagram)
+    assert len(model.histories) == 1
+    assert "h1" in model.histories
 
-    # results dict now has shape {"h1": {"moment": ..., "props": [...]}}
-    assert "h1" in partial_spec["results"]
-    assert "q" in partial_spec["results"]["h1"]["props"]
+    # h1 actions at root moment
+    h1 = model.histories["h1"]
+    acts = h1.complete_actions()
+    assert acts.get("1") == "sd"
+    assert acts.get("2") == "ss"
 
-    # Verify model has all histories generated (2x2 = 4)
-    assert len(model.named_histories) == 4
+    # h1 leaf has q
+    leaf = model.moments[h1.leaf_moment]
+    assert "q" in leaf.propositions
 
-    assert "h1" in model.named_histories
-    h1 = model.named_histories["h1"]
-    assert h1.actions == {"1": "sd", "2": "ss"}
-
-    assert len(model.results) >= 1
-    h1_result = next(r for r in model.results if r.history_name == "h1")
-    assert "q" in h1_result.true_propositions
+    # Opposing relation present
+    assert len(model.opposings) == 1
 
 
 def test_parse_dbt_multiple_histories():
-    """Test parsing DBT diagram with multiple histories."""
+    """Test parsing DBT diagram with multiple explicit histories."""
 
     mermaid = """---
 type: DBT
@@ -109,17 +102,16 @@ direction BT
   m3: ~q
 """
 
-    model, partial_spec = parse_dbt_diagram(mermaid)
+    model = parse_dbt_diagram(mermaid)
 
-    assert len(partial_spec["histories"]) == 3
-    assert "h1" in partial_spec["histories"]
-    assert "h2" in partial_spec["histories"]
-    assert "h3" in partial_spec["histories"]
+    assert "h1" in model.histories
+    assert "h2" in model.histories
+    assert "h3" in model.histories
 
-    assert len(partial_spec["results"]) == 3
-    assert "q" in partial_spec["results"]["h1"]["props"]
-    assert "~q" in partial_spec["results"]["h2"]["props"]
-    assert "~q" in partial_spec["results"]["h3"]["props"]
+    # Check propositions on leaf moments
+    assert "q" in model.moments[model.histories["h1"].leaf_moment].propositions
+    assert "~q" in model.moments[model.histories["h2"].leaf_moment].propositions
+    assert "~q" in model.moments[model.histories["h3"].leaf_moment].propositions
 
 
 if __name__ == "__main__":

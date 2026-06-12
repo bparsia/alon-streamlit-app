@@ -37,9 +37,9 @@ from .hierarchical_expander import HierarchicalExpander
 # Pass 2: Build ALOModel from TOML dict (semantic analysis)
 # ============================================================================
 
-def build_model(toml_dict: Dict[str, Any]) -> ALOModel:
+def build_model(spec_dict: Dict[str, Any]) -> ALOModel:
     """
-    Build ALOModel from TOML dictionary (Pass 2).
+    Build ALOModel from a model spec dictionary (Pass 2).
 
     Performs semantic analysis:
     - Validates required sections
@@ -48,27 +48,19 @@ def build_model(toml_dict: Dict[str, Any]) -> ALOModel:
     - Stores query strings (unparsed)
 
     Args:
-        toml_dict: Dictionary from toml_parser.load_toml()
+        spec_dict: Dict with keys Actions, Opposings, Aliases, Histories, Results, Queries
 
     Returns:
         ALOModel with all sections populated except query ASTs
 
     Raises:
         ValueError: If required sections missing or malformed
-
-    Example:
-        >>> toml_dict = load_toml("theory.toml")
-        >>> model = build_model(toml_dict)
-        >>> model.queries[0].formula_string
-        'Xq'
-        >>> model.queries[0].formula_ast  # None until Pass 3
-        None
     """
     # Parse Actions section (required)
-    if "Actions" not in toml_dict:
-        raise ValueError("TOML file must contain [Actions] section")
+    if "Actions" not in spec_dict:
+        raise ValueError("Model spec must contain Actions")
 
-    actions_dict = toml_dict["Actions"]
+    actions_dict = spec_dict["Actions"]
     # Convert all keys to strings for consistency
     agents_actions = {
         str(agent): action_types
@@ -76,14 +68,14 @@ def build_model(toml_dict: Dict[str, Any]) -> ALOModel:
     }
 
     # Parse optional sections
-    aliases = _parse_aliases(toml_dict.get("Aliases", {}))
-    agent_groups = _parse_agent_groups(toml_dict.get("AgentGroups", {}))
-    opposings = _parse_opposings(toml_dict.get("Opposings", {}))
-    named_histories = _parse_histories(toml_dict.get("Histories", {}))
-    results = _parse_results(toml_dict.get("Results", {}))
-    queries = _parse_queries(toml_dict.get("Queries", {}))
+    aliases = _parse_aliases(spec_dict.get("Aliases", {}))
+    agent_groups = _parse_agent_groups(spec_dict.get("AgentGroups", {}))
+    opposings = _parse_opposings(spec_dict.get("Opposings", {}))
+    named_histories = _parse_histories(spec_dict.get("Histories", {}))
+    results = _parse_results(spec_dict.get("Results", {}))
+    queries = _parse_queries(spec_dict.get("Queries", {}))
     responsibility_config = _parse_responsibility_config(
-        toml_dict.get("responsibility_analysis")
+        spec_dict.get("responsibility_analysis")
     )
 
     return ALOModel(
@@ -119,7 +111,7 @@ def parse_queries(model: ALOModel) -> ALOModel:
         lark.exceptions.LarkError: If any query is malformed
 
     Example:
-        >>> model = build_model(toml_dict)
+        >>> model = build_model(spec_dict)
         >>> model = parse_queries(model)
         >>> model.queries[0].formula_ast
         Next(formula=Prop(symbol='q'))

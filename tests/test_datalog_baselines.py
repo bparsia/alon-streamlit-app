@@ -35,22 +35,13 @@ def load_baselines():
 
 
 def run_datalog(mmd_path: Path):
-    """
-    Run pyDatalog evaluation pipeline from a .mmd model file.
-
-    NOTE: do NOT call expand_queries() here — DatalogIndexSerializer
-    handles expansion internally via PyDatalogExpanderTransformer.
-    Calling expand_queries() first triggers the hierarchical OWL expander
-    which takes ~70s for theory 3.5 and produces no useful output for Datalog.
-    """
+    """Run pyDatalog evaluation pipeline from a .mmd model file."""
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+    from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
 
-    mermaid = mmd_path.read_text()
-    parsed = parse_dbt_diagram(mermaid)
-    model = parsed[0] if isinstance(parsed, tuple) else parsed
+    model = parse_dbt_diagram(mmd_path.read_text())
 
     model.responsibility_config = ResponsibilityConfig(
         target_proposition="q",
@@ -64,7 +55,7 @@ def run_datalog(mmd_path: Path):
         if q.formula_ast is None:
             q.formula_ast = parse_formula(q.formula_string)
 
-    serializer = DatalogIndexSerializer(model, evaluation_history="h1")
+    serializer = LayeredDatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
     return sorted(qid for qid, r in results.items() if r.get("result"))
 
