@@ -20,7 +20,7 @@ class ExpanderTransformer(AlonTransformer):
 
         Args:
             parser: Lark parser instance for recursive parsing
-            model: LayeredALOModel (required for responsibility operators)
+            model: ALOModel (required for responsibility operators)
             evaluation_moment: The moment name at which operators are evaluated.
                 Determines which actions are available for xstit and which
                 history CGA to use for but_for/ness.
@@ -64,7 +64,7 @@ class ExpanderTransformer(AlonTransformer):
         return hp.actions_at.get(self.evaluation_moment, {})
 
     def _get_agent_groups(self) -> dict:
-        """Return the agent_groups dict (may be empty for LayeredALOModel)."""
+        """Return the agent_groups dict (may be empty for ALOModel)."""
         return getattr(self.model, 'agent_groups', {})
 
     # ========== Name Generation ==========

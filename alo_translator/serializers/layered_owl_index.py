@@ -1,10 +1,10 @@
 """
-OWL Index serializer for LayeredALOModel (TD>1).
+OWL Index serializer for ALOModel (TD>1).
 
 Extends OWLIndexNewExpanderSerializer, overriding the ABox generation methods
-to work with LayeredALOModel's multi-hop moment structure.  The TBox (formula
+to work with ALOModel's multi-hop moment structure.  The TBox (formula
 expansion + OwlSerializer) is inherited unchanged — ExpanderTransformer already
-handles LayeredALOModel when evaluation_moment is supplied.
+handles ALOModel when evaluation_moment is supplied.
 
 Same-moment strategies (EquivChainedNominalStrategy, EquivFullCardinalityStrategy,
 etc.) work without modification because they delegate index enumeration to
@@ -15,22 +15,22 @@ from typing import Dict, List, Set, Tuple, Optional
 from xml.etree.ElementTree import Element, SubElement
 
 from .owl_index_new_expander import OWLIndexNewExpanderSerializer
-from ..model.core import LayeredALOModel, GroupAction
+from ..model.core import ALOModel, GroupAction
 from ..parsers.expander_transformer import ExpanderTransformer
 
 
 class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
-    """OWL serializer for LayeredALOModel (arbitrary temporal depth).
+    """OWL serializer for ALOModel (arbitrary temporal depth).
 
     ABox: derives individuals, succ chains, same_moment groups, action
-    assertions, and proposition assertions directly from the LayeredALOModel
+    assertions, and proposition assertions directly from the ALOModel
     structure (HistoryPath.path, MomentNode.propositions, etc.).
 
     TBox: inherited from OWLIndexNewExpanderSerializer — ExpanderTransformer
     with evaluation_moment set, fed into OwlSerializer as before.
     """
 
-    def __init__(self, model: LayeredALOModel,
+    def __init__(self, model: ALOModel,
                  evaluation_moment: str,
                  evaluation_history: str,
                  strategy=None):
@@ -48,7 +48,7 @@ class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
     # ------------------------------------------------------------------
 
     def _get_all_indices(self) -> List[Tuple[str, str]]:
-        """Return all (moment, history) index pairs from the LayeredALOModel.
+        """Return all (moment, history) index pairs from the ALOModel.
 
         Enumerates every step in every history's path, preserving path order so
         that same-moment strategies see indices in a consistent sequence.
@@ -65,11 +65,11 @@ class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
         return indices
 
     # ------------------------------------------------------------------
-    # CGA mappings — not applicable for LayeredALOModel
+    # CGA mappings — not applicable for ALOModel
     # ------------------------------------------------------------------
 
     def _build_cga_mappings(self):
-        """No-op: LayeredALOModel uses explicit HistoryPath objects."""
+        """No-op: ALOModel uses explicit HistoryPath objects."""
         pass
 
     # ------------------------------------------------------------------

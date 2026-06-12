@@ -19,7 +19,7 @@ from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 from alo_translator.parsers.builder import parse_queries
 from alo_translator.query_generation import ResponsibilityConfig, generate_queries
 from alo_translator.serializers.datalog_index import DatalogIndexSerializer
-from alo_translator.model.core import LayeredALOModel, Query
+from alo_translator.model.core import ALOModel, Query
 from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
 from alo_translator.serializers.layered_owl_index import LayeredOWLIndexSerializer
 
@@ -163,12 +163,12 @@ def run_analysis_datalog(model, result_prop: str, eval_history: str,
         return None
 
 
-def parse_model(mermaid_text: str) -> Tuple[LayeredALOModel, Dict]:
+def parse_model(mermaid_text: str) -> Tuple[ALOModel, Dict]:
     """Parse a Mermaid diagram and return (model, partial_spec)."""
     return parse_dbt_diagram(mermaid_text), {}
 
 
-def _target_x_count(model: LayeredALOModel) -> int:
+def _target_x_count(model: ALOModel) -> int:
     """Number of X steps from the evaluation moment to when the target is true.
 
     For do(α) targets the action is performed one step ahead of the eval moment.
@@ -183,13 +183,13 @@ def _target_x_count(model: LayeredALOModel) -> int:
     return 1
 
 
-def _outcome_formula(model: LayeredALOModel) -> str:
+def _outcome_formula(model: ALOModel) -> str:
     """Return the outcome formula for display (e.g. 'Xdo(sd1)' or 'Xq')."""
     x_count = _target_x_count(model)
     return 'X' * x_count + model.target_proposition
 
 
-def _operator_formula(model: LayeredALOModel) -> str:
+def _operator_formula(model: ALOModel) -> str:
     """Return the formula to pass to responsibility operators.
 
     All operators (pres/sres/res/but/ness) internally add one X step,
@@ -200,8 +200,8 @@ def _operator_formula(model: LayeredALOModel) -> str:
     return 'X' * inner_x + model.target_proposition
 
 
-def setup_layered_queries(model: LayeredALOModel) -> LayeredALOModel:
-    """Attach responsibility queries to a LayeredALOModel for analysis."""
+def setup_layered_queries(model: ALOModel) -> ALOModel:
+    """Attach responsibility queries to a ALOModel for analysis."""
     from alo_translator.query_generation import _sanitize_id
     outcome = _outcome_formula(model)
     op_formula = _operator_formula(model)
@@ -230,9 +230,9 @@ def setup_layered_queries(model: LayeredALOModel) -> LayeredALOModel:
     return model
 
 
-def run_analysis_datalog_layered(model: LayeredALOModel,
+def run_analysis_datalog_layered(model: ALOModel,
                                   ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
-    """Run responsibility analysis on a LayeredALOModel using pyDatalog.
+    """Run responsibility analysis on a ALOModel using pyDatalog.
 
     If model.evaluations is set, runs each (moment, history, target) separately
     and unions the satisfied query IDs. Accumulates all queries on model.queries
@@ -264,9 +264,9 @@ def run_analysis_datalog_layered(model: LayeredALOModel,
         return None
 
 
-def run_analysis_konclude_layered(model: LayeredALOModel,
+def run_analysis_konclude_layered(model: ALOModel,
                                    ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
-    """Run responsibility analysis on a LayeredALOModel using Konclude (OWL).
+    """Run responsibility analysis on a ALOModel using Konclude (OWL).
 
     Mirrors run_analysis_datalog_layered but uses LayeredOWLIndexSerializer
     and the Konclude reasoner.  Iterates over model.evaluations like the
@@ -332,8 +332,8 @@ def run_analysis_konclude_layered(model: LayeredALOModel,
         return None
 
 
-def format_layered_model_overview(model: LayeredALOModel) -> str:
-    """Format a LayeredALOModel overview as markdown."""
+def format_layered_model_overview(model: ALOModel) -> str:
+    """Format a ALOModel overview as markdown."""
     lines = []
     aliases = model.aliases
 
@@ -384,7 +384,7 @@ def _cga_str(actions: Dict[str, str], aliases: Dict[str, str]) -> str:
     return "{" + ", ".join(parts) + "}"
 
 
-def _outcome_index(model: LayeredALOModel, ehist: str, etgt: str):
+def _outcome_index(model: ALOModel, ehist: str, etgt: str):
     """Return (holds: bool, index: str) for the target in the given history."""
     hp = model.histories.get(ehist)
     if hp is None:
@@ -407,7 +407,7 @@ def _outcome_index(model: LayeredALOModel, ehist: str, etgt: str):
         return holds, f"{leaf}/{ehist}"
 
 
-def _section_header_layered(model: LayeredALOModel, emom: str, ehist: str, etgt: str) -> str:
+def _section_header_layered(model: ALOModel, emom: str, ehist: str, etgt: str) -> str:
     aliases = model.aliases
     hp = model.histories.get(ehist)
     cga_dict = hp.actions_at.get(emom, {}) if hp else {}
@@ -423,8 +423,8 @@ def _section_header_layered(model: LayeredALOModel, emom: str, ehist: str, etgt:
     )
 
 
-def format_layered_results_table(model: LayeredALOModel, satisfied_ids: Set[str]) -> str:
-    """Format LayeredALOModel responsibility results as markdown.
+def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> str:
+    """Format ALOModel responsibility results as markdown.
 
     Groups results by evaluation point when multiple evaluations are present.
     """

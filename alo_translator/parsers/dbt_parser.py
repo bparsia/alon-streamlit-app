@@ -1,7 +1,7 @@
 """
 DBT Mermaid diagram parser.
 
-Parses DBT (Deontic Branching Time) Mermaid diagrams into LayeredALOModel.
+Parses DBT (Deontic Branching Time) Mermaid diagrams into ALOModel.
 """
 
 import re
@@ -11,7 +11,7 @@ from lark import Lark
 
 from ..model.core import (
     Action, OpposingRelation,
-    MomentNode, MomentTransition, HistoryPath, LayeredALOModel,
+    MomentNode, MomentTransition, HistoryPath, ALOModel,
 )
 from .mermaid_transformer import MermaidTransformer
 from .yaml_helper import frontmatter_to_partial_spec
@@ -97,8 +97,8 @@ def _build_layered_opposings(partial_spec: Dict[str, Any]) -> List[OpposingRelat
     return opposings
 
 
-def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'LayeredALOModel':
-    """Build a LayeredALOModel from a TD>1 diagram."""
+def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'ALOModel':
+    """Build a ALOModel from a TD>1 diagram."""
     succs = diagram.get("succs", [])
     shorthand_members = diagram.get("shorthand_members", [])
 
@@ -209,7 +209,7 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'La
                 node.propositions.add(label)
 
     # ------------------------------------------------------------------
-    # 7. Assemble LayeredALOModel
+    # 7. Assemble ALOModel
     # ------------------------------------------------------------------
     eval_point = partial_spec.get("evaluation_point", f"m/{sorted(all_history_names)[0]}")
     if "/" in eval_point:
@@ -229,7 +229,7 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'La
                 emom, ehist = root_name, ep
             evaluations.append((emom, ehist, tgt))
 
-    return LayeredALOModel(
+    return ALOModel(
         root_name=root_name,
         moments=moment_nodes,
         transitions=transitions,
@@ -249,9 +249,9 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'La
 # Public entry point
 # ---------------------------------------------------------------------------
 
-def parse_dbt_diagram(mermaid_string: str) -> LayeredALOModel:
+def parse_dbt_diagram(mermaid_string: str) -> ALOModel:
     """
-    Parse a DBT Mermaid diagram into a LayeredALOModel.
+    Parse a DBT Mermaid diagram into a ALOModel.
     """
     tree = MERMAID_PARSER.parse(mermaid_string)
     transformer = MermaidTransformer()

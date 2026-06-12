@@ -29,7 +29,7 @@ ALL_TD1_MODELS = ["3.1", "3.5", "3.6", "3.7"]
 # ---------------------------------------------------------------------------
 
 def _setup_model(mmd_path: Path):
-    """Parse .mmd and attach responsibility config. Returns LayeredALOModel."""
+    """Parse .mmd and attach responsibility config. Returns ALOModel."""
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries

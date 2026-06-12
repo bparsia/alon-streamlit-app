@@ -182,7 +182,7 @@ class QueryGenerator:
             ga = model.named_histories.get(history)
             _history_actions: dict = ga.actions if ga is not None else {}
         elif hasattr(model, "histories") and history in model.histories:
-            # LayeredALOModel: collapse per-moment actions into flat dict
+            # ALOModel: collapse per-moment actions into flat dict
             _history_actions = model.histories[history].complete_actions()
         else:
             _history_actions = {}

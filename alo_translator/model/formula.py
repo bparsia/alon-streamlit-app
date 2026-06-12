@@ -6,12 +6,8 @@ formulae with modal depth calculation built into each node type.
 """
 
 from dataclasses import dataclass
-from typing import Optional, Union, List, Dict, TYPE_CHECKING
+from typing import Optional, Union, List, Dict
 from abc import ABC, abstractmethod
-
-# Forward declarations for type hints
-if TYPE_CHECKING:
-    from alo_translator.parsers.formula_expander import HierarchicalExpander
 
 
 class FormulaNode(ABC):

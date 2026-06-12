@@ -4,10 +4,8 @@ Core model classes for ALOn structures.
 This module defines the object model for ALOn (Action Logic with Opposing),
 providing a clean API for constructing and manipulating models programmatically.
 
-Two model classes are provided:
-- ALOModel: flat TD=1 model (one root moment, one successor per history)
-- LayeredALOModel: arbitrary temporal depth, with staged actions per moment.
-  LayeredALOModel is the intended long-term replacement for ALOModel.
+ALOModel represents a branching-time model with arbitrary temporal depth.
+Models are constructed by parse_dbt_diagram() from Mermaid diagram input.
 """
 
 from dataclasses import dataclass, field
@@ -182,130 +180,6 @@ class Query:
 
 
 @dataclass
-class ALOModel:
-    """
-    Complete ALOn model specification.
-
-    This represents a 1-step branching-time model with:
-    - A current moment (conventionally "m")
-    - One history per complete group action
-    - One successor moment per history
-    - Opposing relations between actions
-    - Results (propositions true at successors)
-    - Queries to evaluate
-    """
-
-    # Core structure
-    agents_actions: Dict[str, List[str]]  # agent -> list of action types
-
-    # Optional sections
-    aliases: Dict[str, str] = field(default_factory=dict)  # symbol -> description
-    agent_groups: Dict[str, List[str]] = field(default_factory=dict)  # group name -> list of agents
-    opposings: List[OpposingRelation] = field(default_factory=list)
-    named_histories: Dict[str, GroupAction] = field(default_factory=dict)  # name -> group action
-    results: List[Result] = field(default_factory=list)
-    queries: List[Query] = field(default_factory=list)
-    responsibility_config: Optional['ResponsibilityConfig'] = None  # Auto-gen config
-
-    def get_all_agents(self) -> Set[str]:
-        """Get all agent identifiers"""
-        return set(self.agents_actions.keys())
-
-    def get_all_action_types(self) -> Set[str]:
-        """Get all action types (without agents)"""
-        action_types = set()
-        for actions in self.agents_actions.values():
-            action_types.update(actions)
-        return action_types
-
-    def get_all_actions(self) -> List[Action]:
-        """Get all individual actions (action type + agent combinations)"""
-        actions = []
-        for agent, action_types in self.agents_actions.items():
-            for action_type in action_types:
-                actions.append(Action(action_type, agent))
-        return actions
-
-    def generate_complete_group_actions(self) -> List[GroupAction]:
-        """
-        Generate all complete group actions.
-
-        Returns one GroupAction for each combination of agent choices.
-        """
-        from itertools import product
-
-        agents = sorted(self.agents_actions.keys())
-        action_lists = [self.agents_actions[agent] for agent in agents]
-
-        complete_actions = []
-        for combo in product(*action_lists):
-            cga = GroupAction({agents[i]: combo[i] for i in range(len(agents))})
-            complete_actions.append(cga)
-
-        return complete_actions
-
-    def complete(self, target_prop: str = "q", eval_history: str = "h1") -> None:
-        """
-        Complete the partial model in place.
-
-        - Names all unnamed complete group actions (h2, h3, …)
-        - Adds default results for every unspecified history:
-            eval_history → target_prop is True
-            all others   → target_prop is False (~target_prop)
-        """
-        import re
-
-        # Name every CGA that doesn't already have a history name
-        history_counter = 1
-        for cga in self.generate_complete_group_actions():
-            if not any(ga.actions == cga.actions for ga in self.named_histories.values()):
-                while f"h{history_counter}" in self.named_histories:
-                    history_counter += 1
-                self.named_histories[f"h{history_counter}"] = cga
-                history_counter += 1
-
-        # Default results for histories with no explicit result
-        existing = {r.history_name for r in self.results}
-        moment_counter = 1
-        for result in self.results:
-            if result.moment_name:
-                m = re.match(r'm(\d+)', result.moment_name)
-                if m:
-                    moment_counter = max(moment_counter, int(m.group(1)) + 1)
-
-        for hist_name in self.named_histories:
-            if hist_name not in existing:
-                props = {target_prop} if hist_name == eval_history else {f"~{target_prop}"}
-                self.results.append(Result(hist_name, props, f"m{moment_counter}"))
-                moment_counter += 1
-
-    def get_all_propositions(self) -> Set[str]:
-        """Get all proposition symbols mentioned in results"""
-        props = set()
-        for result in self.results:
-            props.update(result.true_propositions)
-        return props
-
-    def max_modal_depth(self) -> int:
-        """
-        Get the maximum modal depth across all queries in the model.
-
-        Returns:
-            The maximum modal depth, or 0 if no queries.
-
-        Raises:
-            ValueError: If any query has not been parsed yet.
-        """
-        if not self.queries:
-            return 0
-        return max(query.modal_depth for query in self.queries)
-
-
-# ---------------------------------------------------------------------------
-# Layered (TD>1) model
-# ---------------------------------------------------------------------------
-
-@dataclass
 class MomentNode:
     """
     A node in the moment tree (root, intermediate, or leaf).
@@ -374,7 +248,7 @@ class HistoryPath:
 
 
 @dataclass
-class LayeredALOModel:
+class ALOModel:
     """
     ALOn model with arbitrary temporal depth.
 

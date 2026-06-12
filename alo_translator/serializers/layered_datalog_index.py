@@ -1,5 +1,5 @@
 """
-Datalog Index serializer for LayeredALOModel (TD>1).
+Datalog Index serializer for ALOModel (TD>1).
 
 Generates complete pyDatalog programs from multi-step ALOn models.
 Architecture mirrors DatalogIndexSerializer but traverses a moment tree
@@ -11,14 +11,14 @@ from typing import Dict, List, Set, Tuple, Optional
 from pathlib import Path
 from lark import Lark
 
-from ..model.core import LayeredALOModel
+from ..model.core import ALOModel
 from .datalog_serializer import DatalogSerializer
 from ..parsers.pydatalog_expander_transformer import PyDatalogExpanderTransformer
 
 
 class LayeredDatalogIndexSerializer:
     """
-    Serializes a LayeredALOModel to a complete pyDatalog program.
+    Serializes a ALOModel to a complete pyDatalog program.
 
     ABox: facts for indices, succ chains, same_moment, per-moment actions,
           per-moment propositions.
@@ -26,7 +26,7 @@ class LayeredDatalogIndexSerializer:
           DatalogSerializer, with evaluation_moment context.
     """
 
-    def __init__(self, model: LayeredALOModel, evaluation_history: Optional[str] = None,
+    def __init__(self, model: ALOModel, evaluation_history: Optional[str] = None,
                  evaluation_moment: Optional[str] = None, ness_empty_sufficient: bool = True):
         self.model = model
         self.evaluation_history = evaluation_history or model.evaluation_history

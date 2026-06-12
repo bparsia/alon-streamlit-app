@@ -27,7 +27,7 @@ def _block_to_mermaid_text(block: ModelBlock) -> str:
 # ──────────────────────────────────────────────────────────────────────────────
 
 def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set[str], list]:
-    """Run analysis on a LayeredALOModel. Returns (model, satisfied_ids, eval_points)."""
+    """Run analysis on a ALOModel. Returns (model, satisfied_ids, eval_points)."""
     from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
     from streamlit_app.utils import setup_layered_queries
 
@@ -181,7 +181,7 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
 
     try:
         from alo_translator.parsers.dbt_parser import parse_dbt_diagram
-        from alo_translator.model.core import LayeredALOModel
+        from alo_translator.model.core import ALOModel
     finally:
         os.chdir(old_cwd)
 
@@ -197,7 +197,7 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
                 for ness_val in (True, False):
                     # Re-parse for each variant: _run_* mutates the model
                     parsed = parse_dbt_diagram(text)
-                    if isinstance(parsed, LayeredALOModel):
+                    if isinstance(parsed, ALOModel):
                         m, satisfied, eval_pts = _run_layered(
                             parsed, ness_empty_sufficient=ness_val)
                     else:
@@ -208,7 +208,7 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
 
                 # Direct evaluate (ness-independent)
                 parsed = parse_dbt_diagram(text)
-                if not isinstance(parsed, LayeredALOModel):
+                if not isinstance(parsed, ALOModel):
                     m_ev, partial_spec_ev = parsed
                     if partial_spec_ev.get("evaluate"):
                         m_ev, sat_ev, pts_ev = _run_evaluate(m_ev, partial_spec_ev)
@@ -255,8 +255,8 @@ def format_results(
     if not eval_points:
         return f"*No matching evaluation point for eval={eval_filter!r} target={target_filter!r}.*"
 
-    from alo_translator.model.core import LayeredALOModel
-    is_layered = isinstance(model, LayeredALOModel)
+    from alo_translator.model.core import ALOModel
+    is_layered = isinstance(model, ALOModel)
 
     sections = []
     for emom, ehist, etgt in eval_points:
