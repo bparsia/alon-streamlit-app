@@ -1,7 +1,7 @@
 ---
 type: DBT
 title: Example 3.5 from Where Responsibility Takes You
-description: This has 16 histories so is computationally touch for OWL reasoners. We have to explicitly specify all the histories with the target outcome (q). The ~q histories are interpolated.
+description: This has 16 histories so is computationally tough for OWL reasoners.
 actions:
   1:
     - sd
@@ -42,6 +42,15 @@ direction BT
   m --> m5 : h5({sd1, ha2, sd3, ss4})
   m --> m6 : h6({ss1, ss2, sd3, ss4})
   m --> m7 : h7({ss1, ha2, sd3, ss4})
+  m --> m8 : h8({ss1, ss2, ss3, ss4})
+  m --> m9 : h9({ss1, ss2, ss3, rb4})
+  m --> m10 : h10({ss1, ha2, sd3, rb4})
+  m --> m11 : h11({ss1, ss2, sd3, rb4})
+  m --> m12 : h12({sd1, ha2, sd3, rb4})
+  m --> m13 : h13({sd1, ha2, ss3, ss4})
+  m --> m14 : h14({sd1, ha2, ss3, rb4})
+  m --> m15 : h15({ss1, ha2, ss3, ss4})
+  m --> m16 : h16({ss1, ha2, ss3, rb4})
   m1: q
   m2: q
   m3: q
@@ -49,3 +58,12 @@ direction BT
   m5: q
   m6: q
   m7: q
+  m8: ~q
+  m9: ~q
+  m10: ~q
+  m11: ~q
+  m12: ~q
+  m13: ~q
+  m14: ~q
+  m15: ~q
+  m16: ~q

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html><head>
+<title>Estellec1</title>
+<meta charset="utf-8">
+<style>
+body { max-width: 900px; margin: auto; padding: 2em; font-family: sans-serif; }
+h1, h2, h3, h4, h5, h6 { margin-top: 1.4em; }
+table { border-collapse: collapse; margin: 1em 0; }
+th, td { border: 1px solid #ccc; padding: 4px 10px; }
+th { background: #f4f4f4; }
+code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+pre { background: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
+.alon-model-wrap { position: relative; margin: 1.5em 0; }
+.alon-copy-btn {
+  position: absolute; top: 4px; right: 4px;
+  font-size: 0.75em; padding: 2px 8px;
+  background: #f0f0f0; border: 1px solid #ccc;
+  border-radius: 3px; cursor: pointer; z-index: 10;
+}
+.alon-copy-btn:hover { background: #e0e0e0; }
+pre.mermaid { background: none; padding: 0; }
+.math-display { margin: 1em 0; overflow-x: auto; }
+</style>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    mermaid.initialize({startOnLoad: false, theme: 'neutral'});
+    mermaid.run();
+  });
+</script>
+<script>
+function alonCopy(btn) {
+  const src = btn.getAttribute('data-mmd');
+  navigator.clipboard.writeText(src).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+</script>
+</head>
+<body>
+
+<div class="alon-model-wrap">
+<button class="alon-copy-btn" data-mmd='```mermaid
+---
+actions:
+  &#x27;1&#x27;:
+  - wi
+  - wa
+  &#x27;2&#x27;:
+  - sw
+  - na
+  &#x27;3&#x27;:
+  - ih
+  - na
+aliases:
+  &#x27;1&#x27;: jane
+  &#x27;2&#x27;: friend(s)
+  &#x27;3&#x27;: cleaner
+  ih: intention of harm via freezer
+  na: normal activities, then absent (from scene)
+  q: jane dies
+  sw: stayed with jane
+  wa: wandered around
+  wi: wandered into freezer
+description: This analysis provides a little more insight into a theory of this case,
+  which presented the possibility of her death being a result of one of the plaza&#x27;s
+  staff members. It showcases the idea that whether the case was a murder or a freak
+  accident, a friend&#x27;s intervention is likely to have prevented her death.
+evaluate:
+- - m/h3
+  - q
+- - m/h4
+  - q
+- - m/h8
+  - q
+opposings:
+  ih3:
+  - sw2
+  wi1:
+  - sw2
+source?: https://www.youtube.com/watch?v=12S8VPbT494&amp;pp=ygUUa2VubmVrYSBqZW5raW5zIGNhc2U%3D
+title: An analysis on a possible theory of the Kenneka Jenkins case
+type: DBT
+---
+classDiagram
+direction BT
+  class m {
+  }
+  
+  m --&gt; m1 : h1({wi1, sw2, na3})
+  m --&gt; m2 : h2({wi1, sw2, ih3})
+  m --&gt; m3 : h3({wi1, na2, na3})
+  m --&gt; m4 : h4({wi1, na2, ih3})
+  m --&gt; m5 : h5({wa1, sw2, na3})
+  m --&gt; m6 : h6({wa1, sw2, ih3})
+  m --&gt; m7 : h7({wa1, na2, na3})
+  m --&gt; m8 : h8({wa1, na2, ih3})
+  m1: ~q
+  m2: ~q
+  m3: q
+  m4: q
+  m5: ~q
+  m6: ~q
+  m7: ~q
+  m8: q
+```' onclick="alonCopy(this)">Copy .mmd</button>
+<pre class="mermaid">
+classDiagram
+direction BT
+  class m {
+  }
+  
+  m --> m1 : h1({wi1, sw2, na3})
+  m --> m2 : h2({wi1, sw2, ih3})
+  m --> m3 : h3({wi1, na2, na3})
+  m --> m4 : h4({wi1, na2, ih3})
+  m --> m5 : h5({wa1, sw2, na3})
+  m --> m6 : h6({wa1, sw2, ih3})
+  m --> m7 : h7({wa1, na2, na3})
+  m --> m8 : h8({wa1, na2, ih3})
+  m1: ~q
+  m2: ~q
+  m3: q
+  m4: q
+  m5: ~q
+  m6: ~q
+  m7: ~q
+  m8: q
+</pre>
+</div>
+<p><strong>Title</strong>: An analysis on a possible theory of the Kenneka Jenkins case<br />
+<strong>Description</strong>: This analysis provides a little more insight into a theory of this case, which presented the possibility of her death being a result of one of the plaza's staff members. It showcases the idea that whether the case was a murder or a freak accident, a friend's intervention is likely to have prevented her death.<br />
+<strong>Type</strong>: DBT<br />
+<strong>Agents</strong>: jane (<code>1</code>), friend(s) (<code>2</code>), cleaner (<code>3</code>)</p>
+<table>
+<thead>
+<tr>
+<th>Short</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ih</code></td>
+<td>intention of harm via freezer</td>
+</tr>
+<tr>
+<td><code>na</code></td>
+<td>normal activities, then absent (from scene)</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>jane dies</td>
+</tr>
+<tr>
+<td><code>sw</code></td>
+<td>stayed with jane</td>
+</tr>
+<tr>
+<td><code>wa</code></td>
+<td>wandered around</td>
+</tr>
+<tr>
+<td><code>wi</code></td>
+<td>wandered into freezer</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>jane</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>friend(s)</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td>cleaner</td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Opposed by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ih3</code></td>
+<td><code>sw2</code></td>
+</tr>
+<tr>
+<td><code>wi1</code></td>
+<td><code>sw2</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>m/h3</code></strong> → <code>q</code> (jane dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>jane</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>friend(s)</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>cleaner</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>{jane, friend(s)}</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>{jane, cleaner}</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>{friend(s), cleaner}</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>{jane, friend(s), cleaner}</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>m/h4</code></strong> → <code>q</code> (jane dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>jane</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>friend(s)</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>cleaner</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>{jane, friend(s)}</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>{jane, cleaner}</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>{friend(s), cleaner}</td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+<td></td>
+<td>✓</td>
+</tr>
+<tr>
+<td>{jane, friend(s), cleaner}</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>m/h8</code></strong> → <code>q</code> (jane dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>jane</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>friend(s)</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>cleaner</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>{jane, friend(s)}</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>{jane, cleaner}</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>{friend(s), cleaner}</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>{jane, friend(s), cleaner}</td>
+<td>✓</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</body></html>

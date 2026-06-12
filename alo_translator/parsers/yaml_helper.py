@@ -4,7 +4,7 @@ YAML frontmatter parsing helper for Mermaid diagrams.
 Converts YAML frontmatter to partial_spec dict format matching TOML structure.
 """
 
-from strictyaml import load, YAMLError
+import yaml
 from typing import Dict, Any, Optional
 
 
@@ -22,9 +22,8 @@ def parse_yaml_frontmatter(yaml_string: str) -> Dict[str, Any]:
         ValueError: If YAML parsing fails
     """
     try:
-        parsed = load(yaml_string)
-        return parsed.data
-    except YAMLError as e:
+        return yaml.safe_load(yaml_string)
+    except yaml.YAMLError as e:
         raise ValueError(f"Failed to parse YAML frontmatter: {e}")
 
 
@@ -119,6 +118,8 @@ def yaml_to_partial_spec(yaml_data: Dict[str, Any]) -> Dict[str, Any]:
     #   evaluate:
     #     - [m/h1, do(sd1)]
     #     - [mm/h1, q]
+    if "res_analyse" in yaml_data:
+        partial_spec["res_analyse"] = yaml_data["res_analyse"]
     if "evaluate" in yaml_data:
         partial_spec["evaluate"] = yaml_data["evaluate"]
 

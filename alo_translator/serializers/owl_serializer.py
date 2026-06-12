@@ -224,7 +224,10 @@ class OwlSerializer(Transformer):
         return self._class(action)
 
     def free_do_action(self, items):
-        """free_do(a)  →  Class(a) ∩ ¬Class(Opp2a)
+        """free_do(α)  →  each member performed AND no performed action individually opposes it.
+
+        Monotonicity (Def 3.4) is handled implicitly by the OWL subclass axioms:
+        if ha2 ⊑ Opp2sd1, then any world where ha2 is performed will fail ¬Opp2sd1.
 
         For individual: free_do(sd1) → Class(sd1) ∩ ¬Class(Opp2sd1)
         For group: free_do({1:sd, 2:ha}) →
@@ -232,7 +235,6 @@ class OwlSerializer(Transformer):
         """
         action = items[0]
         if isinstance(action, list):
-            # Group action: apply opposing check to each individual action, then intersect
             return self._intersect([self._free_do_individual(a) for a in action])
         return self._free_do_individual(action)
 

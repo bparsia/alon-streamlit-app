@@ -263,17 +263,36 @@ def _parse_agent_groups(groups_dict: Dict[str, List]) -> Dict[str, List[str]]:
     return agent_groups
 
 
+def _parse_action_or_group(s: str) -> 'Union[Action, GroupAction]':
+    """
+    Parse an action string that is either an individual action or a group action.
+
+    Individual: "sd1" → Action("sd", "1")
+    Group: "{sd1,ha2}" → GroupAction({"1": "sd", "2": "ha"})
+    """
+    s = s.strip()
+    if s.startswith("{") and s.endswith("}"):
+        inner = s[1:-1]
+        actions: Dict[str, str] = {}
+        for part in inner.split(","):
+            action = _parse_action_string(part.strip())
+            actions[action.agent] = action.action_type
+        return GroupAction(actions)
+    return _parse_action_string(s)
+
+
 def _parse_opposings(opposings_dict: Dict[str, List[str]]) -> List[OpposingRelation]:
     """
     Parse [Opposings] section.
 
     Format: sd1 = ["ha2"] means "sd1 is opposed by ha2"
+            "{sd1,ha2}" = ["wn4"] means the group action is opposed by wn4
 
     Returns list of OpposingRelation objects.
     """
     opposings = []
     for opposed_str, opposing_list in opposings_dict.items():
-        opposed_action = _parse_action_string(opposed_str)
+        opposed_action = _parse_action_or_group(opposed_str)
 
         for opposing_str in opposing_list:
             opposing_action = _parse_action_string(opposing_str)

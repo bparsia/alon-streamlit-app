@@ -63,7 +63,7 @@ def _run_flat(model, partial_spec: dict,
     from streamlit_app.utils import setup_queries
     from alo_translator.query_generation import _sanitize_id as _qsanitize
 
-    yaml_evals = partial_spec.get("evaluate", [])
+    yaml_evals = partial_spec.get("res_analyse", [])
     if yaml_evals:
         raw_eval_points = []
         for item in yaml_evals:
@@ -102,6 +102,66 @@ def _run_flat(model, partial_spec: dict,
     return model, all_satisfied, raw_eval_points
 
 
+def _run_evaluate(model, partial_spec: dict,
+                  ness_empty_sufficient: Optional[bool] = None) -> Tuple[object, Set[str], list]:
+    """Run direct formula evaluation for the `evaluate` key.
+
+    Each [index, formula] pair is evaluated as-is at the given index —
+    no responsibility query generation, no X-wrapping.
+    Returns (model, satisfied_ids, eval_points) where eval_points are (em, eh, formula).
+    """
+    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+    from alo_translator.model.core import Query
+    from alo_translator.parsers.builder import parse_queries, expand_queries
+    from alo_translator.query_generation import _sanitize_id as _qsanitize
+
+    yaml_evals = partial_spec.get("evaluate", [])
+    if not yaml_evals:
+        return model, set(), []
+
+    if ness_empty_sufficient is None:
+        ness_empty_sufficient = partial_spec.get("ness_empty_sufficient", True)
+
+    raw_eval_points = []
+    for item in yaml_evals:
+        if len(item) >= 2:
+            ep, formula = str(item[0]), str(item[1])
+            eh = ep.split("/")[-1] if "/" in ep else ep
+            raw_eval_points.append((ep, eh, formula))
+
+    all_satisfied: Set[str] = set()
+    all_queries = []
+    for ep, eh, formula in raw_eval_points:
+        qid = _qsanitize(f"eval_{formula}_{eh}")
+        q = Query(formula_string=formula, query_id=qid)
+        model.queries = [q]
+        model = parse_queries(model)
+        model = expand_queries(model)
+        all_queries.append(model.queries[0])
+        serializer = DatalogIndexSerializer(model, evaluation_history=eh,
+                                            ness_empty_sufficient=ness_empty_sufficient)
+        results = serializer.evaluate()
+        all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
+
+    model.queries = all_queries
+    return model, all_satisfied, raw_eval_points
+
+
+def format_evaluate_results(model, satisfied_ids: Set[str], eval_points: list) -> str:
+    """Format direct `evaluate` results as a simple markdown table."""
+    from alo_translator.query_generation import _sanitize_id
+
+    if not eval_points:
+        return ""
+
+    lines = ["| Index | Formula | Holds |", "|-------|---------|-------|"]
+    for ep, eh, formula in eval_points:
+        qid = _sanitize_id(f"eval_{formula}_{eh}")
+        holds = "✓" if qid in satisfied_ids else "✗"
+        lines.append(f"| `{ep}` | `{formula}` | {holds} |")
+    return "\n".join(lines)
+
+
 def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]]:
     """Analyse every ModelBlock in *doc*.
 
@@ -133,7 +193,7 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
             key = id(block)
             try:
                 text = _block_to_mermaid_text(block)
-                model_results: Dict[bool, Tuple] = {}
+                model_results: Dict = {}
                 for ness_val in (True, False):
                     # Re-parse for each variant: _run_* mutates the model
                     parsed = parse_dbt_diagram(text)
@@ -145,6 +205,15 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
                         m, satisfied, eval_pts = _run_flat(
                             m, partial_spec, ness_empty_sufficient=ness_val)
                     model_results[ness_val] = (m, satisfied, eval_pts)
+
+                # Direct evaluate (ness-independent)
+                parsed = parse_dbt_diagram(text)
+                if not isinstance(parsed, LayeredALOModel):
+                    m_ev, partial_spec_ev = parsed
+                    if partial_spec_ev.get("evaluate"):
+                        m_ev, sat_ev, pts_ev = _run_evaluate(m_ev, partial_spec_ev)
+                        model_results["evaluate"] = (m_ev, sat_ev, pts_ev)
+
                 results[key] = model_results
             except Exception as e:
                 print(f"[alo_docs] analysis failed for '{key}': {e}", file=sys.stderr)

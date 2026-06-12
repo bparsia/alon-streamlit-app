@@ -8,6 +8,7 @@ For TD>1 diagrams (intermediate moments detected) returns LayeredALOModel.
 """
 
 import re
+from pathlib import Path
 from typing import Dict, Any, Tuple, Optional, List
 from lark import Lark
 
@@ -20,8 +21,9 @@ from .yaml_helper import frontmatter_to_partial_spec
 from .builder import build_model
 
 
-# Load Mermaid grammar
-with open("alo_translator/parsers/mermaid_class.lark", "r") as f:
+# Load Mermaid grammar using path relative to this file (cwd-independent)
+_GRAMMAR_PATH = Path(__file__).parent / "mermaid_class.lark"
+with open(_GRAMMAR_PATH) as f:
     MERMAID_GRAMMAR = f.read()
 
 MERMAID_PARSER = Lark(MERMAID_GRAMMAR, start="start", parser="lalr")
@@ -310,7 +312,7 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'La
 
     # Parse multi-point evaluations: [[moment/history, target], ...]
     evaluations = []
-    for item in partial_spec.get("evaluate", []):
+    for item in partial_spec.get("res_analyse", []):
         if len(item) >= 2:
             ep, tgt = str(item[0]), str(item[1])
             if "/" in ep:

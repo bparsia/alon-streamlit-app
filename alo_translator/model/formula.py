@@ -246,8 +246,9 @@ class FreeDoAction(FormulaNode):
         return f"free_do({self.action})"
 
     def to_owl_name(self) -> str:
-        # Convert action to OWL-safe name
-        # Action has action_type and agent fields
+        if isinstance(self.action, GroupAction):
+            parts = '_'.join(sorted(f"{at}{ag}" for ag, at in self.action.actions.items()))
+            return f"free_do_{parts}"
         return f"free_do_{self.action.action_type}{self.action.agent}"
 
     def should_be_named(self) -> bool:

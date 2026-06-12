@@ -201,6 +201,15 @@ class DatalogIndexSerializer(Serializer):
             if action_name:
                 terms.add(f"opposing_{action_name}")
 
+        # Group opposing predicates
+        from alo_translator.model.core import GroupAction as _GA
+        for opp_rel in self.model.opposings:
+            if isinstance(opp_rel.opposed_action, _GA):
+                pred = 'opposing_' + '_'.join(
+                    sorted(f"{at}{ag}" for ag, at in opp_rel.opposed_action.actions.items())
+                )
+                terms.add(pred)
+
         # Predicates from query rules (will be populated by DatalogSerializer)
         if self.datalog_serializer:
             terms.update(self.datalog_serializer.predicates)
@@ -320,22 +329,31 @@ class DatalogIndexSerializer(Serializer):
 
             # Check model's opposing relations
             for opp_rel in self.model.opposings:
-                # OpposingRelation: opposing_action opposes opposed_action
-                # If action_name is the opposed_action, then opposing_action opposes it
+                from alo_translator.model.core import GroupAction as _GA
+                if isinstance(opp_rel.opposed_action, _GA):
+                    continue  # handled separately below
                 if str(opp_rel.opposed_action) == action_name:
                     opposing_actions.append(str(opp_rel.opposing_action))
 
             if opposing_actions:
-                # Generate rule for each opposing action
                 for opp_action_name in opposing_actions:
                     rules.append(f"opposing_{action_name}(I) <= action(I, '{opp_action_name}')")
             else:
-                # No opposing actions - must still declare predicate so NAF works.
-                # pyDatalog throws "Predicate without definition" if ~opposing_X(I)
-                # is evaluated and opposing_X has never been asserted.
-                # A dummy fact on a sentinel index defines the predicate as always-false
-                # for real indices (closed-world assumption).
                 rules.append(f"+ opposing_{action_name}('__never__')")
+
+        # Group opposing rules: opposing_<sorted_actions>(I) <= action(I, '<opp>')
+        from alo_translator.model.core import GroupAction as _GA
+        group_opps: dict = {}
+        for opp_rel in self.model.opposings:
+            if isinstance(opp_rel.opposed_action, _GA):
+                pred = 'opposing_' + '_'.join(
+                    sorted(f"{at}{ag}" for ag, at in opp_rel.opposed_action.actions.items())
+                )
+                group_opps.setdefault(pred, []).append(str(opp_rel.opposing_action))
+
+        for pred, opp_actions in sorted(group_opps.items()):
+            for opp_action_name in opp_actions:
+                rules.append(f"{pred}(I) <= action(I, '{opp_action_name}')")
 
         return '\n'.join(rules)
 

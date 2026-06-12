@@ -303,22 +303,32 @@ class DatalogSerializer(Transformer):
         # action is a conjunction like "(action(I, 'ss2') & action(I, 'rb4'))"
         action_names = re.findall(r"action\(I, '(\w+)'\)", action)
 
-        # Ensure individual free_do helpers exist for each action in the group
-        for action_name in action_names:
-            ind_helper = f"free_do_{action_name}"
-            if ind_helper not in self.predicates:
-                opp_pred = f"opposing_{action_name}"
-                self.predicates.add(ind_helper)
-                self.predicates.add(opp_pred)
-                self.rules.append(f"{ind_helper}(I) <= (action(I, '{action_name}') & ~{opp_pred}(I))")
-
         # Create combined group helper (deduped by conjunction string)
+        # Semantics (Def 3.7 + Def 3.4 monotonicity): group α is done unopposed at h
+        # iff every member is performed AND no performed action opposes α.
+        # By monotonicity, a |> b implies {a,c} |> b — so individual opposing on any
+        # member also opposes the group. We therefore check:
+        #   - each member is performed
+        #   - no individual opposing fires for any member
+        #   - no group-level opposing fires for the whole group
         if action not in self._free_do_group_map:
             self.helper_counter += 1
             helper_name = f"free_do_group_{self.helper_counter}"
             self._free_do_group_map[action] = helper_name
             self.predicates.add(helper_name)
-            combined = ' & '.join(f"free_do_{a}(I)" for a in action_names)
+            # Each member must be performed
+            parts = [f"action(I, '{a}')" for a in action_names]
+            # Individual opposing checks for each member (monotonicity)
+            for a in action_names:
+                ind_opp_pred = f"opposing_{a}"
+                self.predicates.add(ind_opp_pred)
+                parts.append(f"~{ind_opp_pred}(I)")
+            # Group-level opposing check
+            group_opp_pred = 'opposing_' + '_'.join(sorted(action_names))
+            self.predicates.add(group_opp_pred)
+            self.rules.append(f"+ {group_opp_pred}('__never__')")
+            parts.append(f"~{group_opp_pred}(I)")
+            combined = ' & '.join(parts)
             self.rules.append(f"{helper_name}(I) <= ({combined})")
 
         return f"{self._free_do_group_map[action]}(I)"

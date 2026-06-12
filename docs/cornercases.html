@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html><head>
+<title>Cornercases</title>
+<meta charset="utf-8">
+<style>
+body { max-width: 900px; margin: auto; padding: 2em; font-family: sans-serif; }
+h1, h2, h3, h4, h5, h6 { margin-top: 1.4em; }
+table { border-collapse: collapse; margin: 1em 0; }
+th, td { border: 1px solid #ccc; padding: 4px 10px; }
+th { background: #f4f4f4; }
+code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; }
+pre { background: #f4f4f4; padding: 1em; border-radius: 4px; overflow-x: auto; }
+.alon-model-wrap { position: relative; margin: 1.5em 0; }
+.alon-copy-btn {
+  position: absolute; top: 4px; right: 4px;
+  font-size: 0.75em; padding: 2px 8px;
+  background: #f0f0f0; border: 1px solid #ccc;
+  border-radius: 3px; cursor: pointer; z-index: 10;
+}
+.alon-copy-btn:hover { background: #e0e0e0; }
+pre.mermaid { background: none; padding: 0; }
+.math-display { margin: 1em 0; overflow-x: auto; }
+</style>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js" async></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    mermaid.initialize({startOnLoad: false, theme: 'neutral'});
+    mermaid.run();
+  });
+</script>
+<script>
+function alonCopy(btn) {
+  const src = btn.getAttribute('data-mmd');
+  navigator.clipboard.writeText(src).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = orig, 1500);
+  });
+}
+</script>
+</head>
+<body>
+<div style="display:none">$$% --- ALOn system names ---
+\newcommand{\alon}{\mathcal{ALO}_n}
+\newcommand{\alonm}{\mathcal{M}}
+% --- Model components ---
+\newcommand{\dbt}{\mathcal{T}}
+\newcommand{\hists}{\mathcal{H}^T}
+\newcommand{\mhists}[1]{\mathcal{H}^T_\mathrm{#1}}
+\newcommand{\moments}{M}
+\newcommand{\actions}{\mathcal{A}}
+\newcommand{\prop}{\mathcal{P}}
+% --- Indices and projections ---
+\newcommand{\idx}[2]{#1/#2}
+\newcommand{\mh}{m/h}
+\newcommand{\proj}[2]{#1|_{#2}}
+\newcommand{\wildcard}{{\star}}
+% --- Action and agent functions ---
+\newcommand{\act}[1]{\mathsf{act}(#1)}
+\newcommand{\agents}[1]{\mathsf{agents}(#1)}
+\newcommand{\sucs}[1]{\mathsf{succ}(#1)}
+\newcommand{\opp}[1]{\mathsf{opp}(#1)}
+\newcommand{\unopp}[2]{\mathsf{UnOpp}(#1,#2)}
+% --- Do operators ---
+\newcommand{\mydo}[2]{\mathsf{do}(#1,#2)}
+\newcommand{\mydos}[1]{\mathsf{do}(#1)}
+\newcommand{\myDo}[1]{\mathsf{Do}(#1)}
+% --- Temporal operator ---
+\newcommand{\X}{\mathbf{X}}
+% --- Results-in relation ---
+\newcommand{\resultsin}{\mathrel{\raisebox{-0.23ex}{\boxplus}\!\!\!\!\rightarrow}}
+% --- Causal notions ---
+\newcommand{\bfCause}[2]{\mathsf{bfC}(#1,#2)}
+\newcommand{\nessCause}[2]{\mathsf{nsC}(#1,#2)}$$</div>
+
+<h1>Exploring corner cases</h1>
+<div style="page-break-after: always; break-after: page;"></div>
+<h1>Aliases</h1>
+<p>These aliases are used throughout.</p>
+<table>
+<thead>
+<tr>
+<th>Short</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ha</code></td>
+<td>hits Alice</td>
+</tr>
+<tr>
+<td><code>masd</code></td>
+<td>manipulates Alice into shooting Dan</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>Dan dies</td>
+</tr>
+<tr>
+<td><code>sd</code></td>
+<td>shoots Dan</td>
+</tr>
+<tr>
+<td><code>sh</code></td>
+<td>stay home</td>
+</tr>
+<tr>
+<td><code>ss</code></td>
+<td>stands still</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>Alice</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>Beth</td>
+</tr>
+<tr>
+<td><code>3</code></td>
+<td>Isabella</td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always; break-after: page;"></div>
+<h1>Minimal cases</h1>
+<p>Let's consider a super minimal case: 1 agent and 1 action.</p>
+<div class="alon-model-wrap">
+<button class="alon-copy-btn" data-mmd='```mermaid
+---
+actions:
+  &#x27;1&#x27;:
+  - sd
+aliases:
+  &#x27;1&#x27;: Alice
+  &#x27;2&#x27;: Beth
+  &#x27;3&#x27;: Isabella
+  ha: hits Alice
+  masd: manipulates Alice into shooting Dan
+  q: Dan dies
+  sd: shoots Dan
+  sh: stay home
+  ss: stands still
+description: T
+math_preamble: &#x27;% --- ALOn system names ---
+
+  \newcommand{\alon}{\mathcal{ALO}_n}
+
+  \newcommand{\alonm}{\mathcal{M}}
+
+  % --- Model components ---
+
+  \newcommand{\dbt}{\mathcal{T}}
+
+  \newcommand{\hists}{\mathcal{H}^T}
+
+  \newcommand{\mhists}[1]{\mathcal{H}^T_\mathrm{#1}}
+
+  \newcommand{\moments}{M}
+
+  \newcommand{\actions}{\mathcal{A}}
+
+  \newcommand{\prop}{\mathcal{P}}
+
+  % --- Indices and projections ---
+
+  \newcommand{\idx}[2]{#1/#2}
+
+  \newcommand{\mh}{m/h}
+
+  \newcommand{\proj}[2]{#1|_{#2}}
+
+  \newcommand{\wildcard}{{\star}}
+
+  % --- Action and agent functions ---
+
+  \newcommand{\act}[1]{\mathsf{act}(#1)}
+
+  \newcommand{\agents}[1]{\mathsf{agents}(#1)}
+
+  \newcommand{\sucs}[1]{\mathsf{succ}(#1)}
+
+  \newcommand{\opp}[1]{\mathsf{opp}(#1)}
+
+  \newcommand{\unopp}[2]{\mathsf{UnOpp}(#1,#2)}
+
+  % --- Do operators ---
+
+  \newcommand{\mydo}[2]{\mathsf{do}(#1,#2)}
+
+  \newcommand{\mydos}[1]{\mathsf{do}(#1)}
+
+  \newcommand{\myDo}[1]{\mathsf{Do}(#1)}
+
+  % --- Temporal operator ---
+
+  \newcommand{\X}{\mathbf{X}}
+
+  % --- Results-in relation ---
+
+  \newcommand{\resultsin}{\mathrel{\raisebox{-0.23ex}{\boxplus}\!\!\!\!\rightarrow}}
+
+  % --- Causal notions ---
+
+  \newcommand{\bfCause}[2]{\mathsf{bfC}(#1,#2)}
+
+  \newcommand{\nessCause}[2]{\mathsf{nsC}(#1,#2)}&#x27;
+title: 1 agent, 1 action degerate model.
+type: DBT
+---
+classDiagram
+direction BT
+
+  m --&gt; m1 : h1({sd1})
+  m1: q
+```' onclick="alonCopy(this)">Copy .mmd</button>
+<pre class="mermaid">
+classDiagram
+direction BT
+
+  m --> m1 : h1({sd1})
+  m1: q
+</pre>
+</div>
+<p>In the "standard" model structure we use, the fact that there is only one complete group action (CGA) means we have only 1 history (ALOn supports models where the same CGA has multiple outcomes, but that doesn't preclude <em>this</em> model). Thus, there are no alternatives and <code>Xq</code> is settled true (i.e., <code>[]Xq</code> is true at <code>m/h1</code>). This precludes strong or plain responsibility as they require <code>~[]Xq</code>. Given that <code>sd1</code> is the only action that happens, it seems it must be part of an actual cause. Indeed, it seems natural to argue that <code>but(sd1, q)</code> is true at <code>m/h1</code> because if <code>sd1</code> doesn't happen <em>nothing</em> happens.</p>
+<p>One might say that it is vacuously true. One could argue that since there are no alternatives that everything is determined and nothing is "caused by a choice", though then it's questionable why the non-necessitated test is in <code>res</code> and <code>sres</code> instead of <code>but</code> and <code>ness</code>. Indeed, this suggests that actual causation can and should happen in determined settings.</p>
+<p>Either way, it seems that if <code>but(sd1, q)</code> is true here, then <code>ness(sd1, q)</code> should likewise be true. After all, <code>{sd1}</code> is sufficient and it couldn't be more minimal. Or could it? Let's look at what the reasoner has to say:</p>
+<p><strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Surprisingly, <code>but(sd1, q)</code> is true but <code>ness(sd1, q)</code> is false. </p>
+<p>If we look at the definition of <code>but</code>:</p>
+<div class="math-display">$$  \bfCause{\vec a}{\phi} := \X\phi \wedge \bigvee_{\begin{array}{c}\scriptstyle{
+        \vec b\in \vec A}\\[-0.8ex] \scriptstyle{\vec a\sqsubseteq\vec b}
+    \end{array}}
+  \left (\mydos{\vec b} \wedge \bigwedge_{\vec c\in\vec A } \proj{\vec c}{I}\neq \proj{\vec a}{I}\rightarrow [\proj{\vec b}{\bar I}\oplus \proj{\vec c}{I}]\neg\phi  \right )$$</div>
+<p>We have only one complete group action so $\vec b = \vec a$ and this is $\{sd1\}$. Thus we have only one disjunction and the inner conjunction is empty (as there are no $\vec c{I}$) and the empty conjunction is true. Thus <code>but(sd1, q)</code> is true at this point. If we compare with the <code>ness</code> definition:</p>
+<div class="math-display">$$  \nessCause{\vec a}{\phi} := \bigvee_{\begin{array}{l}\scriptstyle{
+        \vec b\in \vec A^\wildcard}\\[-0.8ex] \scriptstyle{\vec a\sqsubseteq\vec b}
+    \end{array}}
+  \left (\mydos{\vec b} \wedge [\vec b]\phi \wedge \bigwedge_{K\subsetneq \agents{\vec b} } \neg [\proj{\vec b}{K}]\phi  \right ).$$</div>
+<p>Notably the minimality tests <em>all</em> "subsets" of the sufficient set and that includes the empty set/action. Thus we see the source of the different in actual causation assessment: with only one outcome state, and <code>q</code> being true there (and thus <code>[]q</code> true in <code>m/h1</code>), everything rests on whether there's an appropriate comparator action. For <code>but</code>, the fact that there <em>is no other CGA</em> makes every sub-action essential to the outcome including the one we consider. For <code>ness</code>, if we consider any sufficient group action, <em>every</em> subset will be sufficient <em>including</em> the empty "action". If the empty action is sufficient, then it is necessarily the only minimal sufficient set. As it has no action in it, no action can be an element of a minimal sufficient set. If we requrie K to be non-empty, we get congruent results:</p>
+<p><strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p>Note in both cases, the settledness of  <code>q</code> only plays an indirect role. One could make non-settledness a condition of genuine actual causation. Similarly, one could make genuine choice (i.e., with an alternative) a condition (which would be similar to deliberative STIT). </p>
+<p>If an agent has multiple actions things are slightly different.</p>
+<div class="alon-model-wrap">
+<button class="alon-copy-btn" data-mmd='```mermaid
+---
+actions:
+  &#x27;1&#x27;:
+  - sd
+  - ss
+aliases:
+  &#x27;1&#x27;: Alice
+  &#x27;2&#x27;: Beth
+  &#x27;3&#x27;: Isabella
+  ha: hits Alice
+  masd: manipulates Alice into shooting Dan
+  q: Dan dies
+  sd: shoots Dan
+  sh: stay home
+  ss: stands still
+description: T
+evaluate:
+- - m/h1
+  - q
+- - m/h2
+  - q
+math_preamble: &#x27;% --- ALOn system names ---
+
+  \newcommand{\alon}{\mathcal{ALO}_n}
+
+  \newcommand{\alonm}{\mathcal{M}}
+
+  % --- Model components ---
+
+  \newcommand{\dbt}{\mathcal{T}}
+
+  \newcommand{\hists}{\mathcal{H}^T}
+
+  \newcommand{\mhists}[1]{\mathcal{H}^T_\mathrm{#1}}
+
+  \newcommand{\moments}{M}
+
+  \newcommand{\actions}{\mathcal{A}}
+
+  \newcommand{\prop}{\mathcal{P}}
+
+  % --- Indices and projections ---
+
+  \newcommand{\idx}[2]{#1/#2}
+
+  \newcommand{\mh}{m/h}
+
+  \newcommand{\proj}[2]{#1|_{#2}}
+
+  \newcommand{\wildcard}{{\star}}
+
+  % --- Action and agent functions ---
+
+  \newcommand{\act}[1]{\mathsf{act}(#1)}
+
+  \newcommand{\agents}[1]{\mathsf{agents}(#1)}
+
+  \newcommand{\sucs}[1]{\mathsf{succ}(#1)}
+
+  \newcommand{\opp}[1]{\mathsf{opp}(#1)}
+
+  \newcommand{\unopp}[2]{\mathsf{UnOpp}(#1,#2)}
+
+  % --- Do operators ---
+
+  \newcommand{\mydo}[2]{\mathsf{do}(#1,#2)}
+
+  \newcommand{\mydos}[1]{\mathsf{do}(#1)}
+
+  \newcommand{\myDo}[1]{\mathsf{Do}(#1)}
+
+  % --- Temporal operator ---
+
+  \newcommand{\X}{\mathbf{X}}
+
+  % --- Results-in relation ---
+
+  \newcommand{\resultsin}{\mathrel{\raisebox{-0.23ex}{\boxplus}\!\!\!\!\rightarrow}}
+
+  % --- Causal notions ---
+
+  \newcommand{\bfCause}[2]{\mathsf{bfC}(#1,#2)}
+
+  \newcommand{\nessCause}[2]{\mathsf{nsC}(#1,#2)}&#x27;
+title: 1 agent, 2 action degerate model, settled true outcome.
+type: DBT
+---
+classDiagram
+direction BT
+
+  m --&gt; m1 : h1({sd1})
+  m --&gt; m2 : h2({ss1})
+  m1: q
+  m2: q
+```' onclick="alonCopy(this)">Copy .mmd</button>
+<pre class="mermaid">
+classDiagram
+direction BT
+
+  m --> m1 : h1({sd1})
+  m --> m2 : h2({ss1})
+  m1: q
+  m2: q
+</pre>
+</div>
+<p>Compare with empty set actions:
+<strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>m/h2</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>And without:
+<strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>m/h2</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p>Here, correctly, <code>sd1</code> is not a <code>but</code> cause, because we can replace it with <code>ss1</code> and Dan still dies. It does seem to be a necessary element of a sufficient set. <code>{sd1}</code> is sufficient. Removing it gets you an insufficient empty set. Conversely</p>
+<p>If we modify the model so in <code>h2</code> he doesn't die:</p>
+<div class="alon-model-wrap">
+<button class="alon-copy-btn" data-mmd='```mermaid
+---
+actions:
+  &#x27;1&#x27;:
+  - sd
+  - ss
+aliases:
+  &#x27;1&#x27;: Alice
+  &#x27;2&#x27;: Beth
+  &#x27;3&#x27;: Isabella
+  ha: hits Alice
+  masd: manipulates Alice into shooting Dan
+  q: Dan dies
+  sd: shoots Dan
+  sh: stay home
+  ss: stands still
+description: T
+math_preamble: &#x27;% --- ALOn system names ---
+
+  \newcommand{\alon}{\mathcal{ALO}_n}
+
+  \newcommand{\alonm}{\mathcal{M}}
+
+  % --- Model components ---
+
+  \newcommand{\dbt}{\mathcal{T}}
+
+  \newcommand{\hists}{\mathcal{H}^T}
+
+  \newcommand{\mhists}[1]{\mathcal{H}^T_\mathrm{#1}}
+
+  \newcommand{\moments}{M}
+
+  \newcommand{\actions}{\mathcal{A}}
+
+  \newcommand{\prop}{\mathcal{P}}
+
+  % --- Indices and projections ---
+
+  \newcommand{\idx}[2]{#1/#2}
+
+  \newcommand{\mh}{m/h}
+
+  \newcommand{\proj}[2]{#1|_{#2}}
+
+  \newcommand{\wildcard}{{\star}}
+
+  % --- Action and agent functions ---
+
+  \newcommand{\act}[1]{\mathsf{act}(#1)}
+
+  \newcommand{\agents}[1]{\mathsf{agents}(#1)}
+
+  \newcommand{\sucs}[1]{\mathsf{succ}(#1)}
+
+  \newcommand{\opp}[1]{\mathsf{opp}(#1)}
+
+  \newcommand{\unopp}[2]{\mathsf{UnOpp}(#1,#2)}
+
+  % --- Do operators ---
+
+  \newcommand{\mydo}[2]{\mathsf{do}(#1,#2)}
+
+  \newcommand{\mydos}[1]{\mathsf{do}(#1)}
+
+  \newcommand{\myDo}[1]{\mathsf{Do}(#1)}
+
+  % --- Temporal operator ---
+
+  \newcommand{\X}{\mathbf{X}}
+
+  % --- Results-in relation ---
+
+  \newcommand{\resultsin}{\mathrel{\raisebox{-0.23ex}{\boxplus}\!\!\!\!\rightarrow}}
+
+  % --- Causal notions ---
+
+  \newcommand{\bfCause}[2]{\mathsf{bfC}(#1,#2)}
+
+  \newcommand{\nessCause}[2]{\mathsf{nsC}(#1,#2)}&#x27;
+title: 1 agent, 2 action degerate model, not settled true outcome.
+type: DBT
+---
+classDiagram
+direction BT
+
+  m --&gt; m1 : h1({sd1})
+  m --&gt; m2 : h2({ss1})
+  m1: q
+  m2: ~q
+```' onclick="alonCopy(this)">Copy .mmd</button>
+<pre class="mermaid">
+classDiagram
+direction BT
+
+  m --> m1 : h1({sd1})
+  m --> m2 : h2({ss1})
+  m1: q
+  m2: ~q
+</pre>
+</div>
+<p>With empty set actions:
+<strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p>Without:
+<strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+</tbody>
+</table>
+<p>We're back to a relatively normal sceanrio. Since <code>[]Xq</code> no longer holds, the empty action isn't a sufficient cause, so <code>{sd1}</code> <em>is</em>. Thus we get <code>but</code> and <code>ness</code> and, indeed, all the responsibilities.</p>
+<div style="page-break-after: always; break-after: page;"></div>
+<p>We can add another agent and action:</p>
+<div class="alon-model-wrap">
+<button class="alon-copy-btn" data-mmd='```mermaid
+---
+actions:
+  &#x27;1&#x27;:
+  - sd
+  &#x27;2&#x27;:
+  - ss
+aliases:
+  &#x27;1&#x27;: Alice
+  &#x27;2&#x27;: Beth
+  &#x27;3&#x27;: Isabella
+  ha: hits Alice
+  masd: manipulates Alice into shooting Dan
+  q: Dan dies
+  sd: shoots Dan
+  sh: stay home
+  ss: stands still
+description: T
+math_preamble: &#x27;% --- ALOn system names ---
+
+  \newcommand{\alon}{\mathcal{ALO}_n}
+
+  \newcommand{\alonm}{\mathcal{M}}
+
+  % --- Model components ---
+
+  \newcommand{\dbt}{\mathcal{T}}
+
+  \newcommand{\hists}{\mathcal{H}^T}
+
+  \newcommand{\mhists}[1]{\mathcal{H}^T_\mathrm{#1}}
+
+  \newcommand{\moments}{M}
+
+  \newcommand{\actions}{\mathcal{A}}
+
+  \newcommand{\prop}{\mathcal{P}}
+
+  % --- Indices and projections ---
+
+  \newcommand{\idx}[2]{#1/#2}
+
+  \newcommand{\mh}{m/h}
+
+  \newcommand{\proj}[2]{#1|_{#2}}
+
+  \newcommand{\wildcard}{{\star}}
+
+  % --- Action and agent functions ---
+
+  \newcommand{\act}[1]{\mathsf{act}(#1)}
+
+  \newcommand{\agents}[1]{\mathsf{agents}(#1)}
+
+  \newcommand{\sucs}[1]{\mathsf{succ}(#1)}
+
+  \newcommand{\opp}[1]{\mathsf{opp}(#1)}
+
+  \newcommand{\unopp}[2]{\mathsf{UnOpp}(#1,#2)}
+
+  % --- Do operators ---
+
+  \newcommand{\mydo}[2]{\mathsf{do}(#1,#2)}
+
+  \newcommand{\mydos}[1]{\mathsf{do}(#1)}
+
+  \newcommand{\myDo}[1]{\mathsf{Do}(#1)}
+
+  % --- Temporal operator ---
+
+  \newcommand{\X}{\mathbf{X}}
+
+  % --- Results-in relation ---
+
+  \newcommand{\resultsin}{\mathrel{\raisebox{-0.23ex}{\boxplus}\!\!\!\!\rightarrow}}
+
+  % --- Causal notions ---
+
+  \newcommand{\bfCause}[2]{\mathsf{bfC}(#1,#2)}
+
+  \newcommand{\nessCause}[2]{\mathsf{nsC}(#1,#2)}&#x27;
+title: 2 agents, 2 actions degerate model
+type: DBT
+---
+classDiagram
+direction BT
+
+  m --&gt; m1 : h1({sd1,ss2})
+  m1: q
+```' onclick="alonCopy(this)">Copy .mmd</button>
+<pre class="mermaid">
+classDiagram
+direction BT
+
+  m --> m1 : h1({sd1,ss2})
+  m1: q
+</pre>
+</div>
+<p>Without blocking empty sets, we get a ton of <code>but</code>s but no <code>ness</code>:
+<strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td>Beth</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+<tr>
+<td>{Alice, Beth}</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>If we block empty actions:</p>
+<p><strong><code>m/h1</code></strong> → <code>q</code> (Dan dies)</p>
+<table>
+<thead>
+<tr>
+<th>Agent</th>
+<th>pres</th>
+<th>sres</th>
+<th>res</th>
+<th>but</th>
+<th>ness</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alice</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Beth</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>{Alice, Beth}</td>
+<td></td>
+<td></td>
+<td></td>
+<td>✓</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Note the group action, <code>{sd1, ss2}</code> is <em>not</em> a NESS cause. Each singleton action is also sufficient thus any superset of either cannot be minimal. While this model looks counter intuitive (how can Beth's standing still kill Dan?), it is not hard to come up with a reasonable scenario, e.g., Dan had a heart attack thus either shooting him or standing around would result in his death.</p>
+<p>What is broken now is the <code>but</code> analysis. Even in our strained scenario, we have a classic case of causal overdetermination, thus while both "should be" NESS, neither should be <code>but</code>. </p>
+</body></html>

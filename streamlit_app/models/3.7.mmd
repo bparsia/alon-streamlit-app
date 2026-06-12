@@ -1,6 +1,6 @@
 ---
 title: Example 3.7 from Where Responsibility Takes You
-description: Structurally, this is similar to 3.1 (only one history, h1, has the successful, non-negated outcome), so we only need specify the h1 successor.
+description: Structurally similar to 3.1. q only when both agents push together; individual pushing is insufficient.
 type: DBT
 actions:
   1:
@@ -21,4 +21,10 @@ direction BT
   class m {
   }
   m --> m1 : h1({pd1, pd3})
+  m --> m2 : h2({pd1, ss3})
+  m --> m3 : h3({ss1, pd3})
+  m --> m4 : h4({ss1, ss3})
   m1: q
+  m2: ~q
+  m3: ~q
+  m4: ~q

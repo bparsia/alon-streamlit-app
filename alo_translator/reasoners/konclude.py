@@ -114,16 +114,6 @@ class KoncludeAdapter(ReasonerAdapter):
                     error_message="Ontology is inconsistent"
                 )
 
-            # Check for inconsistency in XML output (individuals asserted as owl:Nothing)
-            if "owl#Nothing" in output_content or "owl:Nothing" in output_content:
-                return ReasoningResult(
-                    individual_types={},
-                    wall_clock_time=wall_clock_time,
-                    raw_output=output_content,
-                    success=False,
-                    error_message="Ontology is inconsistent (all individuals are owl:Nothing)"
-                )
-
             # Parse output
             individual_types = self.parse_output(output_content, mode)
 

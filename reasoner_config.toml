@@ -2,8 +2,8 @@
 # This file specifies paths to OWL reasoners
 
 [reasoners.konclude]
-# Local development: update this path to your Konclude installation
-# Streamlit Cloud: Konclude installed via packages.txt
-# Try common paths: /usr/bin/Konclude or /usr/bin/konclude
-#path = "/usr/bin/Konclude"  # Debian package binary
-path = ""
+# Default: place the Konclude binary at bin/Konclude (gitignored).
+# See bin/README.md for download instructions.
+# For Streamlit Cloud: Konclude installed via packages.txt
+# For Linux system install: path = "/usr/bin/Konclude"
+path = "bin/Konclude"

@@ -8,7 +8,7 @@
 // Capture YAML as a single block to preserve indentation
 frontmatter: "---" _NL YAML_BLOCK "---" _NL
 
-YAML_BLOCK: /(?:(?!^---$)(?:.*\n))+/m
+YAML_BLOCK: /(?:(?!^---\s*$)(?:.*\n))+/m
 
 // Main class diagram
 diagram: "classDiagram" _NL direction? statement*

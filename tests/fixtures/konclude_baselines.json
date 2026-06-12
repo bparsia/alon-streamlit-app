@@ -3,18 +3,17 @@
     "description": "Canonical Konclude baselines for ALOn theories",
     "reasoner": "Konclude",
     "strategy": "EquivFullCardinalityStrategy (strategy 2)",
-    "date": "2026-03-20",
-    "note": "OWL free_do group action fix applied - coalition pres queries now correctly include opposing checks per agent"
+    "date": "2026-06-12",
+    "note": "Updated to use complete mermaid models; dxstit spelling corrected from dsxtit"
   },
   "3.1": {
-    "toml": "theories/3.1_auto.toml",
     "total_queries": 18,
     "satisfied_count": 13,
     "satisfied_queries": [
       "q_but_1_2_q",
       "q_but_sd1_q",
       "q_but_ss2_q",
-      "q_dsxtit_1_2_q",
+      "q_dxstit_1_2_q",
       "q_ness_1_2_q",
       "q_ness_sd1_q",
       "q_ness_ss2_q",
@@ -27,7 +26,6 @@
     ]
   },
   "3.5": {
-    "toml": "theories/3.5_auto.toml",
     "total_queries": 90,
     "satisfied_count": 26,
     "konclude_timeout_seconds": 600,
@@ -35,10 +33,10 @@
       "q_but_1_2_q",
       "q_but_sd1_q",
       "q_but_ss2_q",
-      "q_dsxtit_1_2_3_4_q",
-      "q_dsxtit_1_2_3_q",
-      "q_dsxtit_1_2_4_q",
-      "q_dsxtit_1_2_q",
+      "q_dxstit_1_2_3_4_q",
+      "q_dxstit_1_2_3_q",
+      "q_dxstit_1_2_4_q",
+      "q_dxstit_1_2_q",
       "q_ness_1_2_q",
       "q_ness_sd1_q",
       "q_ness_ss2_q",
@@ -61,13 +59,12 @@
     ]
   },
   "3.6": {
-    "toml": "theories/3.6_auto.toml",
     "total_queries": 18,
     "satisfied_count": 10,
     "satisfied_queries": [
-      "q_dsxtit_1_3_q",
-      "q_dsxtit_1_q",
-      "q_dsxtit_3_q",
+      "q_dxstit_1_3_q",
+      "q_dxstit_1_q",
+      "q_dxstit_3_q",
       "q_ness_sd1_q",
       "q_ness_sd3_q",
       "q_pres_1_3_q",
@@ -78,14 +75,13 @@
     ]
   },
   "3.7": {
-    "toml": "theories/3.7_auto.toml",
     "total_queries": 18,
     "satisfied_count": 10,
     "satisfied_queries": [
       "q_but_1_3_q",
       "q_but_pd1_q",
       "q_but_pd3_q",
-      "q_dsxtit_1_3_q",
+      "q_dxstit_1_3_q",
       "q_ness_1_3_q",
       "q_ness_pd1_q",
       "q_ness_pd3_q",

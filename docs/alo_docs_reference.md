@@ -141,7 +141,7 @@ It is a list of `[moment, target]` pairs, each specifying one evaluation point
 and its target formula.  Defaults to `[[m/h1, q]]` when absent.
 
 ```yaml
-evaluate:
+res_analyse:
   - [m/h1, Xdo(sd1)]
   - [m/h1, do(sd1)]
   - [mm/h1, q]

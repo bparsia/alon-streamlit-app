@@ -1,0 +1,56 @@
+# Non-monotonicity of [+]-> with respect to group expansion
+#
+# This model was constructed to test whether do(A) [+]-> q and do(A∪{b}) [+]-> ~q
+# can both hold (a two-step Sobel sequence). The answer is no.
+#
+# Monotonicity of opposing (Def 3.4: if α |> β and β ⊆ γ then α |> γ) entails
+# that free_do(A) ⊇ free_do(A∪{b}) for any b — adding agents to the group can
+# only shrink the set of witnessing histories, never expand it. Therefore [+]->
+# satisfies antecedent strengthening with respect to group expansion: if
+# do(A) [+]-> q then do(A∪{b}) [+]-> q. Sobel sequences are not possible.
+#
+# What this model does show: do(sd1) [+]-> q (True) and do({sd1,ha2}) [+]-> q
+# (False) — the strengthened antecedent conditional can fail, but only because
+# the group conditional has *fewer* witnessing histories, not because the
+# consequent flips. The second conditional is simply not supported, not reversed.
+#
+# Outcome: q iff sd1 fires and rb3 absent (rb3 opposes sd1 individually).
+# wn4 opposes {sd1,ha2} as a group — present in h3,h4,h7,h8.
+# free_do(sd1): histories without rb3 = h1,h3,h5,h7 — all give q. True.
+# free_do({sd1,ha2}): histories where sd1+ha2 performed and wn4 absent = h1,h2.
+#   h2 has rb3 so ~q. False.
+---
+type: DBT
+actions:
+  1: [sd, nop]
+  2: [ha, nop]
+  3: [rb, nop]
+  4: [wn, nop]
+opposings:
+  sd1: [rb3]
+  "{sd1,ha2}": [wn4]
+evaluate:
+  - - m/h1
+    - "do(sd1) [+]-> q"
+  - - m/h1
+    - "do({1:sd, 2:ha}) [+]-> q"
+---
+classDiagram
+direction BT
+  class m { }
+  m --> m1 : h1({sd1, ha2, nop3, nop4})
+  m --> m2 : h2({sd1, ha2, rb3,  nop4})
+  m --> m3 : h3({sd1, ha2, nop3, wn4})
+  m --> m4 : h4({sd1, ha2, rb3,  wn4})
+  m --> m5 : h5({sd1, nop2, nop3, nop4})
+  m --> m6 : h6({sd1, nop2, rb3,  nop4})
+  m --> m7 : h7({sd1, nop2, nop3, wn4})
+  m --> m8 : h8({sd1, nop2, rb3,  wn4})
+  m1: q
+  m2: ~q
+  m3: q
+  m4: ~q
+  m5: q
+  m6: ~q
+  m7: q
+  m8: ~q

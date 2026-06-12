@@ -571,9 +571,14 @@ def format_model_overview(model) -> str:
     if model.opposings:
         lines.append("\n### Opposing Relations")
         for opp in model.opposings:
-            opposed  = f"{opp.opposed_action.action_type}{opp.opposed_action.agent}"
-            opposing = f"{opp.opposing_action.action_type}{opp.opposing_action.agent}"
-            opposed_desc  = aliases.get(opp.opposed_action.action_type,  opp.opposed_action.action_type)
+            from alo_translator.model.core import GroupAction as _GA
+            if isinstance(opp.opposed_action, _GA):
+                opposed = '{' + ', '.join(f"{at}{ag}" for ag, at in sorted(opp.opposed_action.actions.items())) + '}'
+                opposed_desc = opposed
+            else:
+                opposed = str(opp.opposed_action)
+                opposed_desc = aliases.get(opp.opposed_action.action_type, opp.opposed_action.action_type)
+            opposing = str(opp.opposing_action)
             opposing_desc = aliases.get(opp.opposing_action.action_type, opp.opposing_action.action_type)
             lines.append(f"- `{opposed}` ({opposed_desc}) opposed by `{opposing}` ({opposing_desc})")
 

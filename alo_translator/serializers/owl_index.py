@@ -20,8 +20,9 @@ Example for 2 histories:
 
 import re as _re
 from typing import List, Set, Dict, Tuple, Optional
-from xml.etree.ElementTree import Element, SubElement, tostring
+from xml.etree.ElementTree import Element, SubElement, tostring, fromstring
 from xml.dom import minidom
+from pathlib import Path
 
 from .base import Serializer
 from ..model.core import ALOModel, Action, GroupAction, OpposingRelation
@@ -162,6 +163,47 @@ class OWLIndexSerializer(Serializer):
                     actions.add(a)
         return actions
 
+    def _is_complex_prop(self, prop: str) -> bool:
+        """Return True if prop is a complex ALOn formula (not a bare atom or do(X))."""
+        if self._do_prop_action(prop) is not None:
+            return False
+        # Bare atom: only word chars (letters, digits, underscore)
+        return not _re.match(r'^\w+$', prop.strip())
+
+    def _prop_str_to_owl_elem(self, prop: str) -> Element:
+        """Parse a proposition string and return an OWL XML Element for ClassAssertion.
+
+        - Bare atom 'p'    → <Class IRI="...p"/>
+        - do(X)            → <Class IRI="...X"/>  (action class)
+        - Complex formula  → full OWL class expression via OwlSerializer
+        """
+        action_name = self._do_prop_action(prop)
+        if action_name:
+            elem = Element("Class")
+            elem.set("IRI", self._iri(action_name))
+            return elem
+
+        if not self._is_complex_prop(prop):
+            elem = Element("Class")
+            elem.set("IRI", self._iri(prop.strip()))
+            return elem
+
+        # Complex formula — parse and serialize via OwlSerializer
+        from ..serializers.owl_serializer import OwlSerializer
+        from lark import Lark
+        grammar_path = Path(__file__).parent.parent / "parsers" / "alon_grammar_clean.lark"
+        with open(grammar_path) as f:
+            grammar = f.read()
+        parser = Lark(grammar, start='start', parser='lalr')
+        owl_ser = OwlSerializer(base_iri=self.BASE_IRI)
+        tree = parser.parse(prop.strip())
+        owl_xml_str = owl_ser.transform(tree)
+        # owl_xml_str is an XML string like '<ObjectIntersectionOf>...</ObjectIntersectionOf>'
+        wrapped = f'<root xmlns="{self.OWL_NS}">{owl_xml_str}</root>'
+        root = fromstring(wrapped)
+        # Return the first (and only) child
+        return list(root)[0]
+
     def _declare_class(self, ontology: Element, class_name: str, label: str = None):
         """Declare an OWL class (idempotent: skips if already declared)."""
         if class_name in self._declared_classes:
@@ -200,12 +242,13 @@ class OWLIndexSerializer(Serializer):
                 action_name = f"{action_type}{agent_id}"
                 self._declare_class(ontology, action_name, f"Action {action_name}")
 
-        # Declare proposition classes (skip do(X) props — those are action classes)
+        # Declare proposition classes for bare atoms (needed so query expansions
+        # that reference them by name resolve correctly in the TBox)
         all_props = set()
         for result in self.model.results:
             all_props.update(result.true_propositions)
         for prop in all_props:
-            if self._do_prop_action(prop) is None:
+            if self._do_prop_action(prop) is None and not self._is_complex_prop(prop):
                 self._declare_class(ontology, prop, f"Proposition {prop}")
 
         # Declare action classes for do(X) proposition labels (virtual actions)
@@ -217,6 +260,12 @@ class OWLIndexSerializer(Serializer):
         # Even actions with no explicit opposings need Opp2X classes for query evaluation
         for action in self.model.get_all_actions():
             self._declare_class(ontology, f"Opp2{action}", f"Opposing to {action}")
+
+        # Declare group opposing classes for any group-opposed actions
+        for opp in self.model.opposings:
+            if isinstance(opp.opposed_action, GroupAction):
+                cls = opp.opposed_action.opp_class_name()
+                self._declare_class(ontology, cls, f"Opposing to group {opp.opposed_action}")
 
         # Declare query classes (will be added later)
         for query in self.model.queries:
@@ -295,24 +344,25 @@ class OWLIndexSerializer(Serializer):
         SubElement(succ_some_thing, "ObjectProperty", {"IRI": self._iri("succ")})
         SubElement(succ_some_thing, "Class", {"IRI": "http://www.w3.org/2002/07/owl#Thing"})
 
+    def _opp_class_for(self, opposed_action) -> str:
+        """Return the OWL class name for the Opp2X class of an opposed action."""
+        if isinstance(opposed_action, GroupAction):
+            return opposed_action.opp_class_name()
+        return f"Opp2{opposed_action}"
+
     def _add_opposing_axioms(self, ontology: Element):
         """Add Opp2X classes and subsumption axioms for opposing relations."""
-        # Group opposings by opposed action
+        # Group opposings by opposed action (keyed by opp class name)
         opposing_map: Dict[str, List] = {}
         for opp in self.model.opposings:
-            opposed_str = str(opp.opposed_action)
-            if opposed_str not in opposing_map:
-                opposing_map[opposed_str] = []
-            opposing_map[opposed_str].append(opp.opposing_action)
+            opp_class = self._opp_class_for(opp.opposed_action)
+            opposing_map.setdefault(opp_class, []).append(opp.opposing_action)
 
         # For each opposed action, create Opp2X class and subsumption axioms
-        for opposed_str, opposing_actions in opposing_map.items():
-            opp_class = f"Opp2{opposed_str}"
-
+        for opp_class, opposing_actions in opposing_map.items():
             # Each opposing action is subclass of Opp2X
             for opposing_action in opposing_actions:
                 opposing_str = str(opposing_action)
-
                 subclass = SubElement(ontology, "SubClassOf")
                 SubElement(subclass, "Class", {"IRI": self._iri(opposing_str)})
                 SubElement(subclass, "Class", {"IRI": self._iri(opp_class)})
@@ -406,33 +456,24 @@ class OWLIndexSerializer(Serializer):
 
         # From explicit opposings in model
         for opp in self.model.opposings:
-            opposed_str = str(opp.opposed_action)
-            opp_class = f"Opp2{opposed_str}"
-
-            if opp_class not in opp_class_members:
-                opp_class_members[opp_class] = set()
-
-            opposing_str = str(opp.opposing_action)
-            opp_class_members[opp_class].add(opposing_str)
+            opp_class = self._opp_class_for(opp.opposed_action)
+            opp_class_members.setdefault(opp_class, set()).add(str(opp.opposing_action))
 
         # Also include Opp2X classes for all model actions
         for action in self.model.get_all_actions():
-            opp_class = f"Opp2{action}"
-            if opp_class not in opp_class_members:
-                opp_class_members[opp_class] = set()
+            opp_class_members.setdefault(f"Opp2{action}", set())
 
         # Also include Opp2X classes for virtual actions from do(X) proposition labels
         for action_name in self._collect_do_prop_actions():
-            opp_class = f"Opp2{action_name}"
-            if opp_class not in opp_class_members:
-                opp_class_members[opp_class] = set()
+            opp_class_members.setdefault(f"Opp2{action_name}", set())
 
         # Get all actions performed in this CGA
-        cga_actions = set()
-        for action in cga.to_action_list():
-            cga_actions.add(str(action))
+        cga_actions = set(str(a) for a in cga.to_action_list())
 
-        # For each Opp2X class, check if CGA contains any opposing action
+        # For group opposing classes, check whether ALL actions in the group are in the CGA
+        # AND the opposing action is present.
+        # The check: has_opposing = opposing action present in CGA.
+        # For group Opp2 classes we check the same way (opposing_action membership in cga_actions).
         for opp_class, members in opp_class_members.items():
             has_opposing = bool(cga_actions & members)
 
@@ -458,52 +499,16 @@ class OWLIndexSerializer(Serializer):
         if not self.history_to_cga:
             self._build_cga_mappings()
 
-        # Partition all propositions into regular props and do(X) action-props
-        all_raw_props = set(self.model.get_all_propositions())
-        all_regular_props = {p for p in all_raw_props if self._do_prop_action(p) is None}
-        all_action_props = {p for p in all_raw_props if self._do_prop_action(p) is not None}
-        # Maps do(X) prop string -> action class name X
-        all_action_prop_map = {p: self._do_prop_action(p) for p in all_action_props}
-
         for i, history_name in enumerate(self.history_to_cga.keys(), 1):
-            # Use same enumeration as _add_succ_assertions() for consistency
             succ_index = self._index_name(f'm{i}', history_name)
 
-            # Find the result for this history (may be None for unnamed histories)
-            true_props = set()
             for result in self.model.results:
                 if result.history_name == history_name:
-                    true_props = set(result.true_propositions)
-                    # Add positive assertions
                     for prop in result.true_propositions:
-                        action_name = self._do_prop_action(prop)
-                        if action_name:
-                            # do(X) prop → assert as action class membership
-                            assertion = SubElement(ontology, "ClassAssertion")
-                            SubElement(assertion, "Class", {"IRI": self._iri(action_name)})
-                            SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
-                        else:
-                            assertion = SubElement(ontology, "ClassAssertion")
-                            SubElement(assertion, "Class", {"IRI": self._iri(prop)})
-                            SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
+                        assertion = SubElement(ontology, "ClassAssertion")
+                        assertion.append(self._prop_str_to_owl_elem(prop))
+                        SubElement(assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
                     break
-
-            # Closed-world: negative assertions for regular props not true here
-            false_regular_props = all_regular_props - true_props
-            for prop in false_regular_props:
-                neg_assertion = SubElement(ontology, "ClassAssertion")
-                obj_compl = SubElement(neg_assertion, "ObjectComplementOf")
-                SubElement(obj_compl, "Class", {"IRI": self._iri(prop)})
-                SubElement(neg_assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
-
-            # Closed-world: negative assertions for do(X) action-props not true here
-            false_action_props = all_action_props - true_props
-            for prop in false_action_props:
-                action_name = all_action_prop_map[prop]
-                neg_assertion = SubElement(ontology, "ClassAssertion")
-                obj_compl = SubElement(neg_assertion, "ObjectComplementOf")
-                SubElement(obj_compl, "Class", {"IRI": self._iri(action_name)})
-                SubElement(neg_assertion, "NamedIndividual", {"IRI": self._iri(succ_index)})
 
     def _add_query_classes(self, ontology: Element):
         """Add query class definitions using index-based semantics.

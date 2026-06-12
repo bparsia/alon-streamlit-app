@@ -15,7 +15,7 @@ from typing import Dict, List, Set, Tuple, Optional
 from xml.etree.ElementTree import Element, SubElement
 
 from .owl_index_new_expander import OWLIndexNewExpanderSerializer
-from ..model.core import LayeredALOModel
+from ..model.core import LayeredALOModel, GroupAction
 from ..parsers.expander_transformer import ExpanderTransformer
 
 
@@ -86,9 +86,9 @@ class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
             action_name = f"{action_type}{agent_id}"
             self._declare_class(ontology, action_name, f"Action {action_name}")
 
-        # Proposition classes (non-negated, non-do())
+        # Proposition classes (non-negated, non-do(), non-complex)
         for prop in sorted(self._collect_all_propositions()):
-            if self._do_prop_action(prop) is None:
+            if self._do_prop_action(prop) is None and not self._is_complex_prop(prop):
                 self._declare_class(ontology, prop, f"Proposition {prop}")
 
         # Virtual action classes derived from do(X) proposition labels
@@ -100,6 +100,12 @@ class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
         for action_type, agent_id in sorted(self._all_action_pairs()):
             action_name = f"{action_type}{agent_id}"
             self._declare_class(ontology, f"Opp2{action_name}", f"Opposing to {action_name}")
+
+        # Group opposing classes
+        for opp in self.model.opposings:
+            if isinstance(opp.opposed_action, GroupAction):
+                cls = opp.opposed_action.opp_class_name()
+                self._declare_class(ontology, cls, f"Opposing to group {opp.opposed_action}")
 
         # Query classes
         for query in self.model.queries:
@@ -188,7 +194,7 @@ class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
         # Build Opp2X → {members} map from model's opposing relations
         opp_class_members: Dict[str, Set[str]] = {}
         for opp in self.model.opposings:
-            opp_class = f"Opp2{opp.opposed_action}"
+            opp_class = self._opp_class_for(opp.opposed_action)
             opp_class_members.setdefault(opp_class, set()).add(str(opp.opposing_action))
 
         # Ensure every action has an entry (even if no explicit opposing)
@@ -210,42 +216,18 @@ class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
     # ------------------------------------------------------------------
 
     def _add_proposition_assertions(self, ontology: Element):
-        """Assert proposition memberships at leaf moment indices (closed-world)."""
-        all_props = self._collect_all_propositions()
-        all_action_props = {p for p in all_props if self._do_prop_action(p) is not None}
-        all_regular_props = all_props - all_action_props
+        """Assert proposition memberships at moment indices (closed-world for bare atoms).
 
+        Complex formulas are asserted positively when true; they are not negated
+        closed-world (the reasoner handles the semantics via the formula expression).
+        """
         for node_name, node in self.model.moments.items():
-            if not node.is_leaf:
-                continue
-            true_props = {p for p in node.propositions if not p.startswith('~')}
-            false_regular = all_regular_props - true_props
-            false_action_props = {p for p in all_action_props if p not in true_props}
-
             for hist_name in sorted(self.model.histories_through(node_name)):
-                leaf_idx = self._index_name(node_name, hist_name)
-
-                for prop in sorted(true_props):
-                    action_name = self._do_prop_action(prop)
+                idx = self._index_name(node_name, hist_name)
+                for prop in sorted(node.propositions):
                     assertion = SubElement(ontology, "ClassAssertion")
-                    if action_name:
-                        SubElement(assertion, "Class", {"IRI": self._iri(action_name)})
-                    else:
-                        SubElement(assertion, "Class", {"IRI": self._iri(prop)})
-                    SubElement(assertion, "NamedIndividual", {"IRI": self._iri(leaf_idx)})
-
-                for prop in sorted(false_regular):
-                    neg = SubElement(ontology, "ClassAssertion")
-                    compl = SubElement(neg, "ObjectComplementOf")
-                    SubElement(compl, "Class", {"IRI": self._iri(prop)})
-                    SubElement(neg, "NamedIndividual", {"IRI": self._iri(leaf_idx)})
-
-                for prop in sorted(false_action_props):
-                    action_name = self._do_prop_action(prop)
-                    neg = SubElement(ontology, "ClassAssertion")
-                    compl = SubElement(neg, "ObjectComplementOf")
-                    SubElement(compl, "Class", {"IRI": self._iri(action_name)})
-                    SubElement(neg, "NamedIndividual", {"IRI": self._iri(leaf_idx)})
+                    assertion.append(self._prop_str_to_owl_elem(prop))
+                    SubElement(assertion, "NamedIndividual", {"IRI": self._iri(idx)})
 
     # ------------------------------------------------------------------
     # Query classes — override factory to inject evaluation_moment

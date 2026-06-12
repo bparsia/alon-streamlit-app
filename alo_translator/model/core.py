@@ -58,6 +58,15 @@ class GroupAction:
         items = ', '.join(f"{a}='{act}'" for a, act in sorted(self.actions.items()))
         return f"{{{items}}}"
 
+    def opp_class_name(self) -> str:
+        """Return a sanitized OWL class name for this group action's Opp2 class.
+
+        Sorted alphabetically on composed action strings to match serializer output.
+        e.g. GroupAction({1: sd, 2: ha}) → "Opp2_ha2_sd1"
+        """
+        composed = sorted(f"{act}{agent}" for agent, act in self.actions.items())
+        return f"Opp2_{'_'.join(composed)}"
+
 
 @dataclass
 class History:

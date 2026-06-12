@@ -1,0 +1,75 @@
+
+```mermaid
+---
+title: An analysis on a possible theory of the Kenneka Jenkins case
+description: This analysis provides a little more insight into a theory of this case, which presented the possibility of her death being a result of one of the plaza's staff members. It showcases the idea that whether the case was a murder or a freak accident, a friend's intervention is likely to have prevented her death. 
+source?: https://www.youtube.com/watch?v=12S8VPbT494&pp=ygUUa2VubmVrYSBqZW5raW5zIGNhc2U%3D
+
+type: DBT
+actions:
+  1:
+    - wi
+    - wa
+  2:
+    - sw
+    - na
+  3:
+    - ih
+    - na
+    
+opposings:
+  ih3:
+    - sw2
+  wi1:
+    - sw2
+    
+aliases:
+  1: jane
+  2: friend(s)
+  3: cleaner
+  wi: wandered into freezer
+  wa: wandered around
+  ih: intention of harm via freezer
+  sw: stayed with jane
+  na: normal activities, then absent (from scene)
+  q: jane dies
+  
+res_analyse:
+  - - m/h3
+    - q
+  - - m/h4
+    - q
+  - - m/h8
+    - q
+
+---
+
+classDiagram
+direction BT
+  class m {
+  }
+  
+  m --> m1 : h1({wi1, sw2, na3})
+  m --> m2 : h2({wi1, sw2, ih3})
+  m --> m3 : h3({wi1, na2, na3})
+  m --> m4 : h4({wi1, na2, ih3})
+  m --> m5 : h5({wa1, sw2, na3})
+  m --> m6 : h6({wa1, sw2, ih3})
+  m --> m7 : h7({wa1, na2, na3})
+  m --> m8 : h8({wa1, na2, ih3})
+  m1: ~q
+  m2: ~q
+  m3: q
+  m4: q
+  m5: ~q
+  m6: ~q
+  m7: ~q
+  m8: q
+```
+{{model_overview}}
+
+{{alias_table}}
+
+{{opposing_table}}
+    
+{{results}}

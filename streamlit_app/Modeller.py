@@ -261,7 +261,7 @@ with st.expander("Responsibility Analysis", expanded=True):
 
             # Initialise slots: from YAML evaluate if present, else one default
             if _slots_key not in st.session_state:
-                _yaml_evals = _partial_spec_ra.get("evaluate", []) if _model_ra else []
+                _yaml_evals = _partial_spec_ra.get("res_analyse", []) if _model_ra else []
                 if _yaml_evals:
                     _slots = []
                     for _item in _yaml_evals:
@@ -356,3 +356,45 @@ with st.expander("Responsibility Analysis", expanded=True):
                 ))
 
             st.button("➕ Add analysis point", key=f"ra_add_{_model_hash}", on_click=_add_slot)
+
+
+# ── Section 4: Direct Formula Evaluation ─────────────────────────────────────
+
+with st.expander("Formula Evaluation", expanded=True):
+    if not mermaid_text.strip():
+        st.info("Enter a Mermaid diagram in the Model Definition section")
+    else:
+        try:
+            _model_ev, _partial_spec_ev = parse_model(mermaid_text)
+            _is_layered_ev = isinstance(_model_ev, LayeredALOModel)
+        except Exception:
+            _model_ev = None
+            _partial_spec_ev = {}
+            _is_layered_ev = False
+
+        _yaml_evaluate = (_partial_spec_ev or {}).get("evaluate", []) if not _is_layered_ev else []
+
+        if _is_layered_ev:
+            st.info("Direct formula evaluation is not yet supported for TD>1 models.")
+        elif not _yaml_evaluate:
+            st.info("Add an `evaluate` block to your frontmatter to check formulas directly at an index.\n\n"
+                    "Example:\n```yaml\nevaluate:\n  - - m/h1\n    - \"do(sd1) [+]-> q\"\n```")
+        else:
+            if st.button("▶️ Evaluate", key="ev_run"):
+                with st.spinner("Evaluating…"):
+                    try:
+                        from alo_docs._runner import _run_evaluate, format_evaluate_results
+                        _m_ev, _partial_spec_ev2 = parse_model(mermaid_text)
+                        _m_ev, _sat_ev, _pts_ev = _run_evaluate(_m_ev, _partial_spec_ev2)
+                        _ev_md = format_evaluate_results(_m_ev, _sat_ev, _pts_ev)
+                        st.session_state["ev_result_md"] = _ev_md
+                    except Exception as _e:
+                        st.error(f"Evaluation failed: {_e}")
+                        import traceback; st.code(traceback.format_exc())
+
+            if st.session_state.get("ev_result_md"):
+                _col_ev, _col_evb = st.columns([8, 1])
+                with _col_ev:
+                    st.markdown(st.session_state["ev_result_md"])
+                with _col_evb:
+                    copy_button(st.session_state["ev_result_md"], "📋 Copy")

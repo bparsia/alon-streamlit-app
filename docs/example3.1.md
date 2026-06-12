@@ -28,7 +28,6 @@ evaluation_point: m/h1
 ---
 classDiagram
 direction BT
-  class m { }
   m --> m1 : h1({sd1, ss2})
   m1: q
 ```

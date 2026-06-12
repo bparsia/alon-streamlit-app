@@ -17,6 +17,11 @@ import pytest
 from pathlib import Path
 
 BASELINES_PATH = Path(__file__).parent / "fixtures" / "konclude_baselines.json"
+MODELS_DIR = Path(__file__).parent.parent / "streamlit_app" / "models"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
 
 
 def load_baselines():
@@ -46,18 +51,33 @@ def konclude_available():
     return find_konclude() is not None
 
 
-def run_theory(toml_path: str, timeout: int = 120):
-    """Run evaluate_model pipeline and return satisfied query IDs."""
-    from alo_translator.parsers.toml_parser import parse_toml_file
-    from alo_translator.parsers.builder import parse_queries
+def run_theory(mmd_path: Path, timeout: int = 120):
+    """Run evaluate_model pipeline from a .mmd model file."""
+    from alo_translator.parsers.dbt_parser import parse_dbt_diagram
+    from alo_translator.parsers.builder import parse_formula
+    from alo_translator.query_generation import ResponsibilityConfig, generate_queries
     from alo_translator.serializers.owl_index_new_expander import OWLIndexNewExpanderSerializer
     from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
     from alo_translator.reasoners.konclude import KoncludeAdapter
     from alo_translator.reasoners.base import ReasoningMode
     import tempfile
 
-    model = parse_toml_file(toml_path)
-    model = parse_queries(model)
+    mermaid = mmd_path.read_text()
+    parsed = parse_dbt_diagram(mermaid)
+    model = parsed[0] if isinstance(parsed, tuple) else parsed
+
+    # Generate full responsibility analysis for target q at h1
+    model.responsibility_config = ResponsibilityConfig(
+        target_proposition="q",
+        agents="all",
+        groups="all",
+        responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
+        history="h1",
+    )
+    model.queries = generate_queries(model)
+    for q in model.queries:
+        if q.formula_ast is None:
+            q.formula_ast = parse_formula(q.formula_string)
 
     strategy = EquivFullCardinalityStrategy()
     serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy)
@@ -69,14 +89,14 @@ def run_theory(toml_path: str, timeout: int = 120):
 
     try:
         adapter = KoncludeAdapter(str(find_konclude()))
-        result = adapter.run(owl_path, mode=ReasoningMode.REALISATION, timeout=timeout)
+        konclude_result = adapter.run(owl_path, mode=ReasoningMode.REALISATION, timeout=timeout)
     finally:
         owl_path.unlink(missing_ok=True)
 
-    if not result.success:
-        pytest.skip(f"Konclude failed: {result.error_message}")
+    if not konclude_result.success:
+        pytest.skip(f"Konclude failed: {konclude_result.error_message}")
 
-    m_types = result.individual_types.get("m_h1", set())
+    m_types = konclude_result.individual_types.get("m_h1", set())
     return sorted(q.query_id for q in model.queries if q.query_id in m_types)
 
 
@@ -90,7 +110,7 @@ class TestKoncludeBaselines:
 
     def test_theory_3_1(self, baselines):
         b = baselines["3.1"]
-        satisfied = run_theory(b["toml"], timeout=120)
+        satisfied = run_theory(MODELS_DIR / "3.1.mmd", timeout=120)
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.1 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
@@ -99,7 +119,7 @@ class TestKoncludeBaselines:
 
     def test_theory_3_5(self, baselines):
         b = baselines["3.5"]
-        satisfied = run_theory(b["toml"], timeout=b.get("konclude_timeout_seconds", 600))
+        satisfied = run_theory(MODELS_DIR / "3.5.mmd", timeout=b.get("konclude_timeout_seconds", 600))
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.5 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
@@ -108,7 +128,7 @@ class TestKoncludeBaselines:
 
     def test_theory_3_6(self, baselines):
         b = baselines["3.6"]
-        satisfied = run_theory(b["toml"], timeout=120)
+        satisfied = run_theory(MODELS_DIR / "3.6.mmd", timeout=120)
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.6 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
@@ -117,7 +137,7 @@ class TestKoncludeBaselines:
 
     def test_theory_3_7(self, baselines):
         b = baselines["3.7"]
-        satisfied = run_theory(b["toml"], timeout=120)
+        satisfied = run_theory(MODELS_DIR / "3.7.mmd", timeout=120)
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.7 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
