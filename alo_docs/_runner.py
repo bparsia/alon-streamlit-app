@@ -28,7 +28,7 @@ def _block_to_mermaid_text(block: ModelBlock) -> str:
 
 def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set[str], list]:
     """Run analysis on a ALOModel. Returns (model, satisfied_ids, eval_points)."""
-    from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
+    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
     from streamlit_app.utils import setup_layered_queries
 
     eval_points = model.evaluations or [
@@ -43,7 +43,7 @@ def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set
         model.queries = []
         model = setup_layered_queries(model)
         all_queries.extend(model.queries)
-        serializer = LayeredDatalogIndexSerializer(
+        serializer = DatalogIndexSerializer(
             model, evaluation_history=ehist, evaluation_moment=emom,
             ness_empty_sufficient=ness_empty_sufficient,
         )

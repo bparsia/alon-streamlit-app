@@ -20,8 +20,8 @@ from alo_translator.parsers.builder import parse_queries
 from alo_translator.query_generation import ResponsibilityConfig, generate_queries
 from alo_translator.serializers.datalog_index import DatalogIndexSerializer
 from alo_translator.model.core import ALOModel, Query
-from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
-from alo_translator.serializers.layered_owl_index import LayeredOWLIndexSerializer
+from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+from alo_translator.serializers.layered_owl_index import OWLSerializer
 
 def _sanitize_id(s: str) -> str:
     """Convert a formula string to a safe query-ID suffix (mirrors query_generation._sanitize_id)."""
@@ -251,7 +251,7 @@ def run_analysis_datalog_layered(model: ALOModel,
             model.queries = []
             model = setup_layered_queries(model)
             all_queries.extend(model.queries)
-            serializer = LayeredDatalogIndexSerializer(model,
+            serializer = DatalogIndexSerializer(model,
                                                        evaluation_history=ehist,
                                                        evaluation_moment=emom,
                                                        ness_empty_sufficient=ness_empty_sufficient)
@@ -268,7 +268,7 @@ def run_analysis_konclude_layered(model: ALOModel,
                                    ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
     """Run responsibility analysis on a ALOModel using Konclude (OWL).
 
-    Mirrors run_analysis_datalog_layered but uses LayeredOWLIndexSerializer
+    Mirrors run_analysis_datalog_layered but uses OWLSerializer
     and the Konclude reasoner.  Iterates over model.evaluations like the
     pyDatalog path so results are merged across all evaluation points.
     """
@@ -297,7 +297,7 @@ def run_analysis_konclude_layered(model: ALOModel,
             all_queries.extend(model.queries)
 
             strategy = EquivFullCardinalityStrategy()
-            serializer = LayeredOWLIndexSerializer(
+            serializer = OWLSerializer(
                 model,
                 evaluation_moment=emom,
                 evaluation_history=ehist,

@@ -39,7 +39,7 @@ def run_datalog(mmd_path: Path):
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-    from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
+    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
 
     model = parse_dbt_diagram(mmd_path.read_text())
 
@@ -55,7 +55,7 @@ def run_datalog(mmd_path: Path):
         if q.formula_ast is None:
             q.formula_ast = parse_formula(q.formula_string)
 
-    serializer = LayeredDatalogIndexSerializer(model, evaluation_history="h1")
+    serializer = DatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
     return sorted(qid for qid, r in results.items() if r.get("result"))
 

@@ -19,7 +19,7 @@ from ..model.core import ALOModel, GroupAction
 from ..parsers.expander_transformer import ExpanderTransformer
 
 
-class LayeredOWLIndexSerializer(OWLIndexNewExpanderSerializer):
+class OWLSerializer(OWLIndexNewExpanderSerializer):
     """OWL serializer for ALOModel (arbitrary temporal depth).
 
     ABox: derives individuals, succ chains, same_moment groups, action

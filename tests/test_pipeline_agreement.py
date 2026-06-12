@@ -50,9 +50,9 @@ def _setup_model(mmd_path: Path):
 
 
 def _run_datalog(mmd_path: Path):
-    from alo_translator.serializers.layered_datalog_index import LayeredDatalogIndexSerializer
+    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
     model = _setup_model(mmd_path)
-    serializer = LayeredDatalogIndexSerializer(model, evaluation_history="h1")
+    serializer = DatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
     return sorted(qid for qid, r in results.items() if r.get("result"))
 
@@ -74,14 +74,14 @@ def find_konclude() -> Path | None:
 
 
 def _run_konclude(mmd_path: Path, timeout: int = 120):
-    from alo_translator.serializers.layered_owl_index import LayeredOWLIndexSerializer
+    from alo_translator.serializers.layered_owl_index import OWLSerializer
     from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
     from alo_translator.reasoners.konclude import KoncludeAdapter
     from alo_translator.reasoners.base import ReasoningMode
     import tempfile
 
     model = _setup_model(mmd_path)
-    serializer = LayeredOWLIndexSerializer(model,
+    serializer = OWLSerializer(model,
                                            evaluation_history=model.evaluation_history,
                                            evaluation_moment=model.evaluation_moment,
                                            strategy=EquivFullCardinalityStrategy())
