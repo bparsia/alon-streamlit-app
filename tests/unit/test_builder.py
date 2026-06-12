@@ -6,13 +6,12 @@ from alo_translator.model.formula import (
     Prop, Next, Box, PDLBox, Implication, DoAction,
     PotentialResponsibility, IndividualAction, IndividualAgent
 )
+import tomllib
 from alo_translator.parsers.builder import (
     build_model,
     parse_queries,
     expand_queries,
-    parse_toml,
 )
-from alo_translator.parsers.toml_parser import load_toml_string
 
 
 # ============================================================================
@@ -202,7 +201,7 @@ def test_model_max_modal_depth():
 [Queries]
 Test = ["q", "Xq", "XXq", "X[a1]q"]
 """
-    toml_dict = load_toml_string(toml_string)
+    toml_dict = tomllib.loads(toml_string)
 
     model = build_model(toml_dict)
     model = parse_queries(model)
@@ -260,7 +259,7 @@ def test_pipeline_with_agent_groups():
 [AgentGroups]
 Ag = [1, 2]
 """
-    toml_dict = load_toml_string(toml_string)
+    toml_dict = tomllib.loads(toml_string)
     model = build_model(toml_dict)
 
     assert "Ag" in model.agent_groups

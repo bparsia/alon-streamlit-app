@@ -1,26 +1,19 @@
 """
 ALOn model builder (Pass 2, 3, 4).
 
-This module converts TOML dictionaries into ALOModel objects and provides
-the full pipeline for parsing and expanding queries.
+This module converts parsed dicts into ALOModel objects and provides
+the pipeline for parsing and expanding queries.
 
 Pipeline:
-- Pass 1 (toml_parser.py): Load TOML → Dict
+- Pass 1 (dbt_parser.py): Parse Mermaid diagram → dict
 - Pass 2 (this module): Dict → ALOModel (semantic analysis)
 - Pass 3 (this module): Parse query strings → FormulaNode AST
 - Pass 4 (this module): Expand defined forms → primitive operators
 
 Usage:
-    from alo_translator.parsers.toml_parser import load_toml
-    from alo_translator.parsers.builder import parse_toml
+    from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 
-    # Full pipeline in one call:
-    model = parse_toml("path/to/theory.toml")
-
-    # Or step by step:
-    toml_dict = load_toml("path/to/theory.toml")
-    model = build_model(toml_dict)
-    model = parse_queries(model)
+    model = parse_dbt_diagram("path/to/theory.mmd")
 """
 
 from typing import Dict, List, Any, Optional, Union
@@ -209,34 +202,7 @@ def expand_queries(model: ALOModel, expand_standard: bool = False,
 
 
 # ============================================================================
-# Convenience function: Full pipeline
-# ============================================================================
-
-def parse_toml(file_path: str) -> ALOModel:
-    """
-    Full pipeline: TOML file → ALOModel with parsed queries.
-
-    Runs all passes:
-    1. Load TOML → dict
-    2. Build model (semantic analysis)
-    3. Parse queries (string → AST)
-
-    Args:
-        file_path: Path to TOML file
-
-    Returns:
-        Complete ALOModel ready for serialization
-    """
-    from .toml_parser import load_toml
-
-    toml_dict = load_toml(file_path)
-    model = build_model(toml_dict)
-    model = parse_queries(model)
-    return model
-
-
-# ============================================================================
-# Helper functions for parsing TOML sections
+# Helper functions for parsing model dict sections
 # ============================================================================
 
 def _parse_aliases(aliases_dict: Dict[str, str]) -> Dict[str, str]:

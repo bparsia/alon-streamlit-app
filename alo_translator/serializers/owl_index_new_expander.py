@@ -76,18 +76,15 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
             try:
                 # Parse and expand formula
                 formula_str = query.formula_string
-                print(f"DEBUG: Parsing query {query_id}: {formula_str}")
                 tree = self.parser.parse(formula_str)
 
                 # Expand with shared expander
                 result_name = self.expander.transform(tree)
-                print(f"DEBUG: Query {query_id} expanded to {result_name}")
 
                 # Store mapping for later - we'll add SubClassOf axioms after OWL serializer is created
                 self.query_expansions[query_id] = result_name
 
             except Exception as e:
-                # Print the actual formula string that failed
                 print(f"Warning: Could not expand query '{query_id}': {e}")
                 annotation = SubElement(ontology, "AnnotationAssertion")
                 SubElement(annotation, "AnnotationProperty",
@@ -97,14 +94,12 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
                           text=f"Expansion failed: {str(e)}")
 
         # Step 3: Create OWL serializer with name_to_formula mapping from expander
-        print(f"DEBUG: Creating OWL serializer with {len(self.expander.name_to_formula)} formula mappings")
         self.owl_serializer = OwlSerializer(
             base_iri=self.BASE_IRI,
             name_to_formula=self.expander.name_to_formula
         )
 
         # Step 4: Serialize all expansion axioms to OWL
-        print(f"DEBUG: Serializing {len(self.expander.axioms)} expansion axioms")
         for axiom in self.expander.axioms:
             # Skip trivial or empty axioms
             if '=>' in axiom:
@@ -114,19 +109,13 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
                     rhs = parts[1].strip()
                     # Skip if either side is empty or they're identical (trivial axiom)
                     if not lhs or not rhs or lhs == rhs or lhs == '()':
-                        print(f"DEBUG: Skipping invalid/trivial axiom: {axiom[:60]}")
                         continue
 
             axiom_tree = self.parser.parse(axiom)
             self.owl_serializer.transform(axiom_tree)
 
         # Step 5: Add all accumulated SubClassOf axioms from OwlSerializer
-        print(f"DEBUG: Adding {len(self.owl_serializer.axioms)} SubClassOf axioms")
-        for i, axiom_str in enumerate(self.owl_serializer.axioms):
-            if i == 0:  # Debug first axiom fully
-                print(f"DEBUG: Full axiom string:")
-                print(axiom_str)
-                print()
+        for axiom_str in self.owl_serializer.axioms:
             # Parse the XML string to Element
             from xml.etree.ElementTree import fromstring
             try:
@@ -140,19 +129,13 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
                     subclass_elem = fromstring(wrapped)
                     ontology.append(subclass_elem)
                 else:
-                    print(f"Warning: Could not extract SubClassOf content from axiom")
-                    print(f"Axiom: {axiom_str[:400]}")
+                    print(f"Warning: Could not extract SubClassOf content from axiom: {axiom_str[:200]}")
             except Exception as e:
-                print(f"Warning: Could not parse axiom XML: {e}")
-                print(f"Axiom: {axiom_str[:400]}")
+                print(f"Warning: Could not parse axiom XML: {e}\nAxiom: {axiom_str[:200]}")
 
         # Step 6: Add rdfs:label annotation assertions
-        print(f"DEBUG: Adding {len(self.owl_serializer.annotations)} rdfs:label annotations")
-        for i, annotation_str in enumerate(self.owl_serializer.annotations):
+        for annotation_str in self.owl_serializer.annotations:
             try:
-                # Parse annotation XML string
-                wrapped = f'<AnnotationAssertion xmlns="{self.OWL_NS}" xmlns:rdfs="{self.RDFS_NS}">{annotation_str}</AnnotationAssertion>'
-                # Extract inner content
                 import re
                 match = re.search(r'<AnnotationAssertion>\s*(.*?)\s*</AnnotationAssertion>', annotation_str, re.DOTALL)
                 if match:
@@ -161,30 +144,19 @@ class OWLIndexNewExpanderSerializer(OWLIndexSerializer):
                     annotation_elem = fromstring(wrapped)
                     ontology.append(annotation_elem)
                 else:
-                    print(f"Warning: Could not extract AnnotationAssertion content")
+                    print(f"Warning: Could not extract AnnotationAssertion content: {annotation_str[:200]}")
             except Exception as e:
                 print(f"Warning: Could not parse annotation XML: {e}")
-                if i < 3:  # Show first few for debugging
-                    print(f"Annotation: {annotation_str[:400]}")
 
         # Step 7: Add SubClassOf axioms connecting query IDs to their expansions
-        print(f"DEBUG: Adding {len(self.query_expansions)} query definition axioms")
         from xml.etree.ElementTree import fromstring
         for query_id, expansion_name in self.query_expansions.items():
-            # Parse the expansion_name to get OWL class element
-            # If expansion_name is a simple name (like "Xq" or "q1"), create a Class element
-            # Otherwise, parse it as a formula
             try:
-                # Try to parse as a formula first
                 expansion_tree = self.parser.parse(expansion_name)
                 expansion_owl = self.owl_serializer.transform(expansion_tree)
-
-                # Create SubClassOf axiom: expansion_owl SubClassOf query_id
-                # i.e. if m_h1 : expansion_name then m_h1 : query_id (query satisfied)
                 wrapped = f'<SubClassOf xmlns="{self.OWL_NS}">\n        {expansion_owl}\n        <Class IRI="{self.BASE_IRI}{query_id}"/>\n    </SubClassOf>'
                 subclass_elem = fromstring(wrapped)
                 ontology.append(subclass_elem)
-                print(f"DEBUG: Added definition {expansion_name[:50]} SubClassOf {query_id}")
             except Exception as e:
                 print(f"Warning: Could not create query definition for {query_id}: {e}")
 

@@ -2,14 +2,14 @@
 """
 Command-line interface for ALOn model translator.
 
-Translates TOML model specifications to various target formalisms.
+Translates Mermaid (.mmd) model diagrams to various target formalisms.
 """
 
 import argparse
 import sys
 from pathlib import Path
 
-from .parsers import parse_toml_file
+from .parsers.dbt_parser import parse_dbt_diagram
 from .parsers.builder import parse_queries
 from .serializers import OWLIndexNewExpanderSerializer, EquivFullCardinalityStrategy
 
@@ -17,25 +17,25 @@ from .serializers import OWLIndexNewExpanderSerializer, EquivFullCardinalityStra
 def main():
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        description="Translate ALOn models from TOML to target formalisms",
+        description="Translate ALOn models from Mermaid diagrams to target formalisms",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   # Generate OWL (index-based with full cardinality strategy)
-  %(prog)s theories/3.1.toml -o output.owl
+  %(prog)s streamlit_app/models/3.1.mmd -o output.owl
 
   # Print to stdout instead of saving to file
-  %(prog)s theories/3.1.toml
+  %(prog)s streamlit_app/models/3.1.mmd
 
   # Verbose output with model statistics
-  %(prog)s theories/3.1.toml -o output.owl -v
+  %(prog)s streamlit_app/models/3.1.mmd -o output.owl -v
 """
     )
 
     parser.add_argument(
         "input",
         type=Path,
-        help="Input TOML file containing ALOn model specification"
+        help="Input Mermaid (.mmd) file containing ALOn model diagram"
     )
 
     parser.add_argument(
@@ -73,18 +73,16 @@ Examples:
         if args.verbose:
             print(f"Loading model from {args.input}...", file=sys.stderr)
 
-        model = parse_toml_file(str(args.input))
+        parsed = parse_dbt_diagram(args.input.read_text())
+        model = parsed[0] if isinstance(parsed, tuple) else parsed
         model = parse_queries(model)
 
         if args.verbose:
             print(f"✓ Loaded model successfully", file=sys.stderr)
-            print(f"  - Actions: {len(model.get_all_actions())}", file=sys.stderr)
-            print(f"  - Propositions: {len(model.get_all_propositions())}", file=sys.stderr)
+            print(f"  - Agents: {sorted(model.get_all_agents())}", file=sys.stderr)
             print(f"  - Opposings: {len(model.opposings)}", file=sys.stderr)
-            print(f"  - Histories: {len(model.named_histories)}", file=sys.stderr)
-            print(f"  - Results: {len(model.results)}", file=sys.stderr)
+            print(f"  - Histories: {len(model.histories)}", file=sys.stderr)
             print(f"  - Queries: {len(model.queries)}", file=sys.stderr)
-            print(f"  - Complete group actions: {len(model.generate_complete_group_actions())}", file=sys.stderr)
 
         # Create appropriate serializer
         if args.format == "owl":
