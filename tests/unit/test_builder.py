@@ -6,7 +6,6 @@ from alo_translator.model.formula import (
     Prop, Next, Box, PDLBox, Implication, DoAction,
     PotentialResponsibility, IndividualAction, IndividualAgent
 )
-import tomllib
 from alo_translator.parsers.builder import (
     build_model,
     parse_queries,
@@ -194,16 +193,10 @@ def test_expand_queries_requires_parsed():
 
 def test_model_max_modal_depth():
     """Test ALOModel.max_modal_depth() after pipeline."""
-    toml_string = """
-[Actions]
-1 = ["a"]
-
-[Queries]
-Test = ["q", "Xq", "XXq", "X[a1]q"]
-"""
-    toml_dict = tomllib.loads(toml_string)
-
-    model = build_model(toml_dict)
+    model = build_model({
+        "Actions": {"1": ["a"]},
+        "Queries": {"Test": ["q", "Xq", "XXq", "X[a1]q"]},
+    })
     model = parse_queries(model)
 
     assert model.max_modal_depth() == 2
@@ -250,16 +243,9 @@ def test_build_model_missing_actions():
 
 def test_pipeline_with_agent_groups():
     """Test parsing agent groups."""
-    toml_string = """
-[Actions]
-1 = ["a"]
-2 = ["b"]
-3 = ["c"]
-
-[AgentGroups]
-Ag = [1, 2]
-"""
-    toml_dict = tomllib.loads(toml_string)
-    model = build_model(toml_dict)
+    model = build_model({
+        "Actions": {"1": ["a"], "2": ["b"], "3": ["c"]},
+        "AgentGroups": {"Ag": [1, 2]},
+    })
 
     assert "Ag" in model.agent_groups
