@@ -17,6 +17,7 @@ import pytest
 from pathlib import Path
 
 BASELINES_PATH = Path(__file__).parent / "fixtures" / "konclude_baselines.json"
+MODELS_DIR = Path(__file__).parent.parent / "streamlit_app" / "models"
 
 # Wall-clock limits (seconds) — generous, just catch catastrophic regressions
 PERF_LIMITS = {
@@ -33,21 +34,36 @@ def load_baselines():
     return {k: v for k, v in data.items() if not k.startswith("_")}
 
 
-def run_datalog(toml_path: str):
+def run_datalog(mmd_path: Path):
     """
-    Run pyDatalog evaluation pipeline.
+    Run pyDatalog evaluation pipeline from a .mmd model file.
 
     NOTE: do NOT call expand_queries() here — DatalogIndexSerializer
     handles expansion internally via PyDatalogExpanderTransformer.
     Calling expand_queries() first triggers the hierarchical OWL expander
     which takes ~70s for theory 3.5 and produces no useful output for Datalog.
     """
-    from alo_translator.parsers.toml_parser import parse_toml_file
-    from alo_translator.parsers.builder import parse_queries
+    from alo_translator.parsers.dbt_parser import parse_dbt_diagram
+    from alo_translator.parsers.builder import parse_formula
+    from alo_translator.query_generation import ResponsibilityConfig, generate_queries
     from alo_translator.serializers.datalog_index import DatalogIndexSerializer
 
-    model = parse_toml_file(toml_path)
-    model = parse_queries(model)
+    mermaid = mmd_path.read_text()
+    parsed = parse_dbt_diagram(mermaid)
+    model = parsed[0] if isinstance(parsed, tuple) else parsed
+
+    model.responsibility_config = ResponsibilityConfig(
+        target_proposition="q",
+        agents="all",
+        groups="all",
+        responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
+        history="h1",
+    )
+    model.queries = generate_queries(model)
+    for q in model.queries:
+        if q.formula_ast is None:
+            q.formula_ast = parse_formula(q.formula_string)
+
     serializer = DatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
     return sorted(qid for qid, r in results.items() if r.get("result"))
@@ -62,7 +78,7 @@ class TestDatalogCorrectness:
 
     def test_theory_3_1(self, baselines):
         b = baselines["3.1"]
-        satisfied = run_datalog(b["toml"])
+        satisfied = run_datalog(MODELS_DIR / "3.1.mmd")
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.1 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
@@ -71,7 +87,7 @@ class TestDatalogCorrectness:
 
     def test_theory_3_5(self, baselines):
         b = baselines["3.5"]
-        satisfied = run_datalog(b["toml"])
+        satisfied = run_datalog(MODELS_DIR / "3.5.mmd")
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.5 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
@@ -80,7 +96,7 @@ class TestDatalogCorrectness:
 
     def test_theory_3_6(self, baselines):
         b = baselines["3.6"]
-        satisfied = run_datalog(b["toml"])
+        satisfied = run_datalog(MODELS_DIR / "3.6.mmd")
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.6 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
@@ -89,7 +105,7 @@ class TestDatalogCorrectness:
 
     def test_theory_3_7(self, baselines):
         b = baselines["3.7"]
-        satisfied = run_datalog(b["toml"])
+        satisfied = run_datalog(MODELS_DIR / "3.7.mmd")
         assert satisfied == b["satisfied_queries"], (
             f"Theory 3.7 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
@@ -99,15 +115,15 @@ class TestDatalogCorrectness:
 
 class TestDatalogPerformance:
 
-    @pytest.mark.parametrize("theory_id,toml,limit", [
-        ("3.1", "theories/3.1_auto.toml", PERF_LIMITS["3.1"]),
-        ("3.5", "theories/3.5_auto.toml", PERF_LIMITS["3.5"]),
-        ("3.6", "theories/3.6_auto.toml", PERF_LIMITS["3.6"]),
-        ("3.7", "theories/3.7_auto.toml", PERF_LIMITS["3.7"]),
+    @pytest.mark.parametrize("theory_id,limit", [
+        ("3.1", PERF_LIMITS["3.1"]),
+        ("3.5", PERF_LIMITS["3.5"]),
+        ("3.6", PERF_LIMITS["3.6"]),
+        ("3.7", PERF_LIMITS["3.7"]),
     ])
-    def test_performance(self, theory_id, toml, limit):
+    def test_performance(self, theory_id, limit):
         t0 = time.perf_counter()
-        run_datalog(toml)
+        run_datalog(MODELS_DIR / f"{theory_id}.mmd")
         elapsed = time.perf_counter() - t0
         assert elapsed < limit, (
             f"Theory {theory_id} took {elapsed:.1f}s, limit is {limit}s. "

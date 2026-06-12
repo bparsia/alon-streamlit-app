@@ -110,7 +110,10 @@ class QueryGenerator:
         """
         # Determine which agents to consider
         if config.agents == "all":
-            agents = sorted(model.agents_actions.keys())
+            if hasattr(model, "agents_actions"):
+                agents = sorted(model.agents_actions.keys())
+            else:
+                agents = sorted(model.get_all_agents())
         else:
             agents = sorted(config.agents)
 
@@ -172,8 +175,17 @@ class QueryGenerator:
         """
         queries = []
 
-        # Get the designated history's group action (for but/ness lookups)
-        history_action = model.named_histories.get(history) if history in model.named_histories else None
+        # Get flat {agent: action_type} for the designated history (for but/ness lookups)
+        # TODO: remove ALOModel branch when ALOModel is retired
+        if hasattr(model, "named_histories"):
+            # ALOModel: named_histories[h] is a GroupAction with .actions dict
+            ga = model.named_histories.get(history)
+            _history_actions: dict = ga.actions if ga is not None else {}
+        elif hasattr(model, "histories") and history in model.histories:
+            # LayeredALOModel: collapse per-moment actions into flat dict
+            _history_actions = model.histories[history].complete_actions()
+        else:
+            _history_actions = {}
 
         for agent_set in agent_sets:
             # Format agent set for expression
@@ -205,8 +217,8 @@ class QueryGenerator:
                         agent_id = agent_set[0]
 
                         # Look up which action this agent performed in the history
-                        if history_action and agent_id in history_action.actions:
-                            action_type = history_action.actions[agent_id]
+                        if agent_id in _history_actions:
+                            action_type = _history_actions[agent_id]
                             action_id = f"{action_type}{agent_id}"  # e.g., "sd1"
 
                             expr = f"{resp_type}({action_id}, {prop})"
@@ -219,9 +231,9 @@ class QueryGenerator:
                     else:
                         # Coalition/group - generate joint action query
                         # Check if all agents in the coalition performed actions in this history
-                        if history_action and all(agent_id in history_action.actions for agent_id in agent_set):
+                        if all(agent_id in _history_actions for agent_id in agent_set):
                             # Build joint action expression: {1:sd, 2:ss} (grammar: NUMBER:IDENTIFIER)
-                            mappings = [f"{agent_id}:{history_action.actions[agent_id]}"
+                            mappings = [f"{agent_id}:{_history_actions[agent_id]}"
                                         for agent_id in agent_set]
                             joint_action = "{" + ", ".join(mappings) + "}"
 
