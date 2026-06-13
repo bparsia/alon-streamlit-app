@@ -86,20 +86,18 @@ Key question: which constructs require DL-safe rules vs pure OWL-DL axioms?
 
 ## Priority 3 — Codebase Cleanup
 
-### 3a. Remove TD=1 special pathway
+### 3a. Remove TD=1 special pathway — DONE
 
-There is a special code pathway for temporal depth 1 (single-step) models that predates the
-general TD=n infrastructure. It should be eliminated — everything goes through the same pipeline.
-Impacts: `dbt_parser.py`, `owl_index.py`, possibly `streamlit_app/`.
+Eliminated. Everything goes through the ALOModel / layered pipeline.
 
-### 3b. Remove TOML support
+### 3b. Remove TOML support — DONE
 
-TOML was the original model format, superseded by Mermaid+YAML. Any remaining TOML-reading
-code paths should be removed to reduce surface area.
+TOML was the original model format, superseded by Mermaid+YAML. No model-input TOML parsing
+remains. (reasoner_config.toml for binary paths is separate infrastructure, not model input.)
 
-### 3c. Remove debug print statements
+### 3c. Remove debug print statements — DONE
 
-`owl_index_new_expander.py` has DEBUG print statements that should be removed or gated.
+`owl_index_new_expander.py` deleted entirely as part of serializer consolidation.
 
 ### 3d. Datalog serializer: reject complex moment propositions cleanly
 
@@ -148,14 +146,9 @@ used to produce the baseline results in the AAAI supplement. It is currently:
 
 ## Known Bugs
 
-### Auto-generated histories show q and ~q (UNRESOLVED)
+### Auto-generated histories show q and ~q — RESOLVED
 
-**File:** `project_default_result_bug.md` in memory
-**Symptom:** When a model has explicit histories h1 (q) and h2 (~q), auto-completed histories
-h3, h4, etc. show `q, ~q` as their outcome instead of just one value.
-**What was tried:** Three fix attempts in `dbt_parser.py`, `builder.py`, `core.py` — all still broken.
-**Next step:** Add debug output (`st.write(model.results)`) after `parse_dbt_diagram()` to
-see actual Result objects at runtime, then trace back from there.
+Was in the old flat `ALOModel.complete()` / `build_model()`, which have been deleted.
 
 ---
 
