@@ -109,20 +109,11 @@ with a given model and surfaces that to the user before generation is attempted.
 
 ## Priority 4 — Repo Consolidation
 
-**Status:** Agreed strategy, not executed.
+**Status:** Mostly done.
 
-- Primary repo: `alon-streamlit-app` (at `/Users/mbassbp2/Development/alon-streamlit-app`)
-- Legacy: `deontickit/alon_experiments/alo_translator/` — 35+ commits ahead of origin,
-  ~40 debug scripts, all the latest core fixes applied here (not there)
-
-### Steps
-
-1. Commit pending changes in `alon-streamlit-app` (Modeller.py URL param fix, depth2_example.mmd)
-2. Diff deontickit core files vs streamlit-app — identify any substantive changes not yet migrated
-3. Migrate `alon_experiments/tests/` (test_datalog_baselines.py, test_konclude_baselines.py,
-   fixtures/konclude_baselines.json) into streamlit-app
-4. Leave behind the 40 debug/experiment scripts (no value)
-5. Rename streamlit-app repo to `alon-toolkit` or similar
+- Steps 1–4 complete: changes committed, deontickit diffs resolved, tests migrated, debug scripts abandoned.
+- `deontickit/alon_experiments/` is now legacy — all active development in `alon-streamlit-app`.
+- **Remaining:** rename repo to `alon-toolkit` or similar (optional/cosmetic).
 
 ---
 
