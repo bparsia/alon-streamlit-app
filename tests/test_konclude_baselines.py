@@ -56,7 +56,7 @@ def run_theory(mmd_path: Path, timeout: int = 120):
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-    from alo_translator.serializers.layered_owl_index import OWLSerializer
+    from alo_translator.serializers.owl import OWLSerializer
     from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
     from alo_translator.reasoners.konclude import KoncludeAdapter
     from alo_translator.reasoners.base import ReasoningMode

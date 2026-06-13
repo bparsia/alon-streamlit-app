@@ -39,7 +39,7 @@ def run_datalog(mmd_path: Path):
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+    from alo_translator.serializers.datalog import DatalogIndexSerializer
 
     model = parse_dbt_diagram(mmd_path.read_text())
 

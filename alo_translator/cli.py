@@ -11,7 +11,8 @@ from pathlib import Path
 
 from .parsers.dbt_parser import parse_dbt_diagram
 from .parsers.builder import parse_queries
-from .serializers import OWLSerializer, EquivFullCardinalityStrategy
+from .serializers.owl import OWLSerializer
+from .serializers.index_strategies import EquivFullCardinalityStrategy
 
 
 def main():

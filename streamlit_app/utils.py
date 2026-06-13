@@ -18,10 +18,8 @@ import streamlit.components.v1 as components
 from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 from alo_translator.parsers.builder import parse_queries
 from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+from alo_translator.serializers.datalog import DatalogIndexSerializer
 from alo_translator.model.core import ALOModel, Query
-from alo_translator.serializers.datalog_index import DatalogIndexSerializer
-from alo_translator.serializers.layered_owl_index import OWLSerializer
 
 def _sanitize_id(s: str) -> str:
     """Convert a formula string to a safe query-ID suffix (mirrors query_generation._sanitize_id)."""
@@ -32,7 +30,7 @@ def _sanitize_id(s: str) -> str:
 
 # Konclude imports — only available when running locally with the binary present
 try:
-    from alo_translator.serializers.layered_owl_index import OWLSerializer
+    from alo_translator.serializers.owl import OWLSerializer
     from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
     from alo_translator.reasoners.konclude import KoncludeAdapter
     from alo_translator.reasoners.base import ReasoningMode

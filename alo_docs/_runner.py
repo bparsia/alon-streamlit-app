@@ -28,7 +28,7 @@ def _block_to_mermaid_text(block: ModelBlock) -> str:
 
 def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set[str], list]:
     """Run analysis on a ALOModel. Returns (model, satisfied_ids, eval_points)."""
-    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+    from alo_translator.serializers.datalog import DatalogIndexSerializer
     from streamlit_app.utils import setup_layered_queries
 
     eval_points = model.evaluations or [
@@ -59,7 +59,7 @@ def _run_flat(model, partial_spec: dict,
 
     ness_empty_sufficient overrides the front-matter value when provided explicitly.
     """
-    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+    from alo_translator.serializers.datalog import DatalogIndexSerializer
     from streamlit_app.utils import setup_queries
     from alo_translator.query_generation import _sanitize_id as _qsanitize
 
@@ -110,7 +110,7 @@ def _run_evaluate(model, partial_spec: dict,
     no responsibility query generation, no X-wrapping.
     Returns (model, satisfied_ids, eval_points) where eval_points are (em, eh, formula).
     """
-    from alo_translator.serializers.datalog_index import DatalogIndexSerializer
+    from alo_translator.serializers.datalog import DatalogIndexSerializer
     from alo_translator.model.core import Query
     from alo_translator.parsers.builder import parse_queries, expand_queries
     from alo_translator.query_generation import _sanitize_id as _qsanitize

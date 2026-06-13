@@ -1,9 +1,8 @@
 """Serializers for translating ALOn models to target formalisms."""
 
 from .base import Serializer
-from .datalog_index import DatalogIndexSerializer
-from .layered_owl_index import OWLSerializer
-from .owl_index import OWLIndexSerializer  # base class, kept for inheritance
+from .datalog import DatalogIndexSerializer, FormulaToDatalog
+from .owl import OWLSerializer, OWLSerializerBase, FormulaToOWL
 from .index_strategies import (
     EquivChainedNominalStrategy,
     EquivFullCardinalityStrategy,
@@ -18,8 +17,10 @@ from .index_mermaid import serialize_index
 __all__ = [
     "Serializer",
     "DatalogIndexSerializer",
+    "FormulaToDatalog",
     "OWLSerializer",
-    "OWLIndexSerializer",
+    "OWLSerializerBase",
+    "FormulaToOWL",
     "EquivChainedNominalStrategy",
     "EquivFullCardinalityStrategy",
     "EquivFullNominalStrategy",
