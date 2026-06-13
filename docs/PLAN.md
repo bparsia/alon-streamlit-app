@@ -7,6 +7,22 @@ Last updated: 2026-06-13
 
 ---
 
+## Execution Order
+
+**P3 → (P4a in parallel) → P1 → P2**, then P5/P6/P7/P8 in any order.
+
+- **P3 first** — implement remaining semantics before the compiler pipeline, so P1 has the
+  full feature set to analyse and tag.
+- **P4a in parallel with P3** — test models exercising new features are needed to develop and
+  verify P3. Demo models (P4b) follow once features are stable.
+- **P1 after P3** — semantic analysis + serialiser tagging is then complete, including tagging
+  Datalog as incompatible with most TBox axioms.
+- **P2 after P1+P3** — first new serialiser in a while; properly gated by P1 compatibility
+  tagging. SPARQL may need different reasoner infrastructure (query loop rather than single-file
+  submission) — best deferred until the pipeline is stable.
+
+---
+
 ## Priority 1 — Compiler Pipeline (Semantic Analysis)
 
 **Design doc:** `docs/compiler_pipeline.md`
