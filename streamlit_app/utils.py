@@ -439,7 +439,7 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
             qid = query.query_id
             if not qid or not qid.endswith(suffix):
                 continue
-            middle = qid[len("q_"):-len(suffix)]
+            middle = qid[:-len(suffix)]
             parts = middle.split("_", 1)
             if len(parts) < 2:
                 continue

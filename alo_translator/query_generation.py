@@ -207,7 +207,7 @@ class QueryGenerator:
                         modal_op = resp_type
                     expr = f"[{agent_expr} {modal_op}]{prop}"
                     prop_id = _sanitize_id(prop)
-                    query_id = f"q_{resp_type}_{agent_id_suffix}_{prop_id}"
+                    query_id = f"{resp_type}_{agent_id_suffix}_{prop_id}"
                     queries.append(Query(formula_string=expr, query_id=query_id))
 
                 # Causal responsibility types: but(action, φ) / ness(action, φ)
@@ -222,7 +222,7 @@ class QueryGenerator:
                             action_id = f"{action_type}{agent_id}"  # e.g., "sd1"
 
                             expr = f"{resp_type}({action_id}, {prop})"
-                            query_id = f"q_{resp_type}_{action_id}_{_sanitize_id(prop)}"
+                            query_id = f"{resp_type}_{action_id}_{_sanitize_id(prop)}"
                             queries.append(Query(formula_string=expr, query_id=query_id))
                         else:
                             # Warn if can't find action, but don't error
@@ -238,7 +238,7 @@ class QueryGenerator:
                             joint_action = "{" + ", ".join(mappings) + "}"
 
                             expr = f"{resp_type}({joint_action}, {prop})"
-                            query_id = f"q_{resp_type}_{'_'.join(agent_set)}_{_sanitize_id(prop)}"
+                            query_id = f"{resp_type}_{'_'.join(agent_set)}_{_sanitize_id(prop)}"
                             queries.append(Query(formula_string=expr, query_id=query_id))
 
                 else:
