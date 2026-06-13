@@ -201,31 +201,22 @@ def _operator_formula(model: ALOModel) -> str:
 def setup_layered_queries(model: ALOModel) -> ALOModel:
     """Attach responsibility queries to a ALOModel for analysis."""
     from alo_translator.query_generation import _sanitize_id
-    outcome = _outcome_formula(model)
-    op_formula = _operator_formula(model)
-    prop_id = _sanitize_id(f"{model.evaluation_moment}_{model.evaluation_history}_{outcome}")
-
-    agents_at_eval = sorted(model.available_actions_at(model.evaluation_moment).keys())
-    resp_types = ["pres", "sres", "res"]
-
-    queries = []
-    for agent in agents_at_eval:
-        for rt in resp_types:
-            qid = f"q_{rt}_{agent}_{prop_id}"
-            queries.append(Query(f"[{agent} {rt}]{op_formula}", query_id=qid))
-        # but/ness for individual agents
-        hp = model.histories.get(model.evaluation_history)
-        if hp:
-            acts_at_eval = hp.actions_at.get(model.evaluation_moment, {})
-            if agent in acts_at_eval:
-                action_str = f"{acts_at_eval[agent]}{agent}"
-                queries.append(Query(f"but({action_str}, {op_formula})",
-                                     query_id=f"q_but_{action_str}_{prop_id}"))
-                queries.append(Query(f"ness({action_str}, {op_formula})",
-                                     query_id=f"q_ness_{action_str}_{prop_id}"))
-
+    model.responsibility_config = ResponsibilityConfig(
+        target_proposition=model.target_proposition,
+        agents="all",
+        groups="all",
+        responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
+        history=model.evaluation_history,
+    )
+    queries = generate_queries(model)
+    # Scope each query ID with emom/ehist so multiple eval points don't collide
+    scope = _sanitize_id(f"{model.evaluation_moment}_{model.evaluation_history}")
+    for q in queries:
+        if q.query_id:
+            q.query_id = f"{q.query_id}_{scope}"
     model.queries = queries
-    return model
+    model.responsibility_config = None  # prevent parse_queries from re-generating
+    return parse_queries(model)
 
 
 def run_analysis_datalog_layered(model: ALOModel,
@@ -435,19 +426,14 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
 
     sections = []
     for emom, ehist, etgt in eval_points:
-        if etgt.startswith('do('):
-            x_count = 1
-        elif re.match(r'^X+do\(', etgt):
-            x_count = len(re.match(r'^(X+)', etgt).group(1))
-        else:
-            x_count = 1
-        outcome = 'X' * x_count + etgt
-        prop_id = _sanitize_id(f"{emom}_{ehist}_{outcome}")
-        suffix = f"_{prop_id}"
+        # Suffix matches setup_layered_queries: generate_queries uses _sanitize_id(prop),
+        # then we append _sanitize_id(f"{emom}_{ehist}") for scoping.
+        prop_id = _sanitize_id(etgt)
+        scope = _sanitize_id(f"{emom}_{ehist}")
+        suffix = f"_{prop_id}_{scope}"
 
-        agent_results = defaultdict(lambda: {
-            "pres": False, "sres": False, "res": False, "but": False, "ness": False,
-        })
+        COLS = ("pres", "sres", "res", "dxstit", "but", "ness")
+        agent_results = defaultdict(lambda: {c: False for c in COLS})
 
         for query in model.queries:
             qid = query.query_id
@@ -459,6 +445,7 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
                 continue
             resp_type, agent_str = parts[0], parts[1]
 
+            # but/ness individual: agent_str is like "sd1" → strip to agent id "1"
             if resp_type in ("but", "ness"):
                 m = re.match(r"^([a-zA-Z]+)(\d+)$", agent_str)
                 if m:
@@ -467,16 +454,27 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
             if resp_type in agent_results[agent_str]:
                 agent_results[agent_str][resp_type] = qid in satisfied_ids
 
+        def _agent_display(agent_str: str) -> str:
+            # coalition like "1_2" → "Alice & Beth" (or "Agent 1 & Agent 2")
+            parts = agent_str.split("_")
+            names = [aliases.get(p, f"Agent {p}") for p in parts]
+            return " & ".join(names)
+
+        # Sort: singletons first (no underscore), then coalitions by size then lexically
+        def _sort_key(a):
+            parts = a.split("_")
+            return (len(parts), parts)
+
         lines = [
             _section_header_layered(model, emom, ehist, etgt),
             "",
-            "| Agent | pres | sres | res | but | ness |",
-            "|-------|------|------|-----|-----|------|",
+            "| Agent | pres | sres | res | dxstit | but | ness |",
+            "|-------|------|------|-----|--------|-----|------|",
         ]
-        for agent in sorted(agent_results.keys()):
+        for agent in sorted(agent_results.keys(), key=_sort_key):
             r = agent_results[agent]
-            display = aliases.get(agent, f"Agent {agent}")
-            row = [display] + ["✓" if r[k] else " " for k in ("pres", "sres", "res", "but", "ness")]
+            display = _agent_display(agent)
+            row = [display] + ["✓" if r[k] else " " for k in COLS]
             lines.append("| " + " | ".join(row) + " |")
         sections.append("\n".join(lines))
 

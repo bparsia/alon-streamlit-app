@@ -235,7 +235,7 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'AL
         transitions=transitions,
         histories=histories,
         opposings=_build_layered_opposings(partial_spec),
-        aliases=partial_spec.get("aliases", {}),
+        aliases={str(k): v for k, v in partial_spec.get("aliases", {}).items()},
         queries=[],
         evaluation_history=eval_history,
         evaluation_moment=eval_moment,
