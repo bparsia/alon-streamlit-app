@@ -455,10 +455,11 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
                 agent_results[agent_str][resp_type] = qid in satisfied_ids
 
         def _agent_display(agent_str: str) -> str:
-            # coalition like "1_2" → "Alice & Beth" (or "Agent 1 & Agent 2")
             parts = agent_str.split("_")
             names = [aliases.get(p, f"Agent {p}") for p in parts]
-            return " & ".join(names)
+            if len(names) == 1:
+                return names[0]
+            return "{" + ", ".join(names) + "}"
 
         # Sort: singletons first (no underscore), then coalitions by size then lexically
         def _sort_key(a):
