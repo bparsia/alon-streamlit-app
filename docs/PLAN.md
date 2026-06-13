@@ -99,11 +99,11 @@ remains. (reasoner_config.toml for binary paths is separate infrastructure, not 
 
 `owl_index_new_expander.py` deleted entirely as part of serializer consolidation.
 
-### 3d. Datalog serializer: reject complex moment propositions cleanly
+### 3d. Datalog serializer: reject complex moment propositions — SUBSUMED BY PRIORITY 1
 
-Checking belongs in semantic analysis (Priority 1), not in the serialiser. The serialiser should
-be able to assume it won't be called with incompatible input. In the interim, it should fail fast
-with a clear message rather than silently misbehaving.
+Belongs in semantic analysis (serialiser compatibility tagging), not in the serialiser itself.
+The serialiser assumes valid input; the analysis layer determines which serialisers are compatible
+with a given model and surfaces that to the user before generation is attempted.
 
 ---
 
