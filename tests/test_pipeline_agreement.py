@@ -54,7 +54,9 @@ def _run_datalog(mmd_path: Path):
     model = _setup_model(mmd_path)
     serializer = DatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
-    return sorted(qid for qid, r in results.items() if r.get("result"))
+    id_to_formula = {q.query_id: q.formula_string for q in model.queries}
+    return sorted(id_to_formula[qid] for qid, r in results.items()
+                  if r.get("result") and qid in id_to_formula)
 
 
 def find_konclude() -> Path | None:
@@ -101,7 +103,9 @@ def _run_konclude(mmd_path: Path, timeout: int = 120):
         pytest.skip(f"Konclude failed: {result.error_message}")
 
     m_types = result.individual_types.get("m_h1", set())
-    return sorted(q.query_id for q in model.queries if q.query_id in m_types)
+    id_to_formula = {q.query_id: q.formula_string for q in model.queries}
+    return sorted(id_to_formula[q.query_id] for q in model.queries
+                  if q.query_id in m_types and q.query_id in id_to_formula)
 
 
 # ---------------------------------------------------------------------------

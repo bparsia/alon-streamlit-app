@@ -57,7 +57,9 @@ def run_datalog(mmd_path: Path):
 
     serializer = DatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
-    return sorted(qid for qid, r in results.items() if r.get("result"))
+    id_to_formula = {q.query_id: q.formula_string for q in model.queries}
+    return sorted(id_to_formula[qid] for qid, r in results.items()
+                  if r.get("result") and qid in id_to_formula)
 
 
 @pytest.fixture(scope="module")
@@ -70,7 +72,7 @@ class TestDatalogCorrectness:
     def test_theory_3_1(self, baselines):
         b = baselines["3.1"]
         satisfied = run_datalog(MODELS_DIR / "3.1.mmd")
-        assert satisfied == b["satisfied_queries"], (
+        assert satisfied == b["satisfied_formulas"], (
             f"Theory 3.1 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
             f"  Expected ({b['satisfied_count']}): {b['satisfied_queries']}"
@@ -79,7 +81,7 @@ class TestDatalogCorrectness:
     def test_theory_3_5(self, baselines):
         b = baselines["3.5"]
         satisfied = run_datalog(MODELS_DIR / "3.5.mmd")
-        assert satisfied == b["satisfied_queries"], (
+        assert satisfied == b["satisfied_formulas"], (
             f"Theory 3.5 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
             f"  Expected ({b['satisfied_count']}): {b['satisfied_queries']}"
@@ -88,7 +90,7 @@ class TestDatalogCorrectness:
     def test_theory_3_6(self, baselines):
         b = baselines["3.6"]
         satisfied = run_datalog(MODELS_DIR / "3.6.mmd")
-        assert satisfied == b["satisfied_queries"], (
+        assert satisfied == b["satisfied_formulas"], (
             f"Theory 3.6 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
             f"  Expected ({b['satisfied_count']}): {b['satisfied_queries']}"
@@ -97,7 +99,7 @@ class TestDatalogCorrectness:
     def test_theory_3_7(self, baselines):
         b = baselines["3.7"]
         satisfied = run_datalog(MODELS_DIR / "3.7.mmd")
-        assert satisfied == b["satisfied_queries"], (
+        assert satisfied == b["satisfied_formulas"], (
             f"Theory 3.7 mismatch\n"
             f"  Got ({len(satisfied)}):      {satisfied}\n"
             f"  Expected ({b['satisfied_count']}): {b['satisfied_queries']}"
