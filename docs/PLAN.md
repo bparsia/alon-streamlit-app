@@ -114,13 +114,33 @@ The Streamlit app is the current IDE. Planned improvements:
 
 ---
 
-## Priority 6 — Reasoning Services (All Points)
+## Priority 6 — Reasoning Services
 
 **Status:** Not started.
 
-The app currently evaluates at a single (moment, history) pair. "All points" means running
-the analysis at every valid evaluation index and aggregating results — showing which
-responsibility claims hold globally vs locally across the entire model.
+### 6a. All-points evaluation
+The app currently evaluates at a single (moment, history) pair. All-points runs every query
+at every valid index and aggregates — showing which responsibility claims hold globally vs
+locally, and at which indices each claim first/last holds.
+
+### 6b. Bulk services (query × index matrix)
+Bulk versions of the single-point pipeline: compute the full query × index result matrix in
+one pass. Subsumes 6a. Useful for model checking and for populating the experiment results
+table without repeated invocations.
+
+### 6c. Model checking
+Given a formula, find all indices where it holds. Dual: find counterexamples. Supports
+checking universal/existential claims over the model ("does every history satisfy pres?").
+
+### 6d. Explanation
+Given a query result (true or false), produce a witness or counterexample trace:
+- For **true**: the assignment of actions/propositions that satisfies the formula
+- For **false**: the minimal substructure that blocks satisfaction (why it fails)
+- Particularly useful for causal queries (but/ness): show the set S that witnesses NESS
+
+### 6e. Entailment / query comparison
+Given two queries, determine whether one entails the other across all points in the model.
+Useful for comparing responsibility notions (e.g. does sres always imply pres here?).
 
 ---
 
