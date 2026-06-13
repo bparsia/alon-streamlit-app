@@ -114,15 +114,13 @@ The Streamlit app is the current IDE. Planned improvements:
 
 ---
 
-## Priority 6 — Services (All Points)
+## Priority 6 — Reasoning Services (All Points)
 
 **Status:** Not started.
 
 The app currently evaluates at a single (moment, history) pair. "All points" means running
 the analysis at every valid evaluation index and aggregating results — showing which
-responsibility claims hold globally vs locally.
-
-Also includes exposing the pipeline as a REST/JSON service for programmatic access.
+responsibility claims hold globally vs locally across the entire model.
 
 ---
 
