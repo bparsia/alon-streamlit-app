@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .parsers.dbt_parser import parse_dbt_diagram
 from .parsers.builder import parse_queries
-from .serializers import OWLIndexNewExpanderSerializer, EquivFullCardinalityStrategy
+from .serializers import OWLSerializer, EquivFullCardinalityStrategy
 
 
 def main():
@@ -73,8 +73,7 @@ Examples:
         if args.verbose:
             print(f"Loading model from {args.input}...", file=sys.stderr)
 
-        parsed = parse_dbt_diagram(args.input.read_text())
-        model = parsed[0] if isinstance(parsed, tuple) else parsed
+        model = parse_dbt_diagram(args.input.read_text())
         model = parse_queries(model)
 
         if args.verbose:
@@ -88,7 +87,10 @@ Examples:
         if args.format == "owl":
             if args.verbose:
                 print(f"\nGenerating OWL (index-based, full cardinality strategy)...", file=sys.stderr)
-            serializer = OWLIndexNewExpanderSerializer(model, strategy=EquivFullCardinalityStrategy())
+            serializer = OWLSerializer(model,
+                                       evaluation_moment=model.evaluation_moment,
+                                       evaluation_history=model.evaluation_history,
+                                       strategy=EquivFullCardinalityStrategy())
         else:
             print(f"Error: Unknown format '{args.format}'", file=sys.stderr)
             sys.exit(1)

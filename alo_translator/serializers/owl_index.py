@@ -513,12 +513,12 @@ class OWLIndexSerializer(Serializer):
     def _add_query_classes(self, ontology: Element):
         """Add query class definitions using index-based semantics.
 
-        NOTE: This method is obsolete. Use OWLIndexNewExpanderSerializer which overrides
+        NOTE: This method is obsolete. Use OWLSerializer which overrides
         this method with the new transformer-based approach.
         """
         raise NotImplementedError(
             "OWLIndexSerializer._add_query_classes is obsolete. "
-            "Use OWLIndexNewExpanderSerializer instead."
+            "Use OWLSerializer instead."
         )
 
         # Translate each query
@@ -574,10 +574,10 @@ class OWLIndexSerializer(Serializer):
     def _add_expansion_axioms(self, ontology: Element):
         """Add SubClassOf axioms for formula expansions.
 
-        NOTE: This method is obsolete. Use OWLIndexNewExpanderSerializer which overrides
+        NOTE: This method is obsolete. Use OWLSerializer which overrides
         this method with the new transformer-based approach.
         """
         raise NotImplementedError(
             "OWLIndexSerializer._add_expansion_axioms is obsolete. "
-            "Use OWLIndexNewExpanderSerializer instead."
+            "Use OWLSerializer instead."
         )

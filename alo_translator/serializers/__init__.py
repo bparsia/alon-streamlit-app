@@ -3,6 +3,7 @@
 from .base import Serializer
 from .datalog_index import DatalogIndexSerializer
 from .layered_owl_index import OWLSerializer
+from .owl_index import OWLIndexSerializer  # base class, kept for inheritance
 from .index_strategies import (
     EquivChainedNominalStrategy,
     EquivFullCardinalityStrategy,
@@ -18,6 +19,7 @@ __all__ = [
     "Serializer",
     "DatalogIndexSerializer",
     "OWLSerializer",
+    "OWLIndexSerializer",
     "EquivChainedNominalStrategy",
     "EquivFullCardinalityStrategy",
     "EquivFullNominalStrategy",

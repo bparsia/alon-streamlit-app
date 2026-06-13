@@ -32,7 +32,7 @@ def _sanitize_id(s: str) -> str:
 
 # Konclude imports — only available when running locally with the binary present
 try:
-    from alo_translator.serializers.owl_index_new_expander import OWLIndexNewExpanderSerializer
+    from alo_translator.serializers.layered_owl_index import OWLSerializer
     from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
     from alo_translator.reasoners.konclude import KoncludeAdapter
     from alo_translator.reasoners.base import ReasoningMode
@@ -496,8 +496,10 @@ def run_analysis_konclude(model, result_prop: str, eval_history: str,
         model = setup_queries(model, result_prop, eval_history)
 
         strategy = EquivFullCardinalityStrategy()
-        serializer = OWLIndexNewExpanderSerializer(model, strategy=strategy,
-                                                   evaluation_history=eval_history)
+        serializer = OWLSerializer(model,
+                                   evaluation_moment=model.evaluation_moment,
+                                   evaluation_history=eval_history,
+                                   strategy=strategy)
         owl_output = serializer.serialize()
 
         bin_path = konclude_path()
