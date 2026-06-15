@@ -11,9 +11,11 @@ Run with:
 
 import pytest
 from pathlib import Path
-from tests.registry import check_regression, _run_datalog
+from tests.registry import check_regression, load_registry, _run_datalog
 
 MODELS_DIR = Path(__file__).parent.parent / "streamlit_app" / "models"
+
+_verified_models = sorted({e["model"] for e in load_registry() if e["verified"]})
 
 
 def _get_current_datalog(model_id: str) -> dict:
@@ -22,7 +24,7 @@ def _get_current_datalog(model_id: str) -> dict:
     return _run_datalog(mmd_path.read_text())
 
 
-@pytest.mark.parametrize("theory_id", ["3.1", "3.5", "3.6", "3.7"])
+@pytest.mark.parametrize("theory_id", _verified_models)
 def test_datalog_no_regression(theory_id):
     """Current datalog results must match the most recent verified registry entry."""
     current = _get_current_datalog(theory_id)
