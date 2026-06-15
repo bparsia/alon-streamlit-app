@@ -1,0 +1,638 @@
+[
+  {
+    "model": "3.1",
+    "model_hash": "c349343801a6",
+    "commit": "f5b458c",
+    "tag": null,
+    "date": "2026-06-15",
+    "variants_run": [
+      "datalog"
+    ],
+    "cross_check": {},
+    "verified": true,
+    "source": "Konclude baseline match verified 2026-06-15",
+    "results": [
+      {
+        "formula": "[1 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[1 pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[1 res]q",
+        "datalog": true
+      },
+      {
+        "formula": "[1 sres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[2 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[2 pres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[2 res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[2 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2} DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2} res]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2} sres]q",
+        "datalog": true
+      },
+      {
+        "formula": "but(sd1, q)",
+        "datalog": true
+      },
+      {
+        "formula": "but(ss2, q)",
+        "datalog": true
+      },
+      {
+        "formula": "but({1:sd, 2:ss}, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness(sd1, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness(ss2, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness({1:sd, 2:ss}, q)",
+        "datalog": true
+      }
+    ]
+  },
+  {
+    "model": "3.5",
+    "model_hash": "beafbc79f8dc",
+    "commit": "f5b458c",
+    "tag": null,
+    "date": "2026-06-15",
+    "variants_run": [
+      "datalog"
+    ],
+    "cross_check": {},
+    "verified": true,
+    "source": "Konclude baseline match verified 2026-06-15",
+    "results": [
+      {
+        "formula": "[1 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[1 pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[1 res]q",
+        "datalog": true
+      },
+      {
+        "formula": "[1 sres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[2 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[2 pres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[2 res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[2 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[3 res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[4 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[4 pres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[4 res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[4 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2, 3, 4} DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2, 3, 4} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2, 3, 4} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2, 3, 4} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2, 3} DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2, 3} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2, 3} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2, 3} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2, 4} DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2, 4} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2, 4} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2, 4} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 2} DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2} res]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 2} sres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3, 4} DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3, 4} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3, 4} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3, 4} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3} DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 4} DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 4} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 4} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 4} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 3, 4} DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 3, 4} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{2, 3, 4} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 3, 4} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 3} DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 3} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{2, 3} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 3} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 4} DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 4} pres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 4} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{2, 4} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{3, 4} DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{3, 4} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{3, 4} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{3, 4} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "but(rb4, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but(sd1, q)",
+        "datalog": true
+      },
+      {
+        "formula": "but(sd3, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but(ss2, q)",
+        "datalog": true
+      },
+      {
+        "formula": "but({1:sd, 2:ss, 3:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({1:sd, 2:ss, 3:sd}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({1:sd, 2:ss, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({1:sd, 2:ss}, q)",
+        "datalog": true
+      },
+      {
+        "formula": "but({1:sd, 3:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({1:sd, 3:sd}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({1:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({2:ss, 3:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({2:ss, 3:sd}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({2:ss, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({3:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness(rb4, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness(sd1, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness(sd3, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness(ss2, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness({1:sd, 2:ss, 3:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({1:sd, 2:ss, 3:sd}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({1:sd, 2:ss, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({1:sd, 2:ss}, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness({1:sd, 3:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({1:sd, 3:sd}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({1:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({2:ss, 3:sd, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({2:ss, 3:sd}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({2:ss, 4:rb}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness({3:sd, 4:rb}, q)",
+        "datalog": false
+      }
+    ]
+  },
+  {
+    "model": "3.6",
+    "model_hash": "f3593cc1551f",
+    "commit": "f5b458c",
+    "tag": null,
+    "date": "2026-06-15",
+    "variants_run": [
+      "datalog"
+    ],
+    "cross_check": {},
+    "verified": true,
+    "source": "Konclude baseline match verified 2026-06-15",
+    "results": [
+      {
+        "formula": "[1 DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[1 pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[1 res]q",
+        "datalog": true
+      },
+      {
+        "formula": "[1 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[3 pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[3 res]q",
+        "datalog": true
+      },
+      {
+        "formula": "[3 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3} DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3} res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3} sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "but(sd1, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but(sd3, q)",
+        "datalog": false
+      },
+      {
+        "formula": "but({1:sd, 3:sd}, q)",
+        "datalog": false
+      },
+      {
+        "formula": "ness(sd1, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness(sd3, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness({1:sd, 3:sd}, q)",
+        "datalog": false
+      }
+    ]
+  },
+  {
+    "model": "3.7",
+    "model_hash": "394f50e0bf35",
+    "commit": "f5b458c",
+    "tag": null,
+    "date": "2026-06-15",
+    "variants_run": [
+      "datalog"
+    ],
+    "cross_check": {},
+    "verified": true,
+    "source": "Konclude baseline match verified 2026-06-15",
+    "results": [
+      {
+        "formula": "[1 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[1 pres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[1 res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[1 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 DXSTIT]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 pres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 res]q",
+        "datalog": false
+      },
+      {
+        "formula": "[3 sres]q",
+        "datalog": false
+      },
+      {
+        "formula": "[{1, 3} DXSTIT]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3} pres]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3} res]q",
+        "datalog": true
+      },
+      {
+        "formula": "[{1, 3} sres]q",
+        "datalog": true
+      },
+      {
+        "formula": "but(pd1, q)",
+        "datalog": true
+      },
+      {
+        "formula": "but(pd3, q)",
+        "datalog": true
+      },
+      {
+        "formula": "but({1:pd, 3:pd}, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness(pd1, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness(pd3, q)",
+        "datalog": true
+      },
+      {
+        "formula": "ness({1:pd, 3:pd}, q)",
+        "datalog": true
+      }
+    ]
+  }
+]
