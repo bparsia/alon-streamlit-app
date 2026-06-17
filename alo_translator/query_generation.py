@@ -62,6 +62,14 @@ class ResponsibilityConfig:
     history: str = "h1"
     """History to evaluate at (default: h1)"""
 
+    moment: str | None = None
+    """
+    Moment to evaluate at. When set, agent sets are restricted to agents
+    that act at this moment (via model.available_actions_at). Also used
+    with history for but/ness action lookup. If None, all model agents
+    are used (legacy behaviour for TD=1 models where moment is unambiguous).
+    """
+
 
 class QueryGenerator:
     """Generates responsibility queries from configuration."""
@@ -86,7 +94,8 @@ class QueryGenerator:
             config.responsibility_types,
             config.target_proposition,
             model,
-            config.history
+            config.history,
+            config.moment,
         )
 
         return queries
@@ -110,7 +119,10 @@ class QueryGenerator:
         """
         # Determine which agents to consider
         if config.agents == "all":
-            if hasattr(model, "agents_actions"):
+            if config.moment is not None:
+                # Restrict to agents that act at this moment
+                agents = sorted(model.available_actions_at(config.moment).keys())
+            elif hasattr(model, "agents_actions"):
                 agents = sorted(model.agents_actions.keys())
             else:
                 agents = sorted(model.get_all_agents())
@@ -146,7 +158,8 @@ class QueryGenerator:
         resp_types: list[str],
         prop: str,
         model: ALOModel,
-        history: str
+        history: str,
+        moment: str | None = None,
     ) -> list[Query]:
         """
         Generate responsibility queries for each agent set × responsibility type.
@@ -175,15 +188,18 @@ class QueryGenerator:
         """
         queries = []
 
-        # Get flat {agent: action_type} for the designated history (for but/ness lookups)
-        # TODO: remove ALOModel branch when ALOModel is retired
+        # Get {agent: action_type} for but/ness lookups.
+        # With a moment set, use actions at that specific (moment, history) index.
+        # Without a moment, fall back to complete_actions() for TD=1 compatibility.
         if hasattr(model, "named_histories"):
-            # ALOModel: named_histories[h] is a GroupAction with .actions dict
             ga = model.named_histories.get(history)
             _history_actions: dict = ga.actions if ga is not None else {}
         elif hasattr(model, "histories") and history in model.histories:
-            # ALOModel: collapse per-moment actions into flat dict
-            _history_actions = model.histories[history].complete_actions()
+            hp = model.histories[history]
+            if moment is not None:
+                _history_actions = hp.actions_at.get(moment, {})
+            else:
+                _history_actions = hp.complete_actions()
         else:
             _history_actions = {}
 

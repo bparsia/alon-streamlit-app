@@ -207,6 +207,7 @@ def setup_layered_queries(model: ALOModel) -> ALOModel:
         groups="all",
         responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
         history=model.evaluation_history,
+        moment=model.evaluation_moment,
     )
     queries = generate_queries(model)
     # Scope each query ID with emom/ehist so multiple eval points don't collide
