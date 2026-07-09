@@ -24,13 +24,15 @@ aliases:
   ha: hits Alice
   masd: manipulates Alice into shooting Dan
   q: Dan dies
-result: q
-evaluation_point: m/h1
-evaluate:
+res_analyse:
   - - m/h1
     - do(sd1)
   - - mm/h1
     - q
+  - - m/h1
+    - "[]do(sd1)"
+  - - m/h1
+    - "<>do(sd1)"
 ---
 classDiagram
 direction BT
@@ -46,7 +48,6 @@ direction BT
   mmm --> m5 : h5({ss1, ss2})
   mmm --> m6 : h6({ss1, ha2})
 
-  mm: do(sd1)
   m1: q
   m2: ~q
   m3: q

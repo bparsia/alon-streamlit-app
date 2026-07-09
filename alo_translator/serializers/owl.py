@@ -592,11 +592,7 @@ class OWLSerializer(OWLSerializerBase):
                 result_name = self.expander.transform(self.parser.parse(query.formula_string))
                 self.query_expansions[query_id] = result_name
             except Exception as e:
-                print(f"Warning: Could not expand query '{query_id}': {e}")
-                ann = SubElement(ontology, "AnnotationAssertion")
-                SubElement(ann, "AnnotationProperty", {"IRI": f"{self.RDFS_NS}comment"})
-                SubElement(ann, "IRI", text=self._iri(query_id))
-                SubElement(ann, "Literal", text=f"Expansion failed: {str(e)}")
+                raise RuntimeError(f"Failed to expand query '{query_id}' ('{query.formula_string}'): {e}") from e
 
         self.formula_to_owl = FormulaToOWL(
             base_iri=self.BASE_IRI,
@@ -610,32 +606,23 @@ class OWLSerializer(OWLSerializerBase):
                     lhs, rhs = parts[0].strip(), parts[1].strip()
                     if not lhs or not rhs or lhs == rhs or lhs == '()':
                         continue
-            try:
-                self.formula_to_owl.transform(self.parser.parse(axiom))
-            except Exception as e:
-                print(f"Warning: Could not serialize axiom: {e}")
+            self.formula_to_owl.transform(self.parser.parse(axiom))
 
         for axiom_str in self.formula_to_owl.axioms:
-            try:
-                m = re.search(r'<SubClassOf>\s*(.*?)\s*</SubClassOf>', axiom_str, re.DOTALL)
-                if m:
-                    ontology.append(fromstring(
-                        f'<SubClassOf xmlns="{self.OWL_NS}">{m.group(1).strip()}</SubClassOf>'))
-                else:
-                    print(f"Warning: Could not extract SubClassOf content: {axiom_str[:200]}")
-            except Exception as e:
-                print(f"Warning: Could not parse axiom XML: {e}")
+            m = re.search(r'<SubClassOf>\s*(.*?)\s*</SubClassOf>', axiom_str, re.DOTALL)
+            if not m:
+                raise RuntimeError(f"Could not extract SubClassOf content from axiom: {axiom_str[:200]}")
+            ontology.append(fromstring(
+                f'<SubClassOf xmlns="{self.OWL_NS}">{m.group(1).strip()}</SubClassOf>'))
 
         for annotation_str in self.formula_to_owl.annotations:
-            try:
-                m = re.search(r'<AnnotationAssertion>\s*(.*?)\s*</AnnotationAssertion>',
-                              annotation_str, re.DOTALL)
-                if m:
-                    ontology.append(fromstring(
-                        f'<AnnotationAssertion xmlns="{self.OWL_NS}" xmlns:rdfs="{self.RDFS_NS}">'
-                        f'{m.group(1).strip()}</AnnotationAssertion>'))
-            except Exception as e:
-                print(f"Warning: Could not parse annotation XML: {e}")
+            m = re.search(r'<AnnotationAssertion>\s*(.*?)\s*</AnnotationAssertion>',
+                          annotation_str, re.DOTALL)
+            if not m:
+                raise RuntimeError(f"Could not extract AnnotationAssertion content: {annotation_str[:200]}")
+            ontology.append(fromstring(
+                f'<AnnotationAssertion xmlns="{self.OWL_NS}" xmlns:rdfs="{self.RDFS_NS}">'
+                f'{m.group(1).strip()}</AnnotationAssertion>'))
 
         for query_id, expansion_name in self.query_expansions.items():
             try:
@@ -646,7 +633,7 @@ class OWLSerializer(OWLSerializerBase):
                     f'        <Class IRI="{self.BASE_IRI}{query_id}"/>\n'
                     f'    </SubClassOf>'))
             except Exception as e:
-                print(f"Warning: Could not create query definition for {query_id}: {e}")
+                raise RuntimeError(f"Failed to create query definition for '{query_id}': {e}") from e
 
     def _add_expansion_axioms(self, ontology: Element):
         all_action_names = {f"{a}{ag}" for a, ag in self._all_action_pairs()}
