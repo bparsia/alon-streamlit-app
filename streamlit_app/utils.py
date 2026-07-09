@@ -374,27 +374,42 @@ def _cga_str(actions: Dict[str, str], aliases: Dict[str, str]) -> str:
     return "{" + ", ".join(parts) + "}"
 
 
-def _outcome_index(model: ALOModel, ehist: str, etgt: str):
-    """Return (holds: bool, index: str) for the target in the given history."""
+def _outcome_index(model: ALOModel, ehist: str, etgt: str, emom: str = None):
+    """Return (holds: bool, index: str) for the target at the next moment after emom.
+
+    Outcomes are always evaluated at the successor of the evaluation moment (Xφ).
+    If emom is not given, falls back to the first non-leaf moment on the path.
+    """
     hp = model.histories.get(ehist)
     if hp is None:
         return False, "?"
 
+    # Find the successor of emom on this history's path
+    if emom is not None and emom in hp.path:
+        idx = hp.path.index(emom)
+        if idx + 1 < len(hp.path):
+            next_mom = hp.path[idx + 1]
+        else:
+            return False, f"{emom}/{ehist}"
+    else:
+        # fallback: first transition
+        next_mom = hp.path[1] if len(hp.path) > 1 else hp.path[0]
+
+    next_node = model.moments.get(next_mom)
+    next_index = f"{next_mom}/{ehist}"
+
     if etgt.startswith("do("):
-        inner = etgt[3:-1]          # e.g. "sd1"
+        inner = etgt[3:-1]
         m = re.match(r"^([a-zA-Z]+)(\d+)$", inner)
         if m:
             atype, agent = m.group(1), m.group(2)
-            for moment in hp.path[:-1]:
-                acts = hp.actions_at.get(moment, {})
-                if acts.get(agent) == atype:
-                    return True, f"{moment}/{ehist}"
-        return False, "?"
+            acts = hp.actions_at.get(next_mom, {})
+            holds = acts.get(agent) == atype
+            return holds, next_index
+        return False, next_index
     else:
-        leaf = hp.leaf_moment
-        node = model.moments.get(leaf)
-        holds = node is not None and etgt in node.propositions
-        return holds, f"{leaf}/{ehist}"
+        holds = next_node is not None and etgt in next_node.propositions
+        return holds, next_index
 
 
 def _section_header_layered(model: ALOModel, emom: str, ehist: str, etgt: str) -> str:
@@ -402,7 +417,7 @@ def _section_header_layered(model: ALOModel, emom: str, ehist: str, etgt: str) -
     hp = model.histories.get(ehist)
     cga_dict = hp.actions_at.get(emom, {}) if hp else {}
     cga = _cga_str(cga_dict, aliases) if cga_dict else "{}"
-    holds, index = _outcome_index(model, ehist, etgt)
+    holds, index = _outcome_index(model, ehist, etgt, emom)
     tgt_desc = aliases.get(etgt, etgt)
     holds_str = "holds" if holds else "does not hold"
     outcome_label = f"`{etgt}`" + (f" ({tgt_desc})" if tgt_desc != etgt else "")
