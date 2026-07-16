@@ -398,18 +398,34 @@ def _outcome_index(model: ALOModel, ehist: str, etgt: str, emom: str = None):
     next_node = model.moments.get(next_mom)
     next_index = f"{next_mom}/{ehist}"
 
+    def _parse_do(action_str: str):
+        """Parse 'sd1' -> (atype, agent) or None."""
+        m = re.match(r"^([a-zA-Z]+)(\d+)$", action_str)
+        return (m.group(1), m.group(2)) if m else None
+
+    def _do_at(moment: str, h: str, action_str: str) -> bool:
+        parsed = _parse_do(action_str)
+        if not parsed:
+            return False
+        atype, agent = parsed
+        return model.histories[h].actions_at.get(moment, {}).get(agent) == atype
+
+    def _same_moment_histories(moment: str):
+        return [h for h in model.histories if moment in model.histories[h].path]
+
     if etgt.startswith("do("):
-        inner = etgt[3:-1]
-        m = re.match(r"^([a-zA-Z]+)(\d+)$", inner)
-        if m:
-            atype, agent = m.group(1), m.group(2)
-            acts = hp.actions_at.get(next_mom, {})
-            holds = acts.get(agent) == atype
-            return holds, next_index
-        return False, next_index
+        holds = _do_at(next_mom, ehist, etgt[3:-1])
+    elif etgt.startswith("[]do("):
+        inner = etgt[5:-1]
+        same = _same_moment_histories(next_mom)
+        holds = bool(same) and all(_do_at(next_mom, h, inner) for h in same)
+    elif etgt.startswith("<>do("):
+        inner = etgt[5:-1]
+        same = _same_moment_histories(next_mom)
+        holds = any(_do_at(next_mom, h, inner) for h in same)
     else:
         holds = next_node is not None and etgt in next_node.propositions
-        return holds, next_index
+    return holds, next_index
 
 
 def _section_header_layered(model: ALOModel, emom: str, ehist: str, etgt: str) -> str:
