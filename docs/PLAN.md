@@ -3,7 +3,7 @@
 This document consolidates all known open issues, design decisions pending implementation,
 and planned refactors. Update it as work is completed or priorities shift.
 
-Last updated: 2026-06-13
+Last updated: 2026-07-16
 
 ---
 
@@ -87,18 +87,33 @@ Key question: which constructs require DL-safe rules vs pure OWL-DL axioms?
 
 Features needed to reach full ALOn expressivity.
 
-### 3a. Per-moment available actions
+### 3a. Per-moment available actions — LARGELY DONE
 
-Currently every agent has the same action set at every moment. The model should support
-specifying different available actions per moment (e.g. agent 1 can only do `sd` at `m` but
-`sd` or `ha` at `m1`). Impacts: parser, `MomentNode`, semantic analysis (CGA coverage check),
-both serialisers.
+Per-moment actions were already represented in `MomentNode.available_actions` and
+`HistoryPath.actions_at`. Work completed this cycle:
+
+- `moment` field added to `ResponsibilityConfig` — agent sets now restricted to agents
+  active at the evaluation moment via `available_actions_at(moment)`
+- `but`/`ness` action lookup uses `(moment, history)` index, not `complete_actions()`
+- `_sanitize_id` handles `<>` and `[]` — modal operators in target propositions no longer
+  produce invalid XML IRIs or Datalog predicate names
+- OWL serializer silent failures converted to hard errors
+- Outcome display fixed — checks successor of eval moment (Xφ), not leaf
+- `res_analyse` YAML syntax confirmed and working for multi-point, multi-outcome analysis
+- TD=2 Isabella model (`depth2_example.mmd`) working end-to-end in both serialisers
+
+**Remaining:** `but`-for vacuity — when only one agent acts at a moment, the PDL box
+counterfactual `[γ']¬φ` is trivially true (material conditional with false antecedent at the
+current index). This is a known semantic issue; fix requires evaluating the counterfactual
+across same-moment indices where γ' is actually performed. Not yet fixed.
 
 ### 3b. TBox-style global axioms
 
 Axioms with global effect (e.g. `do(sd1) → Xq`) that apply across all indices rather than
 being asserted at a specific moment. These are likely OWL-only (Datalog would need NAF-safe
 rewriting). Semantic analysis tags models containing TBox axioms as OWL-only.
+
+**Status:** Not started.
 
 ---
 
@@ -111,6 +126,10 @@ Minimal models that exercise specific features and have known ground-truth resul
 against Konclude baselines). Drive regression testing and serialiser compatibility checks.
 Feature matrix (which features each existing model exercises) should be generated first to
 identify gaps.
+
+TD=2 Isabella models (`depth2_example.mmd` and siblings) exist and run end-to-end but are
+not yet captured in the result registry. Formal capture + verification pending once `but`
+vacuity issue is resolved.
 
 ### 4b. Demo / experiment models
 Richer models illustrating philosophical or legal scenarios — used in papers, the Streamlit
@@ -186,10 +205,26 @@ Needs:
 - **3b.** TOML model input removed — Mermaid+YAML is the only format
 - **3c.** Debug print statements removed (files deleted in serialiser consolidation)
 - **3d.** Datalog complex-prop rejection — subsumed by Priority 1 serialiser tagging
+- **Serialiser consolidation** — 5 files → `owl.py` + `datalog.py` (-907 lines)
+- **Alias display bug** — YAML integer keys stringified at parse time
+- **Formula-stable baselines** — tests compare formula strings, not query IDs
+- **Result registry** — `tests/registry.py`, `tests/test_registry.py`, `docs/testing.md`
+- **`q_` prefix dropped** from query IDs
+- **`res_analyse` YAML key** confirmed as multi-point evaluation syntax
 
 ---
 
 ## Known Bugs
+
+### `but`-for vacuity in single-agent moments
+
+When only one agent acts at a moment, `[γ']¬φ` is vacuously true (the PDL box is a material
+conditional; at the current index `do(γ')` is false so the whole thing is true). The
+counterfactual never actually checks the alternative outcome. Affects `but` and `sres` (which
+uses `but` internally) at any moment where fewer agents act than exist in the model.
+
+Fix: evaluate the counterfactual across same-moment indices where γ' is actually performed,
+rather than as a material conditional at the current index.
 
 ### Auto-generated histories show q and ~q — RESOLVED
 
