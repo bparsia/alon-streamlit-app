@@ -1,0 +1,15 @@
+[project]
+name = "alon-streamlit-app"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = [
+    "streamlit>=1.54.0",
+    "streamlit-mermaid>=0.3.0",
+    "lark>=1.1.0",
+    "strictyaml>=1.7.0",
+    "pyDatalog>=0.17.1",
+    "textual>=0.76.0",
+]
+
+[project.scripts]
+run-app = "streamlit:main"
