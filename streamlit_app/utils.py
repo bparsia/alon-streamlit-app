@@ -210,11 +210,16 @@ def setup_layered_queries(model: ALOModel) -> ALOModel:
         moment=model.evaluation_moment,
     )
     queries = generate_queries(model)
-    # Scope each query ID with emom/ehist so multiple eval points don't collide
-    scope = _sanitize_id(f"{model.evaluation_moment}_{model.evaluation_history}")
+    # Scope each query ID with emom/ehist/target so multiple eval points don't collide
+    scope = _sanitize_id(f"{model.evaluation_moment}_{model.evaluation_history}_{model.target_proposition}")
     for q in queries:
         if q.query_id:
             q.query_id = f"{q.query_id}_{scope}"
+    # Add outcome formula as a direct query so display can read holds from results.
+    # Wrap in X so it's evaluated at the successor of emom (where outcomes live).
+    from alo_translator.model.core import Query
+    outcome_qid = f"outcome_{scope}"
+    queries.append(Query(formula_string=f"X{model.target_proposition}", query_id=outcome_qid))
     model.queries = queries
     model.responsibility_config = None  # prevent parse_queries from re-generating
     return parse_queries(model)
@@ -428,12 +433,21 @@ def _outcome_index(model: ALOModel, ehist: str, etgt: str, emom: str = None):
     return holds, next_index
 
 
-def _section_header_layered(model: ALOModel, emom: str, ehist: str, etgt: str) -> str:
+def _section_header_layered(model: ALOModel, emom: str, ehist: str, etgt: str,
+                             satisfied_ids: Set[str] = None) -> str:
+    from alo_translator.query_generation import _sanitize_id
     aliases = model.aliases
     hp = model.histories.get(ehist)
     cga_dict = hp.actions_at.get(emom, {}) if hp else {}
     cga = _cga_str(cga_dict, aliases) if cga_dict else "{}"
-    holds, index = _outcome_index(model, ehist, etgt, emom)
+    scope = _sanitize_id(f"{emom}_{ehist}_{etgt}")
+    outcome_qid = f"outcome_{scope}"
+    if satisfied_ids is not None:
+        holds = outcome_qid in satisfied_ids
+    else:
+        _, index = _outcome_index(model, ehist, etgt, emom)
+        holds = False  # fallback: unknown
+    _, index = _outcome_index(model, ehist, etgt, emom)
     tgt_desc = aliases.get(etgt, etgt)
     holds_str = "holds" if holds else "does not hold"
     outcome_label = f"`{etgt}`" + (f" ({tgt_desc})" if tgt_desc != etgt else "")
@@ -444,13 +458,21 @@ def _section_header_layered(model: ALOModel, emom: str, ehist: str, etgt: str) -
     )
 
 
-def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> str:
-    """Format ALOModel responsibility results as markdown.
+def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str],
+                                  fmt: str = "markdown") -> str:
+    """Format ALOModel responsibility results as markdown or latex.
 
     Groups results by evaluation point when multiple evaluations are present.
+    fmt: "markdown" (default) or "latex"
     """
     from alo_translator.query_generation import _sanitize_id
     aliases = model.aliases
+    latex = fmt == "latex"
+
+    CHECK_MD = "✓"
+    EMPTY_MD = " "
+    CHECK_TEX = r"\ding{51}"
+    EMPTY_TEX = "~"
 
     eval_points = model.evaluations or [
         (model.evaluation_moment, model.evaluation_history, model.target_proposition)
@@ -458,10 +480,8 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
 
     sections = []
     for emom, ehist, etgt in eval_points:
-        # Suffix matches setup_layered_queries: generate_queries uses _sanitize_id(prop),
-        # then we append _sanitize_id(f"{emom}_{ehist}") for scoping.
         prop_id = _sanitize_id(etgt)
-        scope = _sanitize_id(f"{emom}_{ehist}")
+        scope = _sanitize_id(f"{emom}_{ehist}_{etgt}")
         suffix = f"_{prop_id}_{scope}"
 
         COLS = ("pres", "sres", "res", "dxstit", "but", "ness")
@@ -477,7 +497,6 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
                 continue
             resp_type, agent_str = parts[0], parts[1]
 
-            # but/ness individual: agent_str is like "sd1" → strip to agent id "1"
             if resp_type in ("but", "ness"):
                 m = re.match(r"^([a-zA-Z]+)(\d+)$", agent_str)
                 if m:
@@ -493,25 +512,65 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str]) -> st
                 return names[0]
             return "{" + ", ".join(names) + "}"
 
-        # Sort: singletons first (no underscore), then coalitions by size then lexically
         def _sort_key(a):
             parts = a.split("_")
             return (len(parts), parts)
 
-        lines = [
-            _section_header_layered(model, emom, ehist, etgt),
-            "",
-            "| Agent | pres | sres | res | dxstit | but | ness |",
-            "|-------|------|------|-----|--------|-----|------|",
-        ]
-        for agent in sorted(agent_results.keys(), key=_sort_key):
-            r = agent_results[agent]
-            display = _agent_display(agent)
-            row = [display] + ["✓" if r[k] else " " for k in COLS]
-            lines.append("| " + " | ".join(row) + " |")
-        sections.append("\n".join(lines))
+        sorted_agents = sorted(agent_results.keys(), key=_sort_key)
 
-    return "\n\n".join(sections)
+        if latex:
+            # Build header line
+            outcome_qid = f"outcome_{scope}"
+            holds = outcome_qid in satisfied_ids
+            _, index = _outcome_index(model, ehist, etgt, emom)
+            tgt_desc = aliases.get(etgt, etgt)
+            holds_str = "holds" if holds else "does not hold"
+            outcome_label = f"\\texttt{{{etgt}}}" + (f" ({tgt_desc})" if tgt_desc != etgt else "")
+            cga_dict = model.histories[ehist].actions_at.get(emom, {}) if ehist in model.histories else {}
+            cga = _cga_str(cga_dict, aliases) if cga_dict else "{}"
+            cga_tex = cga.replace("{", r"\{").replace("}", r"\}")
+            header = (
+                "\\textbf{At \\texttt{" + f"{emom}/{ehist}" + "}, "
+                "CGA: \\texttt{" + cga_tex + "}, outcome: " + outcome_label + ", " + holds_str + "}"
+            )
+            col_spec = "|l|" + "l|" * len(COLS)
+            col_header = " & ".join([r"\textbf{Agent}"] + [r"\textbf{" + c + "}" for c in COLS])
+            rows = []
+            for agent in sorted_agents:
+                r = agent_results[agent]
+                display = _agent_display(agent)
+                if display.startswith("{"):
+                    display = r"\{" + display[1:-1] + r"\}"
+                cells = " & ".join(CHECK_TEX if r[c] else EMPTY_TEX for c in COLS)
+                rows.append(f"\\textbf{{{display}}} & {cells} \\\\")
+            block = "\n".join([
+                header,
+                "",
+                "\\smallskip",
+                f"\\begin{{tabular}}{{{col_spec}}}",
+                "\\hline",
+                col_header + r" \\ \hline",
+                *rows,
+                "\\hline",
+                "\\end{tabular}",
+            ])
+            sections.append(block)
+        else:
+            lines = [
+                _section_header_layered(model, emom, ehist, etgt, satisfied_ids),
+                "",
+                "| Agent | pres | sres | res | dxstit | but | ness |",
+                "|-------|------|------|-----|--------|-----|------|",
+            ]
+            for agent in sorted_agents:
+                r = agent_results[agent]
+                display = _agent_display(agent)
+                row = [display] + [CHECK_MD if r[k] else EMPTY_MD for k in COLS]
+                lines.append("| " + " | ".join(row) + " |")
+            sections.append("\n".join(lines))
+
+    sep = "\n\n\\medskip\n" if latex else "\n\n"
+    return sep.join(sections)
 
 
 def run_analysis_konclude(model, result_prop: str, eval_history: str,
@@ -734,7 +793,6 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
     return "\n".join(lines)
 
 
-# ---------------------------------------------------------------------------
 # UI helpers
 # ---------------------------------------------------------------------------
 

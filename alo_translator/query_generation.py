@@ -18,7 +18,12 @@ def _sanitize_id(s: str) -> str:
     Replaces characters that are invalid in Datalog predicate names or
     awkward in display (parentheses, spaces, braces, colons, commas) with
     underscores, then collapses runs of underscores.
+
+    [] and <> are replaced with distinct tokens (BOX_/DIA_) before the
+    general substitution so that e.g. "do(sd1)", "[]do(sd1)", and
+    "<>do(sd1)" don't collapse to the same sanitized id.
     """
+    s = s.replace('[]', 'BOX_').replace('<>', 'DIA_')
     result = re.sub(r'[(){}\[\],: ~<>]', '_', s)
     result = re.sub(r'_+', '_', result)
     return result.strip('_')
