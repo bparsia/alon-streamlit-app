@@ -1,0 +1,45 @@
+---
+title: Modified version Example 3.1 from Where Responsibility Takes You
+description: Variant of example 3.1 where Beth has two forms of hitting Alice's arm, one which is oppositional and successful at preventing Dan's death and one which is neither.
+aliases:
+  1: Alice
+  2: Beth
+  3: Isabella
+opposings:
+  sd1:
+    - ha2
+res_analyse:
+  - - m/h1
+    - do(sd1)
+  - - m/h1
+    - Xq
+  - - mm/h1
+    - q
+  - - mm/h2
+    - ~q
+  - - mmm/h3
+    - q
+  - - m/h1
+    - "[]do(sd1)"
+  - - m/h3
+    - "[]do(sd1)"
+---
+classDiagram
+direction BT
+  m --> mm : h1/h2({masd3})
+  m --> mmm : h3/h4/h5/h6({ss3})
+
+  mm --> m1 : h1({sd1, ss2})
+  mm --> m2 : h2({sd1, ha2})
+
+  mmm --> m3 : h3({sd1, ss2})
+  mmm --> m4 : h4({sd1, ha2})
+  mmm --> m5 : h5({ss1, ss2})
+  mmm --> m6 : h6({ss1, ha2})
+
+  m1: q
+  m2: ~q
+  m3: q
+  m4: ~q
+  m5: ~q
+  m6: ~q

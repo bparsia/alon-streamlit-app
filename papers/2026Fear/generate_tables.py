@@ -1,0 +1,254 @@
+"""
+Generate LaTeX tables (model shape, translation size, performance) for the
+2026Fear paper, covering the models in papers/2026Fear/models/.
+
+Each model is analyzed at every (moment, history, target) point in its
+res_analyse list (or the single default evaluation point if res_analyse is
+absent). Datalog/OWL sizes and timings are summed/totaled across those
+points per model, since that's what "analyzing this model" costs in practice.
+
+Usage:
+  cd papers/2026Fear && ../../.venv/bin/python3 generate_tables.py
+Outputs:
+  table_models.tex
+  table_translations.tex
+  table_performance.tex
+"""
+
+import re
+import sys
+import tempfile
+import time
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(REPO_ROOT))
+
+from alo_translator.parsers.dbt_parser import parse_dbt_diagram
+from alo_translator.serializers.datalog import DatalogIndexSerializer
+from alo_translator.serializers.owl import OWLSerializer
+from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
+from alo_translator.reasoners.konclude import KoncludeAdapter
+from alo_translator.reasoners.base import ReasoningMode
+from streamlit_app.utils import setup_layered_queries, konclude_path
+
+MODELS_DIR = Path(__file__).parent / "models"
+OUT_DIR = Path(__file__).parent
+KONCLUDE_TIMEOUT = 600
+
+
+def tex_escape(s: str) -> str:
+    return s.replace("_", r"\_")
+
+
+def eval_points_for(model):
+    return model.evaluations or [
+        (model.evaluation_moment, model.evaluation_history, model.target_proposition)
+    ]
+
+
+def max_possible_eval_points(model) -> int:
+    """Count non-leaf (moment, history) pairs -- the space res_analyse entries draw from."""
+    total = 0
+    for hp in model.histories.values():
+        for moment_name in hp.path:
+            node = model.moments.get(moment_name)
+            if node is not None and not node.is_leaf:
+                total += 1
+    return total
+
+
+def model_shape_stats(model) -> dict:
+    agents_total = set()
+    actions_total = set()
+    agents_max_per_moment = 0
+    actions_max_per_moment = 0
+    for node in model.moments.values():
+        agents_here = set(node.available_actions.keys())
+        actions_here = {a for acts in node.available_actions.values() for a in acts}
+        agents_total |= agents_here
+        actions_total |= actions_here
+        agents_max_per_moment = max(agents_max_per_moment, len(agents_here))
+        actions_max_per_moment = max(actions_max_per_moment, len(actions_here))
+
+    eps = eval_points_for(model)
+    return {
+        "moments": len(model.moments),
+        "histories": len(model.histories),
+        "depth": model.depth(),
+        "agents_total": len(agents_total),
+        "agents_max": agents_max_per_moment,
+        "actions_total": len(actions_total),
+        "actions_max": actions_max_per_moment,
+        "eval_points_actual": len(eps),
+        "eval_points_max": max_possible_eval_points(model),
+    }
+
+
+def count_datalog_size(program: str) -> dict:
+    facts = sum(1 for l in program.splitlines() if l.strip().startswith("+"))
+    rules = sum(1 for l in program.splitlines() if "<=" in l)
+    preds = set()
+    for l in program.splitlines():
+        m = re.match(r"^\+?\s*(\w+)\(", l.strip())
+        if m:
+            preds.add(m.group(1))
+    return {"facts": facts, "rules": rules, "predicates": len(preds)}
+
+
+def count_owl_size(owl_xml: str) -> dict:
+    root = ET.fromstring(owl_xml)
+    classes = individuals = 0
+    axioms = 0
+    for child in root:
+        tag = child.tag.split("}")[-1]
+        if tag == "Declaration":
+            inner = child[0].tag.split("}")[-1]
+            if inner == "Class":
+                classes += 1
+            elif inner == "NamedIndividual":
+                individuals += 1
+        elif tag != "AnnotationAssertion":
+            axioms += 1
+    return {"axioms": axioms, "classes": classes, "individuals": individuals}
+
+
+def run_model(mmd_path: Path) -> dict:
+    text = mmd_path.read_text()
+    model = parse_dbt_diagram(text)
+    shape = model_shape_stats(model)
+
+    eps = eval_points_for(model)
+
+    dl_totals = {"facts": 0, "rules": 0, "predicates": 0}
+    owl_totals = {"axioms": 0, "classes": 0, "individuals": 0}
+
+    t0 = time.perf_counter()
+    for emom, ehist, etgt in eps:
+        model.evaluation_moment = emom
+        model.evaluation_history = ehist
+        model.target_proposition = etgt
+        model.queries = []
+        model = setup_layered_queries(model)
+        serializer = DatalogIndexSerializer(model, evaluation_history=ehist, evaluation_moment=emom)
+        program = serializer.serialize()
+        serializer.evaluate()
+        sizes = count_datalog_size(program)
+        for k in dl_totals:
+            dl_totals[k] += sizes[k]
+    dl_time = time.perf_counter() - t0
+
+    bin_path = konclude_path()
+    if bin_path is None:
+        raise RuntimeError("Konclude binary not found")
+    adapter = KoncludeAdapter(bin_path)
+
+    owl_time = 0.0
+    for emom, ehist, etgt in eps:
+        model.evaluation_moment = emom
+        model.evaluation_history = ehist
+        model.target_proposition = etgt
+        model.queries = []
+        model = setup_layered_queries(model)
+        strategy = EquivFullCardinalityStrategy()
+        serializer = OWLSerializer(model, evaluation_moment=emom, evaluation_history=ehist, strategy=strategy)
+        t0 = time.perf_counter()
+        owl_xml = serializer.serialize()
+        serialize_dt = time.perf_counter() - t0
+        sizes = count_owl_size(owl_xml)
+        for k in owl_totals:
+            owl_totals[k] += sizes[k]
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".owl", delete=False) as f:
+            f.write(owl_xml)
+            temp_path = Path(f.name)
+        try:
+            result = adapter.run(temp_path, ReasoningMode.REALISATION,
+                                  timeout=KONCLUDE_TIMEOUT, verbose=False)
+            if not result.success:
+                raise RuntimeError(f"Konclude failed on {mmd_path.name} @ ({emom},{ehist},{etgt}): {result.error_message}")
+            owl_time += serialize_dt + result.wall_clock_time
+        finally:
+            temp_path.unlink()
+
+    return {
+        "name": mmd_path.stem,
+        "shape": shape,
+        "datalog": dl_totals,
+        "owl": owl_totals,
+        "datalog_time": dl_time,
+        "owl_time": owl_time,
+    }
+
+
+def write_table_models(rows, path: Path):
+    lines = [
+        r"% Auto-generated by generate_tables.py -- do not edit by hand",
+        r"\begin{tabular}{l r r r r r r r r r}",
+        r"\hline",
+        r"Model & Moments & Hist. & Depth & Agents & Agents & Actions & Actions & Eval pts & Eval pts \\",
+        r" & & & & (total) & (max/mom) & (total) & (max/mom) & (actual) & (max poss.) \\",
+        r"\hline",
+    ]
+    for r in rows:
+        s = r["shape"]
+        lines.append(
+            f"{tex_escape(r['name'])} & {s['moments']} & {s['histories']} & {s['depth']} & "
+            f"{s['agents_total']} & {s['agents_max']} & {s['actions_total']} & {s['actions_max']} & "
+            f"{s['eval_points_actual']} & {s['eval_points_max']} \\\\"
+        )
+    lines += [r"\hline", r"\end{tabular}", ""]
+    path.write_text("\n".join(lines))
+
+
+def write_table_translations(rows, path: Path):
+    lines = [
+        r"% Auto-generated by generate_tables.py -- do not edit by hand",
+        r"\begin{tabular}{l r r r r r r}",
+        r"\hline",
+        r"Model & \multicolumn{3}{c}{pyDatalog} & \multicolumn{3}{c}{OWL} \\",
+        r" & Facts & Rules & Preds. & Axioms & Classes & Indiv. \\",
+        r"\hline",
+    ]
+    for r in rows:
+        d, o = r["datalog"], r["owl"]
+        lines.append(
+            f"{tex_escape(r['name'])} & {d['facts']} & {d['rules']} & {d['predicates']} & "
+            f"{o['axioms']} & {o['classes']} & {o['individuals']} \\\\"
+        )
+    lines += [r"\hline", r"\end{tabular}", ""]
+    path.write_text("\n".join(lines))
+
+
+def write_table_performance(rows, path: Path):
+    lines = [
+        r"% Auto-generated by generate_tables.py -- do not edit by hand",
+        r"\begin{tabular}{l r r}",
+        r"\hline",
+        r"Model & pyDatalog (s) & Konclude (s) \\",
+        r"\hline",
+    ]
+    for r in rows:
+        lines.append(
+            f"{tex_escape(r['name'])} & {r['datalog_time']:.3f} & {r['owl_time']:.3f} \\\\"
+        )
+    lines += [r"\hline", r"\end{tabular}", ""]
+    path.write_text("\n".join(lines))
+
+
+def main():
+    mmd_files = sorted(MODELS_DIR.glob("*.mmd"))
+    rows = []
+    for mmd_path in mmd_files:
+        print(f"Analyzing {mmd_path.name}...", file=sys.stderr)
+        rows.append(run_model(mmd_path))
+
+    write_table_models(rows, OUT_DIR / "table_models.tex")
+    write_table_translations(rows, OUT_DIR / "table_translations.tex")
+    write_table_performance(rows, OUT_DIR / "table_performance.tex")
+    print(f"Wrote 3 tables to {OUT_DIR}", file=sys.stderr)
+
+
+if __name__ == "__main__":
+    main()
