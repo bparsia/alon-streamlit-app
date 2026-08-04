@@ -47,13 +47,13 @@ expansion_axiom: formula "=>" IDENTIFIER
         | atom
 
 // Primitive modal operators
-box: "[]" primary
-diamond: "<>" primary
-next: X_OP primary
+box: "[]" negation
+diamond: "<>" negation
+next: X_OP negation
 
 // PDL-style modalities
-pdl_box: "[" action_expr "]" primary
-pdl_diamond: "<" action_expr ">" primary
+pdl_box: "[" action_expr "]" negation
+pdl_diamond: "<" action_expr ">" negation
 
 // Action predicates
 do_action: "do" "(" action_expr ")"
@@ -61,7 +61,7 @@ free_do_action: "free_do" "(" action_expr ")"
 opposing: action_expr "|>" action_expr
 
 // Causal operators
-expected_result: "do" "(" action_expr ")" "[+]->" primary
+expected_result: "do" "(" action_expr ")" "[+]->" negation
 but_for: "but" "(" action_expr "," formula ")"
 ness: "ness" "(" action_expr "," formula ")"
 

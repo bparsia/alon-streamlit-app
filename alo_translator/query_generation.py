@@ -19,11 +19,12 @@ def _sanitize_id(s: str) -> str:
     awkward in display (parentheses, spaces, braces, colons, commas) with
     underscores, then collapses runs of underscores.
 
-    [] and <> are replaced with distinct tokens (BOX_/DIA_) before the
-    general substitution so that e.g. "do(sd1)", "[]do(sd1)", and
-    "<>do(sd1)" don't collapse to the same sanitized id.
+    [], <>, and leading ~ are replaced with distinct tokens (BOX_/DIA_/NOT_)
+    before the general substitution so that e.g. "do(sd1)", "[]do(sd1)",
+    "<>do(sd1)", and "~q" (vs "q") don't collapse to the same sanitized id.
     """
     s = s.replace('[]', 'BOX_').replace('<>', 'DIA_')
+    s = re.sub(r'~', 'NOT_', s)
     result = re.sub(r'[(){}\[\],: ~<>]', '_', s)
     result = re.sub(r'_+', '_', result)
     return result.strip('_')
