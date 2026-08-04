@@ -96,33 +96,42 @@ def model_shape_stats(model) -> dict:
 
 
 def datalog_line_sets(program: str) -> dict:
-    """Return sets of distinct fact/rule lines and predicate names.
+    """Return sets of distinct fact/rule lines, predicate names, and constants.
 
     Sets (not counts) so that callers can union across eval points and count
-    distinct facts/rules/predicates rather than summing duplicates -- the
-    structural facts (moments, histories, actions, succ, same_moment) are
-    identical across every eval point of the same model, since serialize()
-    rebuilds the whole program from scratch each time.
+    distinct facts/rules/predicates/constants rather than summing duplicates
+    -- the structural facts (moments, histories, actions, succ, same_moment)
+    are identical across every eval point of the same model, since
+    serialize() rebuilds the whole program from scratch each time.
+
+    "predicates" is EDB (fact-defined: action, succ, prop, ...) + IDB
+    (rule-defined: same_moment, top, bottom, derived query predicates)
+    combined -- the Datalog analog of OWL's Classes+Properties vocabulary.
+    "constants" is the distinct quoted string literals appearing in facts/
+    rules (moment/history indices, action names, proposition symbols) --
+    the Datalog analog of OWL's named individuals.
     """
-    facts, rules = set(), set()
-    edb_preds, idb_preds = set(), set()
+    facts, rules, predicates, constants = set(), set(), set(), set()
     for l in program.splitlines():
         l = l.strip()
         if l.startswith("+"):
             facts.add(l)
             m = re.match(r"^\+\s*(\w+)\(", l)
             if m:
-                edb_preds.add(m.group(1))
+                predicates.add(m.group(1))
         elif "<=" in l:
             rules.add(l)
             m = re.match(r"^(\w+)\(", l)
             if m:
-                idb_preds.add(m.group(1))
+                predicates.add(m.group(1))
+        else:
+            continue
+        constants.update(re.findall(r"'([^']*)'", l))
     return {
         "facts": facts,
         "rules": rules,
-        "edb_predicates": edb_preds,
-        "idb_predicates": idb_preds,
+        "predicates": predicates,
+        "constants": constants,
     }
 
 
@@ -141,25 +150,31 @@ def owl_axiom_sets(owl_xml: str) -> dict:
     (same_moment closure, action/succ assertions, etc.) is identical across
     every eval point of the same model, since serialize() rebuilds the whole
     ontology from scratch each time.
+
+    "predicates" is Class + ObjectProperty declarations combined -- the OWL
+    analog of Datalog's EDB+IDB predicate vocabulary. "individuals" is
+    NamedIndividual declarations -- the OWL analog of Datalog's constants.
     """
     root = ET.fromstring(owl_xml)
-    classes, individuals, tbox, abox = set(), set(), set(), set()
+    predicates, individuals, tbox, abox = set(), set(), set(), set()
     for child in root:
         tag = child.tag.split("}")[-1]
         key = ET.tostring(child, encoding="unicode")
         if tag == "Declaration":
             inner = child[0].tag.split("}")[-1]
-            if inner == "Class":
-                classes.add(key)
+            if inner in ("Class", "ObjectProperty"):
+                predicates.add(key)
             elif inner == "NamedIndividual":
                 individuals.add(key)
+            else:
+                raise ValueError(f"Unclassified OWL declaration kind: {inner!r}")
         elif tag in TBOX_TAGS:
             tbox.add(key)
         elif tag in ABOX_TAGS:
             abox.add(key)
         elif tag != "AnnotationAssertion":
             raise ValueError(f"Unclassified OWL axiom tag: {tag!r} -- add it to TBOX_TAGS or ABOX_TAGS")
-    return {"classes": classes, "individuals": individuals, "tbox": tbox, "abox": abox}
+    return {"predicates": predicates, "individuals": individuals, "tbox": tbox, "abox": abox}
 
 
 def run_model(mmd_path: Path) -> dict:
@@ -174,8 +189,8 @@ def run_model(mmd_path: Path) -> dict:
     # identical every time since serialize() rebuilds from scratch per eval
     # point -- summing would count the same shared structure once per eval
     # point instead of once total.
-    dl_union = {"facts": set(), "rules": set(), "edb_predicates": set(), "idb_predicates": set()}
-    owl_union = {"classes": set(), "individuals": set(), "tbox": set(), "abox": set()}
+    dl_union = {"facts": set(), "rules": set(), "predicates": set(), "constants": set()}
+    owl_union = {"predicates": set(), "individuals": set(), "tbox": set(), "abox": set()}
 
     t0 = time.perf_counter()
     for emom, ehist, etgt in eps:
@@ -262,14 +277,14 @@ def write_table_translations(rows, path: Path):
         r"\begin{tabular}{l r r r r r r r r r r}",
         r"\hline",
         r"Model & \multicolumn{5}{c}{pyDatalog} & \multicolumn{5}{c}{OWL / Konclude} \\",
-        r" & Facts & Rules & EDB & IDB & Avg.\ time (s) & Classes & Indiv. & TBox & ABox & Avg.\ time (s) \\",
+        r" & Vocab & Const. & Facts & Rules & Avg.\ time (s) & Vocab & Indiv. & ABox & TBox & Avg.\ time (s) \\",
         r"\hline",
     ]
     for r in rows:
         d, o = r["datalog"], r["owl"]
         lines.append(
-            f"{tex_escape(r['name'])} & {d['facts']} & {d['rules']} & {d['edb_predicates']} & {d['idb_predicates']} & {r['datalog_time']:.3f} & "
-            f"{o['classes']} & {o['individuals']} & {o['tbox']} & {o['abox']} & {r['owl_time']:.3f} \\\\"
+            f"{tex_escape(r['name'])} & {d['predicates']} & {d['constants']} & {d['facts']} & {d['rules']} & {r['datalog_time']:.3f} & "
+            f"{o['predicates']} & {o['individuals']} & {o['abox']} & {o['tbox']} & {r['owl_time']:.3f} \\\\"
         )
     lines += [r"\hline", r"\end{tabular}", ""]
     path.write_text("\n".join(lines))
