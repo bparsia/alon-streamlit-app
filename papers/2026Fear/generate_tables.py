@@ -8,8 +8,12 @@ absent). Facts/rules/axioms are counted as the union of distinct
 facts/rules/axioms across all eval points (not summed) -- each eval point's
 serializer rebuilds the whole structural program/ontology from scratch, so
 summing would count identical shared structure once per eval point. Wall-
-clock time IS summed across eval points, since each eval point genuinely
-triggers a separate evaluate()/Konclude run and that cost is real.
+clock time is the average per eval point (total time / number of eval
+points) -- each eval point is a separate evaluate()/Konclude run, and since
+models have different numbers of eval points, summing would conflate "cost
+per query" with "how many queries this model happens to define," making a
+model with more eval points look slower even if each individual run is
+cheap.
 
 Usage:
   cd papers/2026Fear && ../../.venv/bin/python3 generate_tables.py
@@ -221,13 +225,14 @@ def run_model(mmd_path: Path) -> dict:
         finally:
             temp_path.unlink()
 
+    n_eps = len(eps)
     return {
         "name": mmd_path.stem,
         "shape": shape,
         "datalog": {k: len(v) for k, v in dl_union.items()},
         "owl": {k: len(v) for k, v in owl_union.items()},
-        "datalog_time": dl_time,
-        "owl_time": owl_time,
+        "datalog_time": dl_time / n_eps,
+        "owl_time": owl_time / n_eps,
     }
 
 
@@ -257,7 +262,7 @@ def write_table_translations(rows, path: Path):
         r"\begin{tabular}{l r r r r r r r r r r}",
         r"\hline",
         r"Model & \multicolumn{5}{c}{pyDatalog} & \multicolumn{5}{c}{OWL / Konclude} \\",
-        r" & Facts & Rules & EDB & IDB & Time (s) & Classes & Indiv. & TBox & ABox & Time (s) \\",
+        r" & Facts & Rules & EDB & IDB & Avg.\ time (s) & Classes & Indiv. & TBox & ABox & Avg.\ time (s) \\",
         r"\hline",
     ]
     for r in rows:
