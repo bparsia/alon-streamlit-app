@@ -4,8 +4,12 @@ Generate LaTeX tables (model shape, translation size + performance) for the
 
 Each model is analyzed at every (moment, history, target) point in its
 res_analyse list (or the single default evaluation point if res_analyse is
-absent). Datalog/OWL sizes and timings are summed/totaled across those
-points per model, since that's what "analyzing this model" costs in practice.
+absent). Facts/rules/axioms are counted as the union of distinct
+facts/rules/axioms across all eval points (not summed) -- each eval point's
+serializer rebuilds the whole structural program/ontology from scratch, so
+summing would count identical shared structure once per eval point. Wall-
+clock time IS summed across eval points, since each eval point genuinely
+triggers a separate evaluate()/Konclude run and that cost is real.
 
 Usage:
   cd papers/2026Fear && ../../.venv/bin/python3 generate_tables.py
@@ -87,25 +91,34 @@ def model_shape_stats(model) -> dict:
     }
 
 
-def count_datalog_size(program: str) -> dict:
-    facts = sum(1 for l in program.splitlines() if l.strip().startswith("+"))
-    rules = sum(1 for l in program.splitlines() if "<=" in l)
+def datalog_line_sets(program: str) -> dict:
+    """Return sets of distinct fact/rule lines and predicate names.
+
+    Sets (not counts) so that callers can union across eval points and count
+    distinct facts/rules/predicates rather than summing duplicates -- the
+    structural facts (moments, histories, actions, succ, same_moment) are
+    identical across every eval point of the same model, since serialize()
+    rebuilds the whole program from scratch each time.
+    """
+    facts, rules = set(), set()
     edb_preds, idb_preds = set(), set()
     for l in program.splitlines():
         l = l.strip()
         if l.startswith("+"):
+            facts.add(l)
             m = re.match(r"^\+\s*(\w+)\(", l)
             if m:
                 edb_preds.add(m.group(1))
         elif "<=" in l:
+            rules.add(l)
             m = re.match(r"^(\w+)\(", l)
             if m:
                 idb_preds.add(m.group(1))
     return {
         "facts": facts,
         "rules": rules,
-        "edb_predicates": len(edb_preds),
-        "idb_predicates": len(idb_preds),
+        "edb_predicates": edb_preds,
+        "idb_predicates": idb_preds,
     }
 
 
@@ -116,22 +129,30 @@ TBOX_TAGS = {
 ABOX_TAGS = {"ClassAssertion", "ObjectPropertyAssertion", "DifferentIndividuals"}
 
 
-def count_owl_size(owl_xml: str) -> dict:
+def owl_axiom_sets(owl_xml: str) -> dict:
+    """Return sets of distinct axiom strings per category, keyed by canonicalized XML.
+
+    Sets (not counts) so that callers can union across eval points and count
+    distinct axioms rather than summing duplicates -- the structural ABox/TBox
+    (same_moment closure, action/succ assertions, etc.) is identical across
+    every eval point of the same model, since serialize() rebuilds the whole
+    ontology from scratch each time.
+    """
     root = ET.fromstring(owl_xml)
-    classes = individuals = 0
-    tbox = abox = 0
+    classes, individuals, tbox, abox = set(), set(), set(), set()
     for child in root:
         tag = child.tag.split("}")[-1]
+        key = ET.tostring(child, encoding="unicode")
         if tag == "Declaration":
             inner = child[0].tag.split("}")[-1]
             if inner == "Class":
-                classes += 1
+                classes.add(key)
             elif inner == "NamedIndividual":
-                individuals += 1
+                individuals.add(key)
         elif tag in TBOX_TAGS:
-            tbox += 1
+            tbox.add(key)
         elif tag in ABOX_TAGS:
-            abox += 1
+            abox.add(key)
         elif tag != "AnnotationAssertion":
             raise ValueError(f"Unclassified OWL axiom tag: {tag!r} -- add it to TBOX_TAGS or ABOX_TAGS")
     return {"classes": classes, "individuals": individuals, "tbox": tbox, "abox": abox}
@@ -144,8 +165,13 @@ def run_model(mmd_path: Path) -> dict:
 
     eps = eval_points_for(model)
 
-    dl_totals = {"facts": 0, "rules": 0, "edb_predicates": 0, "idb_predicates": 0}
-    owl_totals = {"classes": 0, "individuals": 0, "tbox": 0, "abox": 0}
+    # Union sets across eval points, not sum-of-counts: the structural facts/
+    # axioms (moments, histories, actions, succ, same_moment closure) are
+    # identical every time since serialize() rebuilds from scratch per eval
+    # point -- summing would count the same shared structure once per eval
+    # point instead of once total.
+    dl_union = {"facts": set(), "rules": set(), "edb_predicates": set(), "idb_predicates": set()}
+    owl_union = {"classes": set(), "individuals": set(), "tbox": set(), "abox": set()}
 
     t0 = time.perf_counter()
     for emom, ehist, etgt in eps:
@@ -157,9 +183,9 @@ def run_model(mmd_path: Path) -> dict:
         serializer = DatalogIndexSerializer(model, evaluation_history=ehist, evaluation_moment=emom)
         program = serializer.serialize()
         serializer.evaluate()
-        sizes = count_datalog_size(program)
-        for k in dl_totals:
-            dl_totals[k] += sizes[k]
+        sets = datalog_line_sets(program)
+        for k in dl_union:
+            dl_union[k] |= sets[k]
     dl_time = time.perf_counter() - t0
 
     bin_path = konclude_path()
@@ -179,9 +205,9 @@ def run_model(mmd_path: Path) -> dict:
         t0 = time.perf_counter()
         owl_xml = serializer.serialize()
         serialize_dt = time.perf_counter() - t0
-        sizes = count_owl_size(owl_xml)
-        for k in owl_totals:
-            owl_totals[k] += sizes[k]
+        sets = owl_axiom_sets(owl_xml)
+        for k in owl_union:
+            owl_union[k] |= sets[k]
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".owl", delete=False) as f:
             f.write(owl_xml)
@@ -198,8 +224,8 @@ def run_model(mmd_path: Path) -> dict:
     return {
         "name": mmd_path.stem,
         "shape": shape,
-        "datalog": dl_totals,
-        "owl": owl_totals,
+        "datalog": {k: len(v) for k, v in dl_union.items()},
+        "owl": {k: len(v) for k, v in owl_union.items()},
         "datalog_time": dl_time,
         "owl_time": owl_time,
     }
