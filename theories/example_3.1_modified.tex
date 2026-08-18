@@ -1,0 +1,58 @@
+\begin{figure}[H]
+\noindent
+\adjustbox{valign=t}{%
+\begin{minipage}{0.45\textwidth}
+\begin{lstlisting}[basicstyle=\ttfamily\small, breaklines=true, numbers=left, numberstyle=\tiny]
+---
+title: Modified Example 3.1
+opposings:
+  sd1:
+    - ha2
+---
+classDiagram
+direction BT
+m --> m1 : h1({sd1, ss2})
+m --> m2 : h2({sd1, ha2})
+m --> m3 : h3({ss1, ss2})
+m --> m4 : h4({ss1, ha2})
+m --> m5 : h5({sd1, wha2})
+m --> m6 : h6({ss1, wha2})
+m1: q
+m2: ~q
+m3: ~q
+m4: ~q
+m5: q
+m6: ~q
+\end{lstlisting}
+\end{minipage}}%
+\hfill%
+\adjustbox{valign=t}{%
+\begin{minipage}{0.50\textwidth}
+
+\textbf{At \texttt{m/h1} --- CGA: \texttt{\{sd1, ss2\}}, outcome: $q$}
+
+\smallskip
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+\textbf{Agent} & \textbf{pres} & \textbf{sres} & \textbf{res} & \textbf{dxstit} & \textbf{but} & \textbf{NESS} \\ \hline
+\textbf{Alice}           & \ding{51} & \ding{51} & \ding{51} & ~         & \ding{51} & \ding{51} \\
+\textbf{Beth}            & ~         & ~         & ~         & ~         & ~         & \ding{51} \\
+\textbf{\{Alice, Beth\}} & \ding{51} & ~         & \ding{51} & \ding{51} & ~         & \ding{51} \\ \hline
+\end{tabular}
+
+\medskip
+\textbf{At \texttt{m/h5} --- CGA: \texttt{\{sd1, wha2\}}, outcome: $q$}
+
+\smallskip
+\begin{tabular}{|l|l|l|l|l|l|l|}
+\hline
+\textbf{Agent} & \textbf{pres} & \textbf{sres} & \textbf{res} & \textbf{dxstit} & \textbf{but} & \textbf{NESS} \\ \hline
+\textbf{Alice}           & \ding{51} & \ding{51} & \ding{51} & ~         & \ding{51} & \ding{51} \\
+\textbf{Beth}            & ~         & ~         & ~         & ~         & ~         & \ding{51} \\
+\textbf{\{Alice, Beth\}} & \ding{51} & ~         & \ding{51} & \ding{51} & ~         & \ding{51} \\ \hline
+\end{tabular}
+
+\end{minipage}}%
+\caption{Modified Example 3.1. Left: ALOn model source. Right: responsibility results at \texttt{m/h1} and \texttt{m/h5}.}
+\label{fig:example-3-1-modified}
+\end{figure}

@@ -36,13 +36,6 @@ def test_parse_simple_dbt():
 
     mermaid = """---
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
-  2:
-    - ss
-    - ha
 opposings:
   sd1:
     - ha2
@@ -51,8 +44,6 @@ evaluation_point: m/h1
 ---
 classDiagram
 direction BT
-  class m {
-  }
   m --> m1 : h1({sd1, ss2})
   m1: q
 """
@@ -82,18 +73,9 @@ def test_parse_dbt_multiple_histories():
 
     mermaid = """---
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
-  2:
-    - ss
-    - ha
 ---
 classDiagram
 direction BT
-  class m {
-  }
   m --> m1 : h1({sd1, ss2})
   m --> m2 : h2({sd1, ha2})
   m --> m3 : h3({ss1, ss2})

@@ -87,20 +87,34 @@ def _parse_action_string(action_str: str) -> Action:
     return Action(m.group(1), m.group(2))
 
 
+def _parse_action_or_group(action_str: str):
+    """Parse an individual action string 'sd1' or group '{sd1,ha2}'."""
+    action_str = action_str.strip()
+    if action_str.startswith('{') and action_str.endswith('}'):
+        inner = action_str[1:-1]
+        actions = {}
+        for part in inner.split(','):
+            a = _parse_action_string(part.strip())
+            actions[a.agent] = a.action_type
+        from ..model.core import GroupAction
+        return GroupAction(actions)
+    return _parse_action_string(action_str)
+
+
 def _build_layered_opposings(partial_spec: Dict[str, Any]) -> List[OpposingRelation]:
     """Build OpposingRelation list from partial_spec opposings dict."""
     opposings = []
     for opposed_str, opposing_list in partial_spec.get("opposings", {}).items():
-        opposed = _parse_action_string(opposed_str)
+        opposed = _parse_action_or_group(opposed_str)
         for opp_str in opposing_list:
-            opposings.append(OpposingRelation(opposed, _parse_action_string(opp_str)))
+            opposings.append(OpposingRelation(opposed, _parse_action_or_group(opp_str)))
     return opposings
 
 
 def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'ALOModel':
     """Build a ALOModel from a TD>1 diagram."""
     succs = diagram.get("succs", [])
-    shorthand_members = diagram.get("shorthand_members", [])
+    moment_props = diagram.get("moment_props", [])
 
     default_result = partial_spec.get("defaults", {}).get("result") if partial_spec.get("defaults") else None
 
@@ -197,14 +211,14 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'AL
         )
 
     # ------------------------------------------------------------------
-    # 6. Collect propositions from shorthand_members
+    # 6. Collect propositions from moment_props declarations
     # ------------------------------------------------------------------
-    for shorthand in shorthand_members:
-        moment_name = shorthand["identifier"]
+    for decl in moment_props:
+        moment_name = decl["moment_id"]
         if moment_name not in moment_nodes:
             raise ValueError(f"Proposition label on unknown moment: {moment_name}")
         node = moment_nodes[moment_name]
-        for label in (p.strip() for p in shorthand["value"].split(",")):
+        for label in decl["propositions"]:
             if default_result is None or label != default_result:
                 node.propositions.add(label)
 

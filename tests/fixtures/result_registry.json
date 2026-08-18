@@ -10,7 +10,7 @@
     ],
     "cross_check": {},
     "verified": true,
-    "source": "Konclude baseline match verified 2026-06-15",
+    "source": "reviewed 2026-07-17",
     "results": [
       {
         "formula": "[1 DXSTIT]q",
@@ -84,7 +84,14 @@
         "formula": "ness({1:sd, 2:ss}, q)",
         "datalog": true
       }
-    ]
+    ],
+    "eval_moment": "m",
+    "eval_history": "h1",
+    "outcome": "q",
+    "agent_actions": {
+      "1": "sd",
+      "2": "ss"
+    }
   },
   {
     "model": "3.5",
@@ -459,7 +466,16 @@
         "formula": "ness({3:sd, 4:rb}, q)",
         "datalog": false
       }
-    ]
+    ],
+    "eval_moment": "m",
+    "eval_history": "h1",
+    "outcome": "q",
+    "agent_actions": {
+      "1": "sd",
+      "2": "ss",
+      "3": "sd",
+      "4": "rb"
+    }
   },
   {
     "model": "3.6",
@@ -546,7 +562,14 @@
         "formula": "ness({1:sd, 3:sd}, q)",
         "datalog": false
       }
-    ]
+    ],
+    "eval_moment": "m",
+    "eval_history": "h1",
+    "outcome": "q",
+    "agent_actions": {
+      "1": "sd",
+      "3": "sd"
+    }
   },
   {
     "model": "3.7",
@@ -633,6 +656,13 @@
         "formula": "ness({1:pd, 3:pd}, q)",
         "datalog": true
       }
-    ]
+    ],
+    "eval_moment": "m",
+    "eval_history": "h1",
+    "outcome": "q",
+    "agent_actions": {
+      "1": "pd",
+      "3": "pd"
+    }
   }
 ]

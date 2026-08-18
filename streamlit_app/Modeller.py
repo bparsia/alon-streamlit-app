@@ -198,11 +198,13 @@ with st.expander("Responsibility Analysis", expanded=True):
                     if satisfied_query_ids is not None:
                         st.success(f"Analysis complete! Found {len(satisfied_query_ids)} satisfied queries")
                         results_md = format_layered_results_table(model, satisfied_query_ids)
-                        col_r, col_rb = st.columns([8, 1])
+                        col_r, col_rb, col_rl = st.columns([7, 1, 1])
                         with col_r:
                             st.markdown(results_md)
                         with col_rb:
                             copy_button(results_md, "📋 Copy")
+                        with col_rl:
+                            copy_button(format_layered_results_table(model, satisfied_query_ids, fmt="latex"), "⎇ LaTeX")
                 except Exception as e:
                     st.error(f"Analysis failed: {e}")
 

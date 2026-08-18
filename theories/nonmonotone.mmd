@@ -1,26 +1,30 @@
-# Non-monotonicity of [+]-> with respect to group expansion
-#
-# This model was constructed to test whether do(A) [+]-> q and do(A∪{b}) [+]-> ~q
-# can both hold (a two-step Sobel sequence). The answer is no.
-#
-# Monotonicity of opposing (Def 3.4: if α |> β and β ⊆ γ then α |> γ) entails
-# that free_do(A) ⊇ free_do(A∪{b}) for any b — adding agents to the group can
-# only shrink the set of witnessing histories, never expand it. Therefore [+]->
-# satisfies antecedent strengthening with respect to group expansion: if
-# do(A) [+]-> q then do(A∪{b}) [+]-> q. Sobel sequences are not possible.
-#
-# What this model does show: do(sd1) [+]-> q (True) and do({sd1,ha2}) [+]-> q
-# (False) — the strengthened antecedent conditional can fail, but only because
-# the group conditional has *fewer* witnessing histories, not because the
-# consequent flips. The second conditional is simply not supported, not reversed.
-#
-# Outcome: q iff sd1 fires and rb3 absent (rb3 opposes sd1 individually).
-# wn4 opposes {sd1,ha2} as a group — present in h3,h4,h7,h8.
-# free_do(sd1): histories without rb3 = h1,h3,h5,h7 — all give q. True.
-# free_do({sd1,ha2}): histories where sd1+ha2 performed and wn4 absent = h1,h2.
-#   h2 has rb3 so ~q. False.
 ---
-type: DBT
+title: Sobel sequences are impossible under standard [+]-> semantics
+description: |
+  A Sobel sequence requires: do(A) [+]-> q  and  do(A∪{b}) [+]-> ~q.
+
+  Why this is impossible under Def 3.4:
+
+  Def 3.4 (monotonicity of opposing): if α |> β and β ⊆ γ then α |> γ.
+  This entails free_do(A∪{b}) ⊆ free_do(A) for all A, b — the witness set
+  can only shrink as agents are added. If every free_do(A) history gives q,
+  every free_do(A∪{b}) history does too, so do(A∪{b}) [+]-> ~q cannot hold.
+
+  Note on antecedent strengthening: the two conditionals do not stand in a
+  simple A→B vs A∧C→B relation, because the opposing term also changes:
+
+    do(sd1) [+]-> q       = ∀h: (do(sd1,h) ∧ ¬opp(sd1,h))       → Xq(h)
+    do({sd1,ha2}) [+]-> q = ∀h: (do(sd1,h) ∧ do(ha2,h) ∧ ¬opp({sd1,ha2},h)) → Xq(h)
+
+  The deduction-theorem route to a monotonicity violation therefore does not
+  apply. The impossibility follows from the set-inclusion argument above.
+
+  This model verifies the containment computationally:
+    free_do(sd1)      = {h1,h3,h5,h7}   (rb3 absent) — all give q
+    free_do({sd1,ha2})= {h1}             (ha2 acts, rb3 absent, wn4 absent) — gives q
+  The witness set shrinks as expected; both conditionals are True.
+
+  For a concrete Sobel sequence under relaxed (non-monotone) opposing, see sobel.mmd.
 actions:
   1: [sd, nop]
   2: [ha, nop]
@@ -37,7 +41,6 @@ evaluate:
 ---
 classDiagram
 direction BT
-  class m { }
   m --> m1 : h1({sd1, ha2, nop3, nop4})
   m --> m2 : h2({sd1, ha2, rb3,  nop4})
   m --> m3 : h3({sd1, ha2, nop3, wn4})

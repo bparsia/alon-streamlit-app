@@ -2,13 +2,6 @@
 title: Example 3.1 from Where Responsibility Takes You
 description: Complete specification of the corresponding model with all 4 histories explicit. Of note is that since we do full responsibility analysis we get results for group {1,2} which has quite a bit of responsibility.
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
-  2:
-    - ss
-    - ha
 opposings:
   sd1:
     - ha2
@@ -22,8 +15,6 @@ aliases:
 ---
 classDiagram
 direction BT
-  class m {
-  }
   m --> m1 : h1({sd1, ss2})
   m --> m2 : h2({sd1, ha2})
   m --> m3 : h3({ss1, ss2})

@@ -1,0 +1,145 @@
+model,commit,date,verified,source,formula,datalog
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[1 DXSTIT]q,False
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[1 pres]q,True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[1 res]q,True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[1 sres]q,True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[2 DXSTIT]q,False
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[2 pres]q,False
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[2 res]q,False
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,[2 sres]q,False
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"[{1, 2} DXSTIT]q",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"[{1, 2} pres]q",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"[{1, 2} res]q",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"[{1, 2} sres]q",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"but(sd1, q)",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"but(ss2, q)",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"but({1:sd, 2:ss}, q)",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"ness(sd1, q)",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"ness(ss2, q)",True
+3.1,f5b458c,2026-06-15,True,reviewed 2026-07-16,"ness({1:sd, 2:ss}, q)",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 DXSTIT]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 pres]q,True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 res]q,True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 sres]q,True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[2 DXSTIT]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[2 pres]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[2 res]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[2 sres]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 DXSTIT]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 pres]q,True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 res]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 sres]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[4 DXSTIT]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[4 pres]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[4 res]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[4 sres]q,False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3, 4} DXSTIT]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3, 4} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3, 4} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3, 4} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3} DXSTIT]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 3} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 4} DXSTIT]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 4} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 4} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2, 4} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2} DXSTIT]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2} res]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 2} sres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3, 4} DXSTIT]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3, 4} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3, 4} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3, 4} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} DXSTIT]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 4} DXSTIT]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 4} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 4} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 4} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3, 4} DXSTIT]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3, 4} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3, 4} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3, 4} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3} DXSTIT]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 3} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 4} DXSTIT]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 4} pres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 4} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{2, 4} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{3, 4} DXSTIT]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{3, 4} pres]q",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{3, 4} res]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{3, 4} sres]q",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(rb4, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(sd1, q)",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(sd3, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(ss2, q)",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 2:ss, 3:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 2:ss, 3:sd}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 2:ss, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 2:ss}, q)",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 3:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 3:sd}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({2:ss, 3:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({2:ss, 3:sd}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({2:ss, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({3:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(rb4, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(sd1, q)",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(sd3, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(ss2, q)",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 2:ss, 3:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 2:ss, 3:sd}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 2:ss, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 2:ss}, q)",True
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 3:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 3:sd}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({2:ss, 3:sd, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({2:ss, 3:sd}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({2:ss, 4:rb}, q)",False
+3.5,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({3:sd, 4:rb}, q)",False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 DXSTIT]q,True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 pres]q,True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 res]q,True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 sres]q,False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 DXSTIT]q,True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 pres]q,True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 res]q,True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 sres]q,False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} DXSTIT]q",True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} pres]q",True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} res]q",False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} sres]q",False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(sd1, q)",False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(sd3, q)",False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:sd, 3:sd}, q)",False
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(sd1, q)",True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(sd3, q)",True
+3.6,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:sd, 3:sd}, q)",False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 DXSTIT]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 pres]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 res]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[1 sres]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 DXSTIT]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 pres]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 res]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,[3 sres]q,False
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} DXSTIT]q",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} pres]q",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} res]q",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"[{1, 3} sres]q",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(pd1, q)",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but(pd3, q)",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"but({1:pd, 3:pd}, q)",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(pd1, q)",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness(pd3, q)",True
+3.7,f5b458c,2026-06-15,True,Konclude baseline match verified 2026-06-15,"ness({1:pd, 3:pd}, q)",True

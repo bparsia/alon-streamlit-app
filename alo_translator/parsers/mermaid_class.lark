@@ -1,6 +1,6 @@
 // Lark grammar for restricted Mermaid class diagrams
-// Supports: YAML front matter, class definitions with methods/attributes,
-// associations (-->), and shorthand member declarations
+// Supports: YAML front matter, associations (-->), and moment
+// proposition declarations
 
 ?start: frontmatter? diagram
 
@@ -18,31 +18,23 @@ direction: "direction" DIRECTION _NL
 DIRECTION: "BT" | "TB" | "LR" | "RL"
 
 // Diagram statements
-?statement: moment
-          | succ
-          | shorthand_member
+?statement: succ
+          | moment_props
           | _NL
 
-// Class definition: class NAME { members }
-moment: "class" IDENTIFIER "{" _NL? members? "}" _NL?
-
-members: member+
-
-?member: (action | proposition) _NL?
-
-action: IDENTIFIER "()"
-proposition: "~"? IDENTIFIER  // Propositions or their negations
-
-// Association/link: CLASS1 --> CLASS2 : label
+// Association/link: MOMENT1 --> MOMENT2 : label
 succ: IDENTIFIER "-->" IDENTIFIER (":" label)? _NL?
 
 label: /[^\n]+/
 
-// Shorthand member declaration: CLASS: value
-shorthand_member: IDENTIFIER ":" member_value _NL?
-member_value: /[^\n]+/
+// Moment proposition declaration: MOMENT: prop, ~prop, ...
+moment_props: IDENTIFIER ":" proposition ("," proposition)* _NL?
+proposition: NOT? IDENTIFIER  // Propositions or their negations
+// Named terminal (not a bare string literal) so it isn't filtered out of
+// the parse tree -- Lark drops anonymous single-character string literals.
+NOT: "~"
 
-// Class name identifier (alphanumeric + underscore/hyphen)
+// Moment name identifier (alphanumeric + underscore/hyphen)
 IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_-]*/
 
 // Newline (one or more)

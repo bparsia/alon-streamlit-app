@@ -1,0 +1,52 @@
+---
+title: Sobel sequence under non-monotone opposing
+description: |
+  A concrete model exhibiting a two-step Sobel sequence for [+]->.
+
+  We show:
+    (1)  do(sd1) [+]-> q          [True]
+    (2)  do({sd1,sb3}) [+]-> ~q   [True]
+
+  This is only possible if the opposing relation is non-monotone with respect
+  to group expansion — i.e., Def 3.4 is relaxed.
+
+  Agents: sd (agent 1), ha (agent 2), sb (agent 3).
+  Agent 1 always performs sd. Agents 2 and 3 independently choose to act or not.
+
+  Opposing stipulations (non-standard — Def 3.4 NOT assumed):
+    ha2 |> sd1   — ha2 opposes sd1 when acting alone
+    sb3 |> sd1   — sb3 opposes sd1 when acting alone
+    Neither ha2 nor sb3 opposes the group {sd1,sb3}.
+
+  This violates Def 3.4 monotonicity: sb3 |> sd1 but sb3 ⊬ {sd1,sb3}.
+  (An agent cannot oppose a group of which they are a member — this is the
+  minimal non-monotonicity needed.)
+
+  Witness sets:
+    free_do(sd1)       = { h1 }          (sd1 acts; ha2, sb3 both absent)
+    free_do({sd1,sb3}) = { h3, h4 }      (sd1+sb3 act; ha2 not an opposer of group)
+
+  free_do({sd1,sb3}) ⊄ free_do(sd1) — monotonicity fails.
+
+  Results:
+    h1: q   → do(sd1) [+]-> q holds        (all free_do(sd1) histories give q)
+    h3: ~q  → do({sd1,sb3}) [+]-> ~q holds (all free_do({sd1,sb3}) histories give ~q)
+    h4: ~q
+
+  Note: this model cannot be verified by the current evaluator, which
+  implements standard Def 3.4 semantics. The opposing rules would need to
+  be hand-specified per group rather than derived from individual opposings.
+opposings:
+  sd1: [ha2, sb3]
+  "{sd1,sb3}": []
+---
+classDiagram
+direction BT
+  m --> m1 : h1({sd1, nop2, nop3})
+  m --> m2 : h2({sd1, ha2,  nop3})
+  m --> m3 : h3({sd1, nop2, sb3})
+  m --> m4 : h4({sd1, ha2,  sb3})
+  m1: q
+  m2: q
+  m3: ~q
+  m4: ~q

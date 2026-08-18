@@ -75,12 +75,11 @@ def _model_hash(model_text: str) -> str:
 # Pipeline runners
 # ---------------------------------------------------------------------------
 
-def _run_datalog(model_text: str) -> Dict[str, bool]:
-    """Run Datalog pipeline. Returns {formula: satisfied}."""
+def _setup_model(model_text: str):
+    """Parse model and attach standard responsibility config. Returns model."""
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
-    from alo_translator.serializers.datalog import DatalogIndexSerializer
 
     model = parse_dbt_diagram(model_text)
     model.responsibility_config = ResponsibilityConfig(
@@ -92,7 +91,31 @@ def _run_datalog(model_text: str) -> Dict[str, bool]:
     for q in model.queries:
         if q.formula_ast is None:
             q.formula_ast = parse_formula(q.formula_string)
+    return model
 
+
+def _eval_metadata(model) -> Dict:
+    """Extract eval index, outcome, and agent→action mapping from a parsed model."""
+    eh = model.evaluation_history or "h1"
+    em = model.evaluation_moment or ""
+    outcome = (model.responsibility_config.target_proposition
+               if model.responsibility_config else "")
+    cga = {}
+    if eh in model.histories and em:
+        cga = model.histories[eh].actions_at.get(em, {})
+    return {
+        "eval_history": eh,
+        "eval_moment": em,
+        "outcome": outcome,
+        "agent_actions": {agent: action for agent, action in cga.items()},
+    }
+
+
+def _run_datalog(model_text: str) -> Dict[str, bool]:
+    """Run Datalog pipeline. Returns {formula: satisfied}."""
+    from alo_translator.serializers.datalog import DatalogIndexSerializer
+
+    model = _setup_model(model_text)
     serializer = DatalogIndexSerializer(model, evaluation_history="h1")
     results = serializer.evaluate()
     id_to_formula = {q.query_id: q.formula_string for q in model.queries}
@@ -107,9 +130,6 @@ def _run_owl(model_text: str, strategy_name: str) -> Optional[Dict[str, bool]]:
     """Run OWL+Konclude pipeline. Returns {formula: satisfied} or None if unavailable."""
     try:
         import tempfile
-        from alo_translator.parsers.dbt_parser import parse_dbt_diagram
-        from alo_translator.parsers.builder import parse_formula
-        from alo_translator.query_generation import ResponsibilityConfig, generate_queries
         from alo_translator.serializers.owl import OWLSerializer
         from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
         from alo_translator.reasoners.konclude import KoncludeAdapter
@@ -138,16 +158,7 @@ def _run_owl(model_text: str, strategy_name: str) -> Optional[Dict[str, bool]]:
         if strategy is None:
             return None
 
-        model = parse_dbt_diagram(model_text)
-        model.responsibility_config = ResponsibilityConfig(
-            target_proposition="q", agents="all", groups="all",
-            responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
-            history="h1",
-        )
-        model.queries = generate_queries(model)
-        for q in model.queries:
-            if q.formula_ast is None:
-                q.formula_ast = parse_formula(q.formula_string)
+        model = _setup_model(model_text)
 
         serializer = OWLSerializer(model,
                                    evaluation_history=model.evaluation_history,
@@ -224,6 +235,9 @@ def capture(model_ids: List[str], variants: List[str] = None):
         model_hash = _model_hash(model_text)
         print(f"\nModel {model_id} (hash={model_hash}, commit={commit}):")
 
+        # Parse model once to get eval metadata
+        meta = _eval_metadata(_setup_model(model_text))
+
         variant_results: Dict[str, Dict[str, bool]] = {}
 
         for variant in variants:
@@ -276,6 +290,10 @@ def capture(model_ids: List[str], variants: List[str] = None):
             "commit": commit,
             "tag": tag,
             "date": today,
+            "eval_moment": meta["eval_moment"],
+            "eval_history": meta["eval_history"],
+            "outcome": meta["outcome"],
+            "agent_actions": meta["agent_actions"],
             "variants_run": variant_names,
             "cross_check": cross_check,
             "verified": False,

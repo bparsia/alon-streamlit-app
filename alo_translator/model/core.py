@@ -109,6 +109,24 @@ class OpposingRelation:
 
 
 @dataclass
+class MetaOpposingRelation:
+    """
+    A meta-opposing (shielding) relation: shielder neutralises opposer's effect on opposed.
+
+    Semantics: opposing_<opposed>(I) holds iff opposer acts at I AND shielder does NOT act at I.
+
+    Example: sb3 |> ha2 -> sd1  means:
+        opposing_sd1(I) <= action(I, 'ha2') & ~action(I, 'sb3')
+    """
+    opposed: Action        # the action whose opposition is being modulated
+    opposer: Action        # the action that normally opposes
+    shielder: Action       # the action that neutralises the opposer
+
+    def __str__(self) -> str:
+        return f"{self.shielder} shields {self.opposed} from {self.opposer}"
+
+
+@dataclass
 class Result:
     """
     The result of a history: which propositions are true at its successor moment.
@@ -273,6 +291,7 @@ class ALOModel:
     target_proposition: str              # e.g. "q" or "do(sd1)"
     default_result: Optional[str] = None  # if set, labels matching this are not emitted as facts
     evaluations: List[Tuple[str, str, str]] = field(default_factory=list)
+    meta_opposings: List['MetaOpposingRelation'] = field(default_factory=list)
     # list of (moment, history, target_proposition) for multi-point evaluation
 
     def histories_through(self, moment_name: str) -> List[str]:

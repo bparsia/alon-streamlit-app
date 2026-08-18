@@ -41,31 +41,26 @@ class MermaidTransformer(Transformer):
 
         Returns dict with:
         - direction: Optional[str] - Direction specification (BT/TB/LR/RL)
-        - moments: List[dict] - List of moment (class) definitions
         - succs: List[dict] - List of succession (association) links
-        - shorthand_members: List[dict] - List of shorthand member declarations
+        - moment_props: List[dict] - List of moment proposition declarations
         """
         direction = None
-        moments = []
         succs = []
-        shorthand_members = []
+        moment_props = []
 
         for item in items:
             if isinstance(item, dict):
                 if 'direction' in item:
                     direction = item['direction']
-                elif 'moment_id' in item:
-                    moments.append(item)
                 elif 'from_moment' in item:
                     succs.append(item)
-                elif 'shorthand' in item:
-                    shorthand_members.append(item)
+                elif 'moment_id' in item:
+                    moment_props.append(item)
 
         return {
             "direction": direction,
-            "moments": moments,
             "succs": succs,
-            "shorthand_members": shorthand_members
+            "moment_props": moment_props
         }
 
     def direction(self, items):
@@ -77,78 +72,20 @@ class MermaidTransformer(Transformer):
         direction_token = items[0]
         return {"direction": str(direction_token)}
 
-    def moment(self, items):
-        """
-        Moment (class) definition: "class" IDENTIFIER "{" _NL? members? "}" _NL?
-
-        Returns dict with:
-        - moment_id: str - The identifier for this moment
-        - actions: List[str] - List of action method names
-        - propositions: List[str] - List of propositions (with optional ~)
-        """
-        moment_id = str(items[0])
-
-        actions = []
-        propositions = []
-
-        # Check if members present (items[1] if exists)
-        if len(items) > 1 and isinstance(items[1], dict):
-            members = items[1]
-            actions = members.get('actions', [])
-            propositions = members.get('propositions', [])
-
-        return {
-            "moment_id": moment_id,
-            "actions": actions,
-            "propositions": propositions
-        }
-
-    def members(self, items):
-        """
-        Members list: member+
-
-        Returns dict with:
-        - actions: List[str] - Action method names
-        - propositions: List[str] - Proposition attributes
-        """
-        actions = []
-        propositions = []
-
-        for item in items:
-            if isinstance(item, dict):
-                if 'action' in item:
-                    actions.append(item['action'])
-                elif 'proposition' in item:
-                    propositions.append(item['proposition'])
-
-        return {
-            "actions": actions,
-            "propositions": propositions
-        }
-
-    def action(self, items):
-        """
-        Action (method): IDENTIFIER "()"
-
-        Returns dict with action name.
-        """
-        action_name = str(items[0])
-        return {"action": action_name}
-
     def proposition(self, items):
         """
         Proposition (attribute): "~"? IDENTIFIER
 
-        Returns dict with proposition (possibly negated).
+        Returns the proposition name (possibly negated with a leading ~).
         """
         if len(items) == 2:
             # Has negation
             prop_name = str(items[1])
-            return {"proposition": f"~{prop_name}"}
+            return f"~{prop_name}"
         else:
             # No negation
             prop_name = str(items[0])
-            return {"proposition": prop_name}
+            return prop_name
 
     def succ(self, items):
         """
@@ -180,31 +117,21 @@ class MermaidTransformer(Transformer):
         """
         return str(items[0]).strip()
 
-    def shorthand_member(self, items):
+    def moment_props(self, items):
         """
-        Shorthand member: IDENTIFIER ":" member_value _NL?
+        Moment proposition declaration: IDENTIFIER ":" proposition ("," proposition)* _NL?
 
         Returns dict with:
-        - shorthand: True
-        - identifier: str - Class/moment identifier
-        - value: str - Member value
+        - moment_id: str - Moment identifier
+        - propositions: List[str] - Proposition names (possibly negated with a leading ~)
         """
         identifier = str(items[0])
-        value = str(items[1])
+        propositions = [p for p in items[1:] if isinstance(p, str)]
 
         return {
-            "shorthand": True,
-            "identifier": identifier,
-            "value": value
+            "moment_id": identifier,
+            "propositions": propositions
         }
-
-    def member_value(self, items):
-        """
-        Member value: /[^\n]+/
-
-        Returns the value as a string.
-        """
-        return str(items[0]).strip()
 
     # Terminal transformers
     def IDENTIFIER(self, token):

@@ -31,7 +31,7 @@ evaluation_point: m/h1
         print(f"  {key}: {value}")
 
     # Verify structure
-    assert partial_spec["diagram_type"] == "DBT"
+    assert "diagram_type" not in partial_spec
     assert partial_spec["actions"] == {1: ["sd", "ss"], 2: ["ss", "ha"]}
     assert partial_spec["opposings"] == {"sd1": ["ha2"]}
     assert partial_spec["result"] == "q"

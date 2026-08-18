@@ -19,17 +19,17 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
     """
 
     def pdl_box(self, items):
-        """[a]φ  →  [](imp_a_φ) where imp_a_φ is named implication
+        """[a]φ  →  Named implication to avoid disjunction in pyDatalog.
 
-        Strategy: Name the implication and create multiple rules.
+        [a]φ = do(a) -> Xφ = ~do(a) v Xφ
 
-        Instead of:
-            [](do(a) -> Xφ) => pdl_box_a_φ
+        Since pyDatalog can't handle disjunction, name the implication:
+            ~do(a) => imp_name
+            Xφ => imp_name
+            []imp_name => pdl_box_name
 
-        Generate:
-            ~do(a) => imp_do_a_Xφ
-            Xφ => imp_do_a_Xφ
-            []imp_do_a_Xφ => pdl_box_a_φ
+        The []imp_name step uses FormulaToDatalog.box which correctly
+        universally quantifies over same-moment indices.
 
         Returns:
             pdl_box_a_φ (name)
@@ -39,11 +39,11 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
         # Name the implication: do(a) -> Xφ
         imp_name = self._name_for(f"imp_do({action})_X{formula}")
 
-        # Generate two axioms for the implication (modeling ~do(a) | Xφ)
+        # Generate two axioms for the implication (disjunction split)
         self.axioms.add(f"~do({action}) => {imp_name}")
         self.axioms.add(f"X{formula} => {imp_name}")
 
-        # Now generate the box axiom
+        # Generate the box axiom: []imp_name => pdl_box_name
         expansion = f"[]{imp_name}"
         name = self._name_for(expansion)
         self.axioms.add(f"{expansion} => {name}")

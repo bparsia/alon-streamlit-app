@@ -39,7 +39,7 @@ def yaml_to_partial_spec(yaml_data: Dict[str, Any]) -> Dict[str, Any]:
     - results: {history_name: [props]}
     - result: str (singular, for queries)
     - evaluation_point: str (e.g., "m/h1")
-    - diagram_type: str ("DBT" or "Indexed")
+
 
     Args:
         yaml_data: Parsed YAML dictionary from frontmatter
@@ -48,10 +48,6 @@ def yaml_to_partial_spec(yaml_data: Dict[str, Any]) -> Dict[str, Any]:
         Partial spec dictionary matching TOML structure
     """
     partial_spec = {}
-
-    # Extract diagram type (not part of TOML, but metadata)
-    if "type" in yaml_data:
-        partial_spec["diagram_type"] = yaml_data["type"]
 
     # Extract actions (required for building model)
     # YAML format: actions: {1: ["sd", "ss"], 2: ["ss", "ha"]}
