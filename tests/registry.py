@@ -97,7 +97,7 @@ def _setup_model(model_text: str):
 def _eval_metadata(model) -> Dict:
     """Extract eval index, outcome, and agent→action mapping from a parsed model."""
     eh = model.evaluation_history or "h1"
-    em = model.evaluation_moment or ""
+    em = model.evaluation_moment or "m"
     outcome = (model.responsibility_config.target_proposition
                if model.responsibility_config else "")
     cga = {}
@@ -116,7 +116,7 @@ def _run_datalog(model_text: str) -> Dict[str, bool]:
     from alo_translator.serializers.datalog import DatalogIndexSerializer
 
     model = _setup_model(model_text)
-    serializer = DatalogIndexSerializer(model, evaluation_history="h1")
+    serializer = DatalogIndexSerializer(model, evaluation_history="h1", evaluation_moment="m")
     results = serializer.evaluate()
     id_to_formula = {q.query_id: q.formula_string for q in model.queries}
     return {
@@ -161,8 +161,8 @@ def _run_owl(model_text: str, strategy_name: str) -> Optional[Dict[str, bool]]:
         model = _setup_model(model_text)
 
         serializer = OWLSerializer(model,
-                                   evaluation_history=model.evaluation_history,
-                                   evaluation_moment=model.evaluation_moment,
+                                   evaluation_history="h1",
+                                   evaluation_moment="m",
                                    strategy=strategy)
         owl_str = serializer.serialize()
 

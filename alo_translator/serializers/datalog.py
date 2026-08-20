@@ -446,6 +446,7 @@ class DatalogIndexSerializer:
         self.expander = PyDatalogExpanderTransformer(
             self.parser, self.model,
             evaluation_moment=self.evaluation_moment,
+            evaluation_history=self.evaluation_history,
             ness_empty_sufficient=self.ness_empty_sufficient,
         )
         self._query_predicate_map = {}
@@ -455,6 +456,16 @@ class DatalogIndexSerializer:
                 tree = self.parser.parse(query.formula_string)
                 predicate_name = self.expander.transform(tree)
                 if query.query_id and isinstance(predicate_name, str):
+                    # Operators that need expansion (X, ~, [I pres]/etc.) return an
+                    # already-named/axiomed predicate via _name_for(). Primitive
+                    # formulas (bare props, do(...), free_do(...)) fall through the
+                    # base transformer unchanged -- it just reconstructs the ALOn
+                    # syntax string, with no axiom ever created for it. Detect that
+                    # case and axiom it ourselves so it's queryable.
+                    if predicate_name not in self.expander.name_to_formula:
+                        name = self.expander._name_for(predicate_name)
+                        self.expander.axioms.add(f"{predicate_name} => {name}")
+                        predicate_name = name
                     self._query_predicate_map[query.query_id] = predicate_name
             except Exception as e:
                 lines.append(f"# ERROR expanding {query.query_id}: {str(e).replace(chr(10), ' | ')}")

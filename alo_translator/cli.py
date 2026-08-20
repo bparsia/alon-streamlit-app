@@ -58,6 +58,18 @@ Examples:
         help="Print detailed information about the model"
     )
 
+    parser.add_argument(
+        "--moment",
+        default="m",
+        help="Evaluation moment for the serializer's index context (default: m)"
+    )
+
+    parser.add_argument(
+        "--history",
+        default="h1",
+        help="Evaluation history for the serializer's index context (default: h1)"
+    )
+
     args = parser.parse_args()
 
     # Validate input file exists
@@ -89,8 +101,8 @@ Examples:
             if args.verbose:
                 print(f"\nGenerating OWL (index-based, full cardinality strategy)...", file=sys.stderr)
             serializer = OWLSerializer(model,
-                                       evaluation_moment=model.evaluation_moment,
-                                       evaluation_history=model.evaluation_history,
+                                       evaluation_moment=args.moment,
+                                       evaluation_history=args.history,
                                        strategy=EquivFullCardinalityStrategy())
         else:
             print(f"Error: Unknown format '{args.format}'", file=sys.stderr)

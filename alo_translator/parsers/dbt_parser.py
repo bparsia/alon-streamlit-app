@@ -116,8 +116,6 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'AL
     succs = diagram.get("succs", [])
     moment_props = diagram.get("moment_props", [])
 
-    default_result = partial_spec.get("defaults", {}).get("result") if partial_spec.get("defaults") else None
-
     # ------------------------------------------------------------------
     # 1. Build directed graph and enumerate all moments
     # ------------------------------------------------------------------
@@ -219,19 +217,11 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'AL
             raise ValueError(f"Proposition label on unknown moment: {moment_name}")
         node = moment_nodes[moment_name]
         for label in decl["propositions"]:
-            if default_result is None or label != default_result:
-                node.propositions.add(label)
+            node.propositions.add(label)
 
     # ------------------------------------------------------------------
     # 7. Assemble ALOModel
     # ------------------------------------------------------------------
-    eval_point = partial_spec.get("evaluation_point", f"m/{sorted(all_history_names)[0]}")
-    if "/" in eval_point:
-        eval_moment, eval_history = eval_point.rsplit("/", 1)
-    else:
-        eval_moment = root_name
-        eval_history = eval_point
-
     # Parse multi-point evaluations: [[moment/history, target], ...]
     evaluations = []
     for item in partial_spec.get("res_analyse", []):
@@ -251,10 +241,9 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'AL
         opposings=_build_layered_opposings(partial_spec),
         aliases={str(k): v for k, v in partial_spec.get("aliases", {}).items()},
         queries=[],
-        evaluation_history=eval_history,
-        evaluation_moment=eval_moment,
-        target_proposition=partial_spec.get("result", "q"),
-        default_result=default_result,
+        evaluation_history="",
+        evaluation_moment="",
+        target_proposition="",
         evaluations=evaluations,
     )
 

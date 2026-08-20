@@ -43,11 +43,8 @@ Model front matters only carry what varies:
 ---
 title: Baseline (no manipulation)
 type: DBT
-actions:
-  1: [sd, ss]
-  2: [ss, ha]
-result: q
-evaluation_point: m/h1
+res_analyse:
+  - [m/h1, q]
 ---
 ...
 ```

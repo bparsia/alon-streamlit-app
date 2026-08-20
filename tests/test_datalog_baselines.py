@@ -55,7 +55,7 @@ def run_datalog(mmd_path: Path):
         if q.formula_ast is None:
             q.formula_ast = parse_formula(q.formula_string)
 
-    serializer = DatalogIndexSerializer(model, evaluation_history="h1")
+    serializer = DatalogIndexSerializer(model, evaluation_history="h1", evaluation_moment="m")
     results = serializer.evaluate()
     id_to_formula = {q.query_id: q.formula_string for q in model.queries}
     return sorted(id_to_formula[qid] for qid, r in results.items()

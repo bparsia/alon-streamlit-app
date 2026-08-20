@@ -1167,6 +1167,41 @@ class DXSTIT(FormulaNode):
         return Conjunction(NamedFormula(xstit.to_owl_name()), NamedFormula(not_box.to_owl_name()))
 
 
+def _resolve_agent_id(agent: 'Agent', expander: 'HierarchicalExpander') -> str:
+    """Resolve an Agent (individual/group/named-group) to a single agent ID."""
+    if isinstance(agent, IndividualAgent):
+        return agent.agent_id
+    elif isinstance(agent, AgentGroup):
+        return agent.agents[0] if agent.agents else "1"
+    elif isinstance(agent, NamedAgentGroup):
+        if agent.name in expander.model.agent_groups:
+            agents = expander.model.agent_groups[agent.name]
+            return agents[0] if agents else "1"
+        return "1"
+    return "1"
+
+
+def _action_for_agent(expander: 'HierarchicalExpander', agent_id: str, op_desc: str) -> str:
+    """Return the action type agent_id takes at expander.evaluation_moment, on
+    expander.evaluation_history. op_desc (e.g. "[I pres]φ") is used in error messages.
+    """
+    history = expander.model.histories.get(expander.evaluation_history)
+    if history is None:
+        raise ValueError(
+            f"Evaluation history '{expander.evaluation_history}' not found in model. "
+            f"Cannot expand {op_desc}."
+        )
+
+    actions_at_moment = history.actions_at.get(expander.evaluation_moment, {})
+    if agent_id not in actions_at_moment:
+        raise ValueError(
+            f"Agent {agent_id} has no action at moment '{expander.evaluation_moment}' "
+            f"in history '{expander.evaluation_history}'. Cannot expand {op_desc}."
+        )
+
+    return actions_at_moment[agent_id]
+
+
 @dataclass
 class PotentialResponsibility(FormulaNode):
     """Potential responsibility: [1 pres]φ."""
@@ -1200,35 +1235,8 @@ class PotentialResponsibility(FormulaNode):
         Note: For evaluation at m/h1, we use the actual action from the
         designated evaluation history.
         """
-        # Get agent ID
-        if isinstance(self.agent, IndividualAgent):
-            agent_id = self.agent.agent_id
-        elif isinstance(self.agent, AgentGroup):
-            agent_id = self.agent.agents[0] if self.agent.agents else "1"
-        elif isinstance(self.agent, NamedAgentGroup):
-            if self.agent.name in expander.model.agent_groups:
-                agents = expander.model.agent_groups[self.agent.name]
-                agent_id = agents[0] if agents else "1"
-            else:
-                agent_id = "1"
-        else:
-            agent_id = "1"
-
-        # Get actual action from evaluation history
-        if expander.evaluation_history not in expander.model.named_histories:
-            raise ValueError(
-                f"Evaluation history '{expander.evaluation_history}' not found in model. "
-                f"Cannot expand [I pres]φ."
-            )
-
-        history = expander.model.named_histories[expander.evaluation_history]
-        if agent_id not in history.actions:
-            raise ValueError(
-                f"Agent {agent_id} has no action in history '{expander.evaluation_history}'. "
-                f"Cannot expand [I pres]φ."
-            )
-
-        action_type = history.actions[agent_id]
+        agent_id = _resolve_agent_id(self.agent, expander)
+        action_type = _action_for_agent(expander, agent_id, "[I pres]φ")
         action = IndividualAction(action_type, agent_id)
 
         # Build subformulas and register each
@@ -1298,35 +1306,8 @@ class StrongResponsibility(FormulaNode):
         where αI is the actual action performed by agent I on the evaluation history.
         This is potential responsibility plus but-for causation.
         """
-        # Get agent ID
-        if isinstance(self.agent, IndividualAgent):
-            agent_id = self.agent.agent_id
-        elif isinstance(self.agent, AgentGroup):
-            agent_id = self.agent.agents[0] if self.agent.agents else "1"
-        elif isinstance(self.agent, NamedAgentGroup):
-            if self.agent.name in expander.model.agent_groups:
-                agents = expander.model.agent_groups[self.agent.name]
-                agent_id = agents[0] if agents else "1"
-            else:
-                agent_id = "1"
-        else:
-            agent_id = "1"
-
-        # Get actual action from evaluation history
-        if expander.evaluation_history not in expander.model.named_histories:
-            raise ValueError(
-                f"Evaluation history '{expander.evaluation_history}' not found in model. "
-                f"Cannot expand [I sres]φ."
-            )
-
-        history = expander.model.named_histories[expander.evaluation_history]
-        if agent_id not in history.actions:
-            raise ValueError(
-                f"Agent {agent_id} has no action in history '{expander.evaluation_history}'. "
-                f"Cannot expand [I sres]φ."
-            )
-
-        action_type = history.actions[agent_id]
+        agent_id = _resolve_agent_id(self.agent, expander)
+        action_type = _action_for_agent(expander, agent_id, "[I sres]φ")
         action = IndividualAction(action_type, agent_id)
 
         # Build subformulas and register each
@@ -1384,35 +1365,8 @@ class PlainResponsibility(FormulaNode):
         This is potential responsibility plus NESS causation.
         Uses the actual action from the evaluation history.
         """
-        # Get agent ID
-        if isinstance(self.agent, IndividualAgent):
-            agent_id = self.agent.agent_id
-        elif isinstance(self.agent, AgentGroup):
-            agent_id = self.agent.agents[0] if self.agent.agents else "1"
-        elif isinstance(self.agent, NamedAgentGroup):
-            if self.agent.name in expander.model.agent_groups:
-                agents = expander.model.agent_groups[self.agent.name]
-                agent_id = agents[0] if agents else "1"
-            else:
-                agent_id = "1"
-        else:
-            agent_id = "1"
-
-        # Get actual action from evaluation history
-        if expander.evaluation_history not in expander.model.named_histories:
-            raise ValueError(
-                f"Evaluation history '{expander.evaluation_history}' not found in model. "
-                f"Cannot expand [I res]φ."
-            )
-
-        history = expander.model.named_histories[expander.evaluation_history]
-        if agent_id not in history.actions:
-            raise ValueError(
-                f"Agent {agent_id} has no action in history '{expander.evaluation_history}'. "
-                f"Cannot expand [I res]φ."
-            )
-
-        action_type = history.actions[agent_id]
+        agent_id = _resolve_agent_id(self.agent, expander)
+        action_type = _action_for_agent(expander, agent_id, "[I res]φ")
         action = IndividualAction(action_type, agent_id)
 
         # Build subformulas and register each

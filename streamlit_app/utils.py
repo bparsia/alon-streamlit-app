@@ -101,21 +101,20 @@ def setup_queries(model, result_prop: str, eval_history: str):
     return parse_queries(model)
 
 
-def analysis_button(key: str, model, partial_spec: dict, label: str = "▶️ Run Analysis",
-                    show_legend: bool = True) -> None:
+def analysis_button(key: str, model, result_prop: str = "q", eval_point: str = "m/h1",
+                    label: str = "▶️ Run Analysis", show_legend: bool = True) -> None:
     """
     Render a self-contained analysis button that persists results across reruns.
 
     Args:
         key: Unique session_state key for this analysis (e.g. "tut_analysis_1").
         model: Parsed ALOn model.
-        partial_spec: Spec dict from parse_dbt_diagram (provides result/eval_point).
+        result_prop: Outcome proposition to evaluate (default "q").
+        eval_point: "moment/history" to evaluate at (default "m/h1").
         label: Button label text.
     """
     if st.button(label, key=f"btn_{key}"):
         with st.spinner("Running…"):
-            result_prop  = partial_spec.get("result", "q")
-            eval_point   = partial_spec.get("evaluation_point", "m/h1")
             eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
             satisfied    = run_analysis_datalog(model, result_prop, eval_history)
             if satisfied is not None:
@@ -234,9 +233,7 @@ def run_analysis_datalog_layered(model: ALOModel,
     so format_layered_results_table can display each section correctly.
     """
     try:
-        eval_points = model.evaluations or [
-            (model.evaluation_moment, model.evaluation_history, model.target_proposition)
-        ]
+        eval_points = model.require_evaluations()
         all_satisfied: Set[str] = set()
         all_queries = []
         for emom, ehist, etgt in eval_points:
@@ -277,9 +274,7 @@ def run_analysis_konclude_layered(model: ALOModel,
             st.error("Konclude binary not found.")
             return None
 
-        eval_points = model.evaluations or [
-            (model.evaluation_moment, model.evaluation_history, model.target_proposition)
-        ]
+        eval_points = model.require_evaluations()
         all_satisfied: Set[str] = set()
         all_queries = []
 
@@ -474,9 +469,7 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str],
     CHECK_TEX = r"\ding{51}"
     EMPTY_TEX = "~"
 
-    eval_points = model.evaluations or [
-        (model.evaluation_moment, model.evaluation_history, model.target_proposition)
-    ]
+    eval_points = model.require_evaluations()
 
     sections = []
     for emom, ehist, etgt in eval_points:
@@ -635,57 +628,9 @@ def load_example_models() -> Dict[str, str]:
 # Formatting helpers
 # ---------------------------------------------------------------------------
 
-def format_model_overview(model) -> str:
-    """Format model overview (agents, opposings, history table) as markdown."""
-    lines = []
-    aliases = model.aliases
-
-    lines.append("### Agents")
-    for agent_id in sorted(model.agents_actions.keys()):
-        agent_name = aliases.get(agent_id, f"Agent {agent_id}")
-        action_strs = [
-            f"`{a}` ({aliases[a]})" if a in aliases else f"`{a}`"
-            for a in model.agents_actions[agent_id]
-        ]
-        lines.append(f"- **{agent_name}** (`{agent_id}`): {', '.join(action_strs)}")
-
-    if model.opposings:
-        lines.append("\n### Opposing Relations")
-        for opp in model.opposings:
-            from alo_translator.model.core import GroupAction as _GA
-            if isinstance(opp.opposed_action, _GA):
-                opposed = '{' + ', '.join(f"{at}{ag}" for ag, at in sorted(opp.opposed_action.actions.items())) + '}'
-                opposed_desc = opposed
-            else:
-                opposed = str(opp.opposed_action)
-                opposed_desc = aliases.get(opp.opposed_action.action_type, opp.opposed_action.action_type)
-            opposing = str(opp.opposing_action)
-            opposing_desc = aliases.get(opp.opposing_action.action_type, opp.opposing_action.action_type)
-            lines.append(f"- `{opposed}` ({opposed_desc}) opposed by `{opposing}` ({opposing_desc})")
-
-    lines.append(f"\n### Histories\n\nTotal histories: **{len(model.named_histories)}**\n")
-    lines.append(format_history_table_md(model))
-
-    return "\n".join(lines)
-
-
-def format_history_table_md(model) -> str:
-    """Return the history table as a markdown string."""
-    lines = [
-        "| History | Actions | Outcome |",
-        "|---------|---------|---------|",
-    ]
-    for hist_name in sorted(model.named_histories.keys()):
-        ga = model.named_histories[hist_name]
-        result = next((r for r in model.results if r.history_name == hist_name), None)
-        actions_str = ", ".join(f"{act}{ag}" for ag, act in sorted(ga.actions.items()))
-        outcome_str = ", ".join(sorted(result.true_propositions)) if result else ""
-        lines.append(f"| {hist_name} | {actions_str} | {outcome_str} |")
-    return "\n".join(lines)
-
 
 def _section_header_flat(model, eval_point: str, result_prop: str) -> str:
-    """Build the At/CGA/Outcome header for a TD=1 results table."""
+    """Build the At/CGA header for a single-evaluation-point results table."""
     emom, _, ehist = eval_point.partition("/")
     if not ehist:
         ehist = eval_point
@@ -693,29 +638,16 @@ def _section_header_flat(model, eval_point: str, result_prop: str) -> str:
 
     aliases = model.aliases
 
-    # CGA from named_histories
-    ga = model.named_histories.get(ehist)
-    if ga is not None:
-        parts = sorted(f"{atype}{agent}" for agent, atype in ga.actions.items())
-        cga = "{" + ", ".join(parts) + "}"
-    else:
-        cga = "{}"
+    hp = model.histories.get(ehist)
+    cga_dict = hp.actions_at.get(emom, {}) if hp else {}
+    cga = _cga_str(cga_dict, aliases) if cga_dict else "{}"
 
-    # Whether result_prop holds and where
-    result = next((r for r in model.results if r.history_name == ehist), None)
-    if result is not None:
-        holds = result_prop in result.true_propositions
-        index = f"{result.moment_name}/{ehist}"
-    else:
-        holds, index = False, "?"
-
-    holds_str = "holds" if holds else "does not hold"
     prop_desc = aliases.get(result_prop, result_prop)
     outcome_label = f"`{result_prop}`" + (f" ({prop_desc})" if prop_desc != result_prop else "")
     return (
         f"**At:** `{emom}/{ehist}`  \n"
         f"**CGA:** `{cga}`  \n"
-        f"**Outcome:** {outcome_label} — {holds_str} at `{index}`"
+        f"**Outcome:** {outcome_label}"
     )
 
 

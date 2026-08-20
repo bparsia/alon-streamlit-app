@@ -34,7 +34,7 @@ class HierarchicalExpander:
     """
 
     def __init__(self, model: ALOModel, registry: FormulaRegistry,
-                 evaluation_history: str = "h1"):
+                 evaluation_history: str = "h1", evaluation_moment: Optional[str] = None):
         """
         Initialize the hierarchical expander.
 
@@ -42,10 +42,13 @@ class HierarchicalExpander:
             model: The ALOModel containing agents, actions, and histories
             registry: The FormulaRegistry for tracking unique formulas
             evaluation_history: Name of the history to evaluate formulas in (default: "h1")
+            evaluation_moment: Name of the moment to evaluate formulas at. Required
+                for expanding responsibility operators ([X pres]/[X sres]/[X res]).
         """
         self.model = model
         self.registry = registry
         self.evaluation_history = evaluation_history
+        self.evaluation_moment = evaluation_moment
 
     def expand_all(self):
         """

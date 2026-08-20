@@ -286,17 +286,33 @@ class ALOModel:
     opposings: List[OpposingRelation]
     aliases: Dict[str, str]
     queries: List[Query]
-    evaluation_history: str               # e.g. "h1"
-    evaluation_moment: str                # e.g. "m" (typically root)
-    target_proposition: str              # e.g. "q" or "do(sd1)"
-    default_result: Optional[str] = None  # if set, labels matching this are not emitted as facts
+    evaluation_history: str               # e.g. "h1"; current evaluation-loop scratch value
+    evaluation_moment: str                # e.g. "m"; current evaluation-loop scratch value
+    target_proposition: str              # e.g. "q" or "do(sd1)"; current evaluation-loop scratch value
     evaluations: List[Tuple[str, str, str]] = field(default_factory=list)
     meta_opposings: List['MetaOpposingRelation'] = field(default_factory=list)
+    responsibility_config: Optional['ResponsibilityConfig'] = None
     # list of (moment, history, target_proposition) for multi-point evaluation
 
     def histories_through(self, moment_name: str) -> List[str]:
         """Return names of all histories whose path passes through moment_name."""
         return [h for h, hp in self.histories.items() if moment_name in hp.path]
+
+    def require_evaluations(self) -> List[Tuple[str, str, str]]:
+        """Return evaluations, or raise if none are set.
+
+        res_analyse (-> self.evaluations) is the only source of evaluation
+        points; there is no single-point fallback. Call this at analysis
+        time, not at parse/construction time, so a model can be built or
+        parsed with no evaluation points yet and have them set later
+        (e.g. by an interactive frontend) before analysis runs.
+        """
+        if not self.evaluations:
+            raise ValueError(
+                "No evaluation points set on this model. Populate model.evaluations "
+                "(e.g. via res_analyse: in frontmatter) before running analysis."
+            )
+        return self.evaluations
 
     def get_all_agents(self) -> Set[str]:
         """Return all agent identifiers across all moments."""

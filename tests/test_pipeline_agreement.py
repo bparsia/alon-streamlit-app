@@ -52,7 +52,7 @@ def _setup_model(mmd_path: Path):
 def _run_datalog(mmd_path: Path):
     from alo_translator.serializers.datalog import DatalogIndexSerializer
     model = _setup_model(mmd_path)
-    serializer = DatalogIndexSerializer(model, evaluation_history="h1")
+    serializer = DatalogIndexSerializer(model, evaluation_history="h1", evaluation_moment="m")
     results = serializer.evaluate()
     id_to_formula = {q.query_id: q.formula_string for q in model.queries}
     return sorted(id_to_formula[qid] for qid, r in results.items()
@@ -84,8 +84,8 @@ def _run_konclude(mmd_path: Path, timeout: int = 120):
 
     model = _setup_model(mmd_path)
     serializer = OWLSerializer(model,
-                                           evaluation_history=model.evaluation_history,
-                                           evaluation_moment=model.evaluation_moment,
+                                           evaluation_history="h1",
+                                           evaluation_moment="m",
                                            strategy=EquivFullCardinalityStrategy())
     owl_str = serializer.serialize()
 

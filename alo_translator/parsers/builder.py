@@ -41,12 +41,15 @@ def parse_queries(model: ALOModel) -> ALOModel:
 
 
 def expand_queries(model: ALOModel, expand_standard: bool = False,
-                   evaluation_history: str = "h1") -> ALOModel:
+                   evaluation_history: str = "h1",
+                   evaluation_moment: str = None) -> ALOModel:
     """
     Expand all defined forms in queries (Pass 4) using HierarchicalExpander.
     """
     registry = FormulaRegistry()
-    expander = HierarchicalExpander(model, registry)
+    expander = HierarchicalExpander(model, registry,
+                                     evaluation_history=evaluation_history,
+                                     evaluation_moment=evaluation_moment)
 
     query_owl_names = {}
     for query in model.queries:

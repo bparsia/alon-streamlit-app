@@ -576,7 +576,8 @@ class OWLSerializer(OWLSerializerBase):
     def _make_expander(self):
         from ..parsers.expander_transformer import ExpanderTransformer
         return ExpanderTransformer(self.parser, self.model,
-                                   evaluation_moment=self.evaluation_moment)
+                                   evaluation_moment=self.evaluation_moment,
+                                   evaluation_history=self.evaluation_history)
 
     def _add_query_classes(self, ontology: Element):
         self.expander = self._make_expander()

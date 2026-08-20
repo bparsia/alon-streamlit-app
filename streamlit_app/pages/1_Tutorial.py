@@ -9,8 +9,6 @@ from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 from utils import (
     analysis_button,
     copy_button,
-    format_model_overview,
-    format_history_table_md,
     format_results_table,
     run_analysis_datalog,
 )
@@ -105,7 +103,7 @@ direction BT
         st.image('streamlit_app/pages/images/tut1.png')
 
     # Parse once for overview and analysis
-    model, partial_spec = parse_dbt_diagram(MODEL_1)
+    model = parse_dbt_diagram(MODEL_1)
 
     st.markdown(
         """At this point we can run a complete responsibility analysis at `m/h1`. That is, for every possible "actor" (individual agent or group), we determine if that actor is potentially responsible (`pres`), strongly responsible (`sres`), or plainly responsible (`res`). We also determine whether the actor sees to it that the outcome happens (`dxstit`) and whether thier action is an actual cause of the outcome (either as a but for cause or a NESS (necessary element of a sufficient set) cause).
@@ -113,7 +111,7 @@ direction BT
 Click the button to see the results. A tick means the corresponding formula is true at `m/h1` and a blank means that it is false there."""
     )
 
-    analysis_button("tut_analysis_1", model, partial_spec)
+    analysis_button("tut_analysis_1", model)
 
     st.markdown(
         """In this case, as is not surprising, Alice is every kind of responsible for Dan's death. If you tweak the model so Dan dies at `m2` (`m2: q`), then Alice will have no causal role in Dan's death as it would have happened no matter what she does, of her available actions"""
@@ -138,9 +136,9 @@ direction BT
   m1: q
   m2: q
 """
-    model2, partial_spec2 = parse_dbt_diagram(MODEL_2)
+    model2 = parse_dbt_diagram(MODEL_2)
     analysis_button(
-        "tut_analysis_2", model2, partial_spec2,
+        "tut_analysis_2", model2,
         label="▶️ Run Analysis on a model where Dan is doomed no matter what Alice does.",
     show_legend=False)
 
@@ -210,9 +208,9 @@ with st.expander("An example with opposing", expanded=False):
 In addition to adding a second agent (2, aka, "Beth") and an additional action type (`ha` aka "hits Alice"), we add an opposing relation between *Beth's* hitting Alice and *Alice's* shooting Dan. 
 
 Note that not all action types are available to all agents: We don't model Beth's shooting Dan or Alice hitting herself. This is the modeller's choice!""")
-    model3, partial_spec3 = parse_dbt_diagram(MODEL_3)
+    model3 = parse_dbt_diagram(MODEL_3)
     analysis_button(
-        "tut_analysis_3", model3, partial_spec3,
+        "tut_analysis_3", model3,
         label="▶️ Run Analysis on a example 3.5.",
     show_legend=False)
     st.markdown("""If you run the analysis, you'll find that the results are the same as presented in "[Where Responsibility Takes You](https://link.springer.com/book/10.1007/978-3-031-17111-6)" on page 58:""")

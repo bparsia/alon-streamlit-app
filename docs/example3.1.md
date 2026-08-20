@@ -23,8 +23,8 @@ shot Thus  `ha2` opposes `sd1`.
 title: Example 3.1
 description: Minimal single-history model; remaining histories are implicit.
 type: DBT
-result: q
-evaluation_point: m/h1
+res_analyse:
+  - [m/h1, q]
 ---
 classDiagram
 direction BT

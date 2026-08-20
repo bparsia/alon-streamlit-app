@@ -31,9 +31,7 @@ def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set
     from alo_translator.serializers.datalog import DatalogIndexSerializer
     from streamlit_app.utils import setup_layered_queries
 
-    eval_points = model.evaluations or [
-        (model.evaluation_moment, model.evaluation_history, model.target_proposition)
-    ]
+    eval_points = model.require_evaluations()
     all_satisfied: Set[str] = set()
     all_queries = []
     for emom, ehist, etgt in eval_points:
@@ -51,55 +49,6 @@ def _run_layered(model, ness_empty_sufficient: bool = True) -> Tuple[object, Set
         all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
     model.queries = all_queries
     return model, all_satisfied, eval_points
-
-
-def _run_flat(model, partial_spec: dict,
-              ness_empty_sufficient: Optional[bool] = None) -> Tuple[object, Set[str], list]:
-    """Run analysis on a TD=1 ALOModel. Returns (model, satisfied_ids, eval_points).
-
-    ness_empty_sufficient overrides the front-matter value when provided explicitly.
-    """
-    from alo_translator.serializers.datalog import DatalogIndexSerializer
-    from streamlit_app.utils import setup_queries
-    from alo_translator.query_generation import _sanitize_id as _qsanitize
-
-    yaml_evals = partial_spec.get("res_analyse", [])
-    if yaml_evals:
-        raw_eval_points = []
-        for item in yaml_evals:
-            if len(item) >= 2:
-                ep, tgt = str(item[0]), str(item[1])
-                em = ep.split("/")[0] if "/" in ep else "m"
-                eh = ep.split("/")[1] if "/" in ep else ep
-                raw_eval_points.append((em, eh, tgt))
-    else:
-        result_prop = partial_spec.get("result", "q")
-        eval_point  = partial_spec.get("evaluation_point", "m/h1")
-        eval_mom    = eval_point.split("/")[0] if "/" in eval_point else eval_point
-        eval_hist   = eval_point.split("/")[1] if "/" in eval_point else "h1"
-        raw_eval_points = [(eval_mom, eval_hist, result_prop)]
-
-    if ness_empty_sufficient is None:
-        ness_empty_sufficient = partial_spec.get("ness_empty_sufficient", True)
-
-    all_satisfied: Set[str] = set()
-    all_queries = []
-    for em, eh, tgt in raw_eval_points:
-        model.queries = []
-        model = setup_queries(model, tgt, eh)
-        # Scope query IDs with history to prevent collision across eval points
-        eh_tag = _qsanitize(eh)
-        for q in model.queries:
-            if q.query_id:
-                q.query_id = f"{q.query_id}_{eh_tag}"
-        all_queries.extend(model.queries)
-        serializer = DatalogIndexSerializer(model, evaluation_history=eh,
-                                            ness_empty_sufficient=ness_empty_sufficient)
-        results = serializer.evaluate()
-        all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
-
-    model.queries = all_queries
-    return model, all_satisfied, raw_eval_points
 
 
 def _run_evaluate(model, partial_spec: dict,
@@ -126,19 +75,20 @@ def _run_evaluate(model, partial_spec: dict,
     for item in yaml_evals:
         if len(item) >= 2:
             ep, formula = str(item[0]), str(item[1])
-            eh = ep.split("/")[-1] if "/" in ep else ep
+            eh = ep.rsplit("/", 1)[-1] if "/" in ep else ep
             raw_eval_points.append((ep, eh, formula))
 
     all_satisfied: Set[str] = set()
     all_queries = []
     for ep, eh, formula in raw_eval_points:
+        em = ep.rsplit("/", 1)[0] if "/" in ep else model.root_name
         qid = _qsanitize(f"eval_{formula}_{eh}")
         q = Query(formula_string=formula, query_id=qid)
         model.queries = [q]
         model = parse_queries(model)
-        model = expand_queries(model)
+        model = expand_queries(model, evaluation_history=eh, evaluation_moment=em)
         all_queries.append(model.queries[0])
-        serializer = DatalogIndexSerializer(model, evaluation_history=eh,
+        serializer = DatalogIndexSerializer(model, evaluation_history=eh, evaluation_moment=em,
                                             ness_empty_sufficient=ness_empty_sufficient)
         results = serializer.evaluate()
         all_satisfied.update(qid for qid, r in results.items() if r.get("result"))
@@ -181,7 +131,7 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
 
     try:
         from alo_translator.parsers.dbt_parser import parse_dbt_diagram
-        from alo_translator.model.core import ALOModel
+        from alo_translator.parsers.yaml_helper import yaml_to_partial_spec
     finally:
         os.chdir(old_cwd)
 
@@ -193,26 +143,21 @@ def run_doc_analysis(doc: ALOnDocument) -> Dict[str, Optional[Dict[bool, Tuple]]
             key = id(block)
             try:
                 text = _block_to_mermaid_text(block)
+                fm = block.resolved_fm if block.resolved_fm else block.front_matter
+                partial_spec = yaml_to_partial_spec(fm) if fm else {}
                 model_results: Dict = {}
                 for ness_val in (True, False):
                     # Re-parse for each variant: _run_* mutates the model
-                    parsed = parse_dbt_diagram(text)
-                    if isinstance(parsed, ALOModel):
-                        m, satisfied, eval_pts = _run_layered(
-                            parsed, ness_empty_sufficient=ness_val)
-                    else:
-                        m, partial_spec = parsed
-                        m, satisfied, eval_pts = _run_flat(
-                            m, partial_spec, ness_empty_sufficient=ness_val)
+                    m = parse_dbt_diagram(text)
+                    m, satisfied, eval_pts = _run_layered(
+                        m, ness_empty_sufficient=ness_val)
                     model_results[ness_val] = (m, satisfied, eval_pts)
 
                 # Direct evaluate (ness-independent)
-                parsed = parse_dbt_diagram(text)
-                if not isinstance(parsed, ALOModel):
-                    m_ev, partial_spec_ev = parsed
-                    if partial_spec_ev.get("evaluate"):
-                        m_ev, sat_ev, pts_ev = _run_evaluate(m_ev, partial_spec_ev)
-                        model_results["evaluate"] = (m_ev, sat_ev, pts_ev)
+                if partial_spec.get("evaluate"):
+                    m_ev = parse_dbt_diagram(text)
+                    m_ev, sat_ev, pts_ev = _run_evaluate(m_ev, partial_spec)
+                    model_results["evaluate"] = (m_ev, sat_ev, pts_ev)
 
                 results[key] = model_results
             except Exception as e:

@@ -78,8 +78,8 @@ def run_theory(mmd_path: Path, timeout: int = 120):
             q.formula_ast = parse_formula(q.formula_string)
 
     serializer = OWLSerializer(model,
-                                           evaluation_history=model.evaluation_history,
-                                           evaluation_moment=model.evaluation_moment,
+                                           evaluation_history="h1",
+                                           evaluation_moment="m",
                                            strategy=EquivFullCardinalityStrategy())
     owl_str = serializer.serialize()
 

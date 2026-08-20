@@ -11,9 +11,6 @@ from .index_strategies import (
     ReifiedMomentsNominalStrategy,
     ReifiedMomentsCardinalityStrategy,
 )
-from .dbt_mermaid import serialize_dbt
-from .index_mermaid import serialize_index
-
 __all__ = [
     "Serializer",
     "DatalogIndexSerializer",
@@ -27,6 +24,4 @@ __all__ = [
     "EquivFocusedCardinalityStrategy",
     "ReifiedMomentsNominalStrategy",
     "ReifiedMomentsCardinalityStrategy",
-    "serialize_dbt",
-    "serialize_index",
 ]

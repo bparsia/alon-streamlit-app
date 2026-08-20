@@ -58,9 +58,9 @@ class ExpanderTransformer(AlonTransformer):
         """Return the {agent: action_type} mapping for the evaluation history at the evaluation moment."""
         if self.evaluation_moment is None:
             raise ValueError("evaluation_moment required")
-        hp = self.model.histories.get(self.model.evaluation_history)
+        hp = self.model.histories.get(self.evaluation_history)
         if hp is None:
-            raise ValueError(f"Evaluation history '{self.model.evaluation_history}' not found")
+            raise ValueError(f"Evaluation history '{self.evaluation_history}' not found")
         return hp.actions_at.get(self.evaluation_moment, {})
 
     def _get_agent_groups(self) -> dict:

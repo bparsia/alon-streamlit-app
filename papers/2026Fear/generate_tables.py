@@ -50,9 +50,7 @@ def tex_escape(s: str) -> str:
 
 
 def eval_points_for(model):
-    return model.evaluations or [
-        (model.evaluation_moment, model.evaluation_history, model.target_proposition)
-    ]
+    return model.require_evaluations()
 
 
 def max_possible_eval_points(model) -> int:

@@ -6,22 +6,15 @@ from alo_translator.parsers.yaml_helper import frontmatter_to_partial_spec
 
 
 def test_basic_frontmatter():
-    """Test parsing basic YAML frontmatter matching 3.1_auto.toml structure."""
+    """Test parsing basic YAML frontmatter (opposings, res_analyse)."""
 
     yaml_string = """
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
-  2:
-    - ss
-    - ha
 opposings:
   sd1:
     - ha2
-result: q
-evaluation_point: m/h1
+res_analyse:
+  - [m/h1, q]
 """
 
     partial_spec = frontmatter_to_partial_spec(yaml_string)
@@ -32,10 +25,8 @@ evaluation_point: m/h1
 
     # Verify structure
     assert "diagram_type" not in partial_spec
-    assert partial_spec["actions"] == {1: ["sd", "ss"], 2: ["ss", "ha"]}
     assert partial_spec["opposings"] == {"sd1": ["ha2"]}
-    assert partial_spec["result"] == "q"
-    assert partial_spec["evaluation_point"] == "m/h1"
+    assert partial_spec["res_analyse"] == [["m/h1", "q"]]
 
     print("\n✓ Basic frontmatter parsing works!")
 
@@ -45,13 +36,6 @@ def test_frontmatter_with_aliases():
 
     yaml_string = """
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
-  2:
-    - ss
-    - ha
 aliases:
   1: Alice
   2: Beth
