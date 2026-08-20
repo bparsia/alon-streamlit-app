@@ -74,23 +74,32 @@ def _model_overview(model: ModelBlock) -> str:
     if fm.get("type"):
         lines.append(f"**Type**: {fm['type']}")
 
-    # Agents
-    actions = model.actions
-    if actions:
+    # Agents -- derived from the parsed diagram (succ edges), not frontmatter.
+    try:
+        from alo_translator.parsers.dbt_parser import parse_dbt_diagram
+        from ._runner import _block_to_mermaid_text
+        parsed = parse_dbt_diagram(_block_to_mermaid_text(model))
+        agent_ids = parsed.get_all_agents()
+    except Exception:
+        agent_ids = set()
+    if agent_ids:
         agent_parts = []
-        for agent_id in sorted(actions.keys(), key=lambda x: (not x.isdigit(), x)):
+        for agent_id in sorted(agent_ids, key=lambda x: (not x.isdigit(), x)):
             name = aliases.get(agent_id, f"Agent {agent_id}")
             agent_parts.append(f"{name} (`{agent_id}`)")
         lines.append(f"**Agents**: {', '.join(agent_parts)}")
 
-    if fm.get("result"):
-        outcome = fm["result"]
-        label   = aliases.get(outcome, outcome)
-        lines.append(f"**Outcome**: `{outcome}` ({label})" if label != outcome
-                     else f"**Outcome**: `{outcome}`")
-
-    if fm.get("evaluation_point"):
-        lines.append(f"**Evaluation point**: `{fm['evaluation_point']}`")
+    res_analyse = fm.get("res_analyse") or []
+    if res_analyse:
+        points = []
+        for item in res_analyse:
+            if len(item) >= 2:
+                ep, tgt = str(item[0]), str(item[1])
+                label = aliases.get(tgt, tgt)
+                tgt_str = f"`{tgt}` ({label})" if label != tgt else f"`{tgt}`"
+                points.append(f"`{ep}` → {tgt_str}")
+        if points:
+            lines.append(f"**Evaluation points**: {', '.join(points)}")
 
     return "  \n".join(lines) if lines else "*No overview available.*"
 
