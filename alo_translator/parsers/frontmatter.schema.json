@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bparsia/alon-streamlit-app/alo_translator/parsers/frontmatter.schema.json",
+  "title": "ALOn Mermaid diagram YAML frontmatter",
+  "description": "Schema for the YAML block between the leading and trailing '---' lines of an ALOn DBT Mermaid (.mmd) diagram. Two disjoint sets of ALOn-specific keys: those read by alo_translator/parsers/yaml_helper.py (feed the model parser/analysis pipeline) and those read only by alo_docs (display/doc-build metadata, ignored by the parser). additionalProperties is permissive rather than closed, since Mermaid itself accepts other native frontmatter keys in the same block (e.g. 'config' for diagram theming) that this schema does not attempt to describe.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Display title. Read only by alo_docs (ModelBlock.title, {{model_overview}}). Ignored by the model parser."
+    },
+    "description": {
+      "type": "string",
+      "description": "Free-text description shown in {{model_overview}}. alo_docs only; ignored by the model parser."
+    },
+    "type": {
+      "type": "string",
+      "description": "Free-text label shown in {{model_overview}} (e.g. \"DBT\"). Not validated or branched on anywhere in the parser -- purely descriptive."
+    },
+    "ref": {
+      "type": "string",
+      "description": "Short stable identifier for this model, for cross-referencing from other blocks. alo_docs only (ModelBlock.ref)."
+    },
+    "display": {
+      "type": ["boolean", "string"],
+      "description": "Whether alo_docs renders this model's diagram in output. Default true. A string is accepted for YAML authoring convenience (\"false\"/\"no\"/\"0\" -> False, anything else -> True); prefer a real boolean.",
+      "default": true
+    },
+    "actions": {
+      "type": "object",
+      "description": "Documentation-only: {agent_id: [action_type, ...]}. Shown by the {{action_table}} shortcode. NOT used to build the model -- the real agent/action data is always derived by parsing 'succ' edge labels (e.g. 'h1({sd1, ss2})') in the diagram body. Safe to omit; safe to leave out of sync with the diagram (nothing validates the two match).",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "examples": [
+        { "1": ["sd", "ss"], "2": ["ss", "ha"] }
+      ]
+    },
+    "opposings": {
+      "type": "object",
+      "description": "{action: [opposing_action, ...]}. Read by the model parser (alo_translator/parsers/dbt_parser.py::_build_layered_opposings) to build OpposingRelation entries. Keys/values are action strings (e.g. 'sd1') or brace-grouped joint actions (e.g. '{sd1,ha2}').",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "examples": [
+        { "sd1": ["ha2"] }
+      ]
+    },
+    "aliases": {
+      "type": "object",
+      "description": "{id: display_name}. id may be an agent number, action type, or proposition -- all share one namespace. Read by the model parser (ALOModel.aliases) and by alo_docs ({{alias_table}}, {{model_overview}}).",
+      "additionalProperties": { "type": "string" },
+      "examples": [
+        { "1": "Alice", "2": "Beth", "sd": "shoots Dan", "ss": "stands still", "q": "Dan dies" }
+      ]
+    },
+    "res_analyse": {
+      "type": "array",
+      "description": "The sole source of evaluation points for responsibility analysis (pres/sres/res/dxstit/but/ness queries). Each entry is [\"moment/history\", target_proposition]. Populates ALOModel.evaluations; analysis functions call ALOModel.require_evaluations(), which raises if this is empty at analysis time -- there is no implicit fallback (e.g. to \"m/h1\"). An interactive caller (e.g. a UI) may instead populate model.evaluations directly at runtime without ever setting this key.",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "prefixItems": [
+          { "type": "string", "description": "moment/history, e.g. \"m/h1\"" },
+          { "type": "string", "description": "target proposition, e.g. \"q\" or \"do(sd1)\"" }
+        ]
+      },
+      "examples": [
+        [["m/h1", "q"]],
+        [["m/h1", "do(sd1)"], ["mm/h1", "q"]]
+      ]
+    },
+    "evaluate": {
+      "type": "array",
+      "description": "Direct formula evaluation: each entry is [\"moment/history\", formula] evaluated as-is, with no responsibility-query generation and no X-wrapping. Distinct from res_analyse -- may contain arbitrary ALOn formulas (including [X pres]phi / [X sres]phi / [X res]phi). Read by alo_docs::_run_evaluate.",
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "prefixItems": [
+          { "type": "string", "description": "moment/history, e.g. \"m/h1\"" },
+          { "type": "string", "description": "an ALOn formula string" }
+        ]
+      },
+      "examples": [
+        [["m/h1", "do(sd1)"], ["m/h1", "[1 pres]q"]]
+      ]
+    },
+    "math_preamble": {
+      "type": "string",
+      "description": "LaTeX/MathJax preamble injected for this context block's scope in alo_docs HTML output. alo_docs only."
+    },
+    "ness_empty_sufficient": {
+      "type": "boolean",
+      "description": "NESS empty-set semantics toggle: if true (default), the empty set counts as a potential sufficient set in NESS minimality checks, matching the original semantics where q-inevitability blocks NESS. If false, only non-empty proper subsets are tested. Read by both the analysis pipeline (DatalogIndexSerializer/OWLSerializer) and alo_docs ({{results ness_empty_sufficient=...}}).",
+      "default": true
+    }
+  }
+}
