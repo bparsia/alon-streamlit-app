@@ -527,7 +527,10 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str],
                 "CGA: \\texttt{" + cga_tex + "}, outcome: " + outcome_label + ", " + holds_str + "}"
             )
             col_spec = "|l|" + "l|" * len(COLS)
-            col_header = " & ".join([r"\textbf{Agent}"] + [r"\textbf{" + c + "}" for c in COLS])
+            col_labels = {"ness": "NESS"}
+            col_header = " & ".join(
+                [r"\textbf{Agent}"] + [r"\textbf{" + col_labels.get(c, c) + "}" for c in COLS]
+            )
             rows = []
             for agent in sorted_agents:
                 r = agent_results[agent]
