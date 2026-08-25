@@ -34,3 +34,7 @@ htmlcov/
 
 # Reasoner binaries (large, platform-specific — see bin/README.md)
 bin/
+
+# Local mirror of the Overleaf paper source, for testing table/figure
+# regeneration scripts without touching the Dropbox-synced original
+papers/2026Fear/paper_mirror/
