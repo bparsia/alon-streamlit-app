@@ -27,7 +27,8 @@ class KoncludeAdapter(ReasonerAdapter):
         ontology_file: Path,
         mode: ReasoningMode,
         timeout: Optional[int] = None,
-        verbose: bool = False
+        verbose: bool = False,
+        threads: str = "AUTO"
     ) -> ReasoningResult:
         """Run Konclude on ontology file.
 
@@ -35,6 +36,15 @@ class KoncludeAdapter(ReasonerAdapter):
             ontology_file: Path to OWL ontology file
             mode: Reasoning mode (realisation or classification)
             timeout: Optional timeout in seconds
+            threads: Value for Konclude's -w flag (number of processing
+                threads). Without this flag Konclude defaults to a single
+                processing unit regardless of core count. Measured on the
+                same 16-history ontology (2026-08-24): "-w AUTO" (11
+                processing units on this machine) completed in 71.75s vs.
+                600s+ single-threaded. This does NOT explain why the
+                single-threaded path itself got slower than its own
+                historical baseline (~200-270s) -- that's a separate,
+                unresolved question. See project_konclude_performance memory.
 
         Returns:
             ReasoningResult with parsed results and measurements
@@ -60,6 +70,8 @@ class KoncludeAdapter(ReasonerAdapter):
                 cmd.append("classification")
 
             cmd.extend(["-i", str(ontology_file), "-o", str(output_path)])
+            if threads:
+                cmd.extend(["-w", threads])
 
             # Capture timing
             start_time = time.time()

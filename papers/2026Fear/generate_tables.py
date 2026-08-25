@@ -42,7 +42,7 @@ from streamlit_app.utils import setup_layered_queries, konclude_path
 
 MODELS_DIR = Path(__file__).parent / "models"
 OUT_DIR = Path(__file__).parent
-KONCLUDE_TIMEOUT = 600
+KONCLUDE_TIMEOUT = 1200  # 3.5's 16 histories can run well past 600s under load (Konclude runs under Rosetta on Apple Silicon)
 
 
 def tex_escape(s: str) -> str:
