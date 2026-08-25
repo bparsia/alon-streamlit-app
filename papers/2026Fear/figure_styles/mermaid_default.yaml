@@ -1,0 +1,5 @@
+# No config injected -- mermaid.js's own out-of-the-box defaults
+# (purple theme, trebuchet ms font, visible empty methods box on
+# class-diagram nodes). Kept as an explicit, named baseline so it's a
+# deliberate choice rather than "whatever mmdc does if you forget to
+# ask for something else."

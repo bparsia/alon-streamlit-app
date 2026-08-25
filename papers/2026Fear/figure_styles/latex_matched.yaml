@@ -1,0 +1,24 @@
+# Neutral, serif, LaTeX-coherent styling -- gray/white boxes instead of
+# mermaid's default purple, empty methods box hidden, and a fontFamily
+# matched to whatever font the target paper's LaTeX document actually
+# uses (NOT always Computer Modern -- e.g. this paper's eptcs.cls loads
+# mathptmx, which sets Times Roman as the body font, confirmed via the
+# compile log showing utmr8a/utmb8a URW Times glyphs; NewComputerModern
+# would be a mismatch here despite looking superficially "LaTeX-y").
+#
+# `font` has a default below but is meant to be overridden per paper --
+# see FONT_FOR_TEX_PACKAGE in generate_figures.py for the mapping from
+# a LaTeX font package to an installed system font name mermaid can use.
+font: "NewComputerModern"
+config: |
+  config:
+    theme: base
+    fontFamily: "{font}"
+    themeVariables:
+      primaryColor: "#f5f5f5"
+      primaryBorderColor: "#999999"
+      primaryTextColor: "#1a1a1a"
+      lineColor: "#666666"
+      classText: "#1a1a1a"
+    class:
+      hideEmptyMembersBox: true
