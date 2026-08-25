@@ -1,0 +1,29 @@
+---
+title: Complete Manipulation
+description: Beth's psychological states P result entirely from Neil's manipulation. Beth (agent 1) is asleep (ss1) while Neil (agent 2) implants the chip (ic2) -- the actual history h1. Beth's other potential actions (a1, b1) and Neil's alternative of leaving Beth alone (lb2) are also modeled.
+aliases:
+  1: Beth
+  2: Neil
+  ss: sleeps
+  a: a
+  b: b
+  ic: implants chip
+  lb: leaves Beth alone
+  v: v
+res_analyse:
+  - [m/h1, v]
+---
+classDiagram
+direction BT
+m --> m1 : h1({ss1, ic2})
+m --> m2 : h2({a1, ic2})
+m --> m3 : h3({b1, ic2})
+m --> m4 : h4({ss1, lb2})
+m --> m5 : h5({a1, lb2})
+m --> m6 : h6({b1, lb2})
+m1: v
+m2: v
+m3: v
+m4: ~v
+m5: ~v
+m6: ~v

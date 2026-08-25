@@ -50,8 +50,15 @@ class FormulaToOWL(Transformer):
         self.name_to_formula = name_to_formula or {}
 
     def _sanitize_name(self, name):
+        # Only strip punctuation unsafe in an OWL IRI fragment (group
+        # notation like "{1, 2}", separators). Do NOT strip v/&/~/|/</>
+        # -- those look like formula operators but real formula structure
+        # is built by the disjunction/conjunction/negation transformer
+        # rules, never passed here as text; stripping them previously
+        # corrupted any atomic proposition literally named "v" into an
+        # empty class (see project_owl_sanitize_bug memory).
         result = str(name)
-        for ch in '{}:, ()~&v|><-[]':
+        for ch in '{}:, ()[]':
             result = result.replace(ch, '_')
         return result
 
