@@ -150,7 +150,13 @@ class FormulaToOWL(Transformer):
         return f'<ObjectSomeValuesFrom>{self._property("same_moment")}{items[0]}</ObjectSomeValuesFrom>'
 
     def next(self, items):
-        return f'<ObjectAllValuesFrom>{self._property("succ")}{items[1]}</ObjectAllValuesFrom>'
+        # succ is FunctionalObjectProperty (exactly one successor per index),
+        # so ObjectSomeValuesFrom and ObjectAllValuesFrom are logically
+        # equivalent here. Uses SomeValuesFrom -- see reasoner_oddities.md,
+        # a DLSafeRule whose entire body is a standalone
+        # ObjectAllValuesFrom(succ, ...) atom silently breaks unrelated
+        # rules elsewhere in the same ontology under HermiT/ROBOT.
+        return f'<ObjectSomeValuesFrom>{self._property("succ")}{items[1]}</ObjectSomeValuesFrom>'
 
     # ---- action predicates ----
 
