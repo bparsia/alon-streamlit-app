@@ -28,19 +28,27 @@ what happened.
 
 **If revisiting:** if a similar anomaly is found with `box`/`same_moment` in a DL-safe rule body, do NOT apply the same `AllValuesFrom -> SomeValuesFrom` substitution there -- `same_moment` is not functional, so that substitution would silently change the model's semantics rather than being a safe equivalent rewrite.
 
-## HermiT (via ROBOT): a SECOND, separate anomaly -- rules whose body is a
-## compound expression referencing another rule-derived class fail to fire,
-## even with the ObjectAllValuesFrom(succ,...) fix above applied and even
-## with ALL SubClassOf axioms converted to rules (no mixing at all) (2026-08-26)
+## HermiT (via ROBOT): converting `outcome_m_h1_q`'s query specifically to a
+## rule breaks OTHER, unrelated rules elsewhere in the ontology -- confirmed
+## via clean bisection, independent of the AllValuesFrom/SomeValuesFrom choice
+## above (2026-08-26)
 
-**This is a distinct bug from the one above, found while checking whether that fix fully resolved the original problem. It does not.**
+**This supersedes the "compound body" working-hypothesis originally written in this section, which was based on a methodological error (stale test data) -- see below.**
 
-**Symptom:** after applying the `next()` -> `ObjectSomeValuesFrom` fix (source-level, `FormulaToOWL.next()`), the original 19-query real-file test (3.1.mmd `m/h1/q`) still only derives 4 of 14 expected query classes. The internal helper class `f1` -- whose body is `ObjectIntersectionOf(ObjectIntersectionOf(sd1, f2), ObjectComplementOf(...))` referencing `f2` (itself rule-derived) -- fails to derive, while `f2` and `outcome_m_h1_q` (whose bodies are each a single, non-compound `ClassAtom`) derive correctly.
+**Clean bisection, on fresh post-`next()`-fix data (all `f`-class indirection removed via full inlining first, so there is no rule-to-rule dependency chain of any kind -- every one of the 19 query rules is a fully self-contained, primitive-only expression referencing no other class):**
 
-**Ruled out:**
-- Not caused by mixing rules and plain axioms: converted ALL 56 query-related `SubClassOf` axioms to `DLSafeRule`s (only the one non-query totality axiom left untouched) -- same failure, same 4/14 result. Mixing is not the trigger.
+Started with just `pres_1_q_m_h1_q` as a lone `DLSafeRule` (real ABox, no other rules) -- derives correctly. Added the other 17 non-`outcome` query rules **one at a time**, re-testing after each addition -- `pres_1_q` continued to derive correctly through all 18 additions. Added `outcome_m_h1_q`'s rule as the 19th and final addition -- `pres_1_q` immediately stopped deriving. This is a clean, ordered, one-variable-at-a-time bisection, not a guess: `outcome_m_h1_q`'s rule, specifically, is what breaks `pres_1_q`'s otherwise-correct rule, and no other one of the 18 rules does.
+
+**The `ObjectAllValuesFrom` vs `ObjectSomeValuesFrom` question is now closed and was a dead end:** re-ran this exact bisection with `outcome_m_h1_q`'s rule body in its current, post-fix `ObjectSomeValuesFrom(succ, q)` form (not the original `ObjectAllValuesFrom` form) -- **still breaks `pres_1_q` identically.** The earlier claim that this substitution "fixed" anything was based on a methodological error: the isolated 2-rule test that appeared to show a fix was accidentally run against a stale pre-fix copy of the serialized ontology (`sparql_test.owl`, generated before the `next()` source change), while the "no difference" 19-rule re-test used a freshly-generated (post-fix) file -- an apples-to-oranges comparison, not a real contradiction in reasoner behavior. Once both sides of the comparison were regenerated fresh and consistently, the substitution makes **no difference at all** to this bug. It remains logically neutral for the existing Konclude/plain-axiom pipeline (verified separately, still true) but does not touch this rule-interaction issue.
+
+**Ruled out along the way (still valid, not affected by the above correction):**
+- Not caused by mixing rules and plain axioms: converting ALL 56 query-related `SubClassOf` axioms to `DLSafeRule`s (pure-rules ontology, zero plain query-definition axioms) gives the identical 4/14 failure.
 - Not a general rule-chaining depth limit: a synthetic 4-hop chain (`sd1 -> hop1 -> hop2 -> hop3 -> hop4`, each rule body a single bare `ClassAtom`) derives correctly end to end.
+- Not about compound-vs-simple rule bodies in general: the bisection above used fully-inlined (compound, often 4000+ character) bodies for all 19 rules, and 18 of them coexisted with each other and with `pres_1_q` without issue. Only `outcome_m_h1_q`'s presence specifically breaks things.
+- Not about `outcome_m_h1_q`'s formula shape being `ObjectAllValuesFrom`/`ObjectSomeValuesFrom` over `succ`: a standalone rule with exactly that shape (`ObjectComplementOf(ObjectAllValuesFrom(same_moment, ObjectSomeValuesFrom(succ, q)))`, i.e. `~[]Xq`) alone, with no other rules present, correctly derives on all four moment/history individuals tested.
 
-**Working hypothesis, NOT yet confirmed by a targeted test:** the difference between the working synthetic chain and the failing real case is that the synthetic chain's rule bodies were each a single, non-compound `ClassAtom`, whereas the real failing rules (`f1`, and by the same pattern `f3`, `f6`, `f7`, `f22`, `f26`, `f28`, `f30`, `f31`, `f32`, and the corresponding `pres`/`sres`/`res`/`dxstit`/`ness` query classes that depend on them) have a **compound body** (`ObjectIntersectionOf` of several conjuncts) where one conjunct is a bare reference to a rule-derived class. This has NOT been isolated with a dedicated minimal test yet -- do that before assuming it's the real mechanism.
+**What's actually different about `outcome_m_h1_q` specifically, not yet identified:** it's the only one of the 19 real queries whose body, even before inlining, was already a single, non-compound `ObjectSomeValuesFrom(succ, q)` -- every other query's body has at least the `do(...)` conjunct making it a compound `ObjectIntersectionOf`. Whether that "simplicity" (rather than anything about the modal operator, negation, or `succ`/`same_moment` specifically) is the actual trigger has NOT been tested -- e.g. has not yet been checked whether an artificially simple standalone rule for a DIFFERENT, non-`outcome` formula shape would have the same disruptive effect when added alongside others.
 
-**Status: UNRESOLVED.** The DL-safe-rules approach does not currently produce correct results for the real query set, only for single-hop-dependency cases. Do not consider `dlsafe_rules.py`/the HermiT rules path production-ready until this is actually fixed and re-verified against the full 14-query known-good baseline.
+**Status: UNRESOLVED.** The DL-safe-rules approach does not currently produce correct results for the real query set. Do not consider `dlsafe_rules.py`/the HermiT rules path production-ready until this is actually understood or worked around, and re-verified against the full 14-query known-good baseline.
+
+**Process lesson, worth remembering for future investigations:** re-verify that comparison inputs are actually generated from the same code state before drawing conclusions from a diff -- a stale scratch file (`sparql_test.owl`, generated before a source-level fix, reused across many later tests without regeneration) produced a real, reproducible, but ultimately spurious "the fix works on this test" result that took a full re-run of the bisection with freshly-generated data to catch and correct.
