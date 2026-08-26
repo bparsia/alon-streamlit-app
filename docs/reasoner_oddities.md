@@ -65,4 +65,6 @@ Checked whether restricting the `ObjectExactCardinality(same_moment, N, owl:Thin
 
 Checked whether keeping only the `same_moment` assertions that start FROM `m_h1` (16 of them, one per same-moment history including the reflexive pair) -- dropping all 256 assertions in the other direction, since only `m_h1`'s own same-moment neighborhood is ever needed, never "is X same-moment to m_h1" starting from some other X -- would help. Reran with the same 300s timeout, clean load (~7-8) -- **still timed out, zero completion.**
 
+Checked whether `ObjectExactCardinality` specifically (vs. the looser `ObjectMaxCardinality`, same value) is the trigger. Swapped `m_h1`'s single remaining cardinality constraint from exact to max, same 300s timeout, clean load (~6-7) -- **still timed out, zero completion.**
+
 **Process lesson, worth remembering for future investigations:** re-verify that comparison inputs are actually generated from the same code state before drawing conclusions from a diff -- a stale scratch file (`sparql_test.owl`, generated before a source-level fix, reused across many later tests without regeneration) produced a real, reproducible, but ultimately spurious "the fix works on this test" result that took a full re-run of the bisection with freshly-generated data to catch and correct.
