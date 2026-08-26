@@ -67,4 +67,20 @@ Checked whether keeping only the `same_moment` assertions that start FROM `m_h1`
 
 Checked whether `ObjectExactCardinality` specifically (vs. the looser `ObjectMaxCardinality`, same value) is the trigger. Swapped `m_h1`'s single remaining cardinality constraint from exact to max, same 300s timeout, clean load (~6-7) -- **still timed out, zero completion.**
 
+**Found the actual breakover point by sweeping same-moment-neighborhood size directly**, starting from the reduced (directed-only, single-cardinality) bare model above and keeping only `same_moment(m_h1, m_hK)` for `K` in `1..n` (adjusting the cardinality constraint to match `n` each time), clean load (~6-8), 120s timeout per run:
+
+| n (same-moment neighborhood size) | result | time |
+|---|---|---|
+| 1 | OK | 0.9s |
+| 2 | OK | 0.7s |
+| 4 | OK | 0.7s |
+| 6 | OK | 0.7s |
+| 8 | OK | 0.9s |
+| 10 | OK | 2.7s |
+| 12 | OK | 41.1s |
+| 14 | TIMEOUT | >120s |
+| 16 (3.5's real value) | TIMEOUT | >120s |
+
+This is a real, sharp, steep growth curve between n=10 and n=14, not a gradual scaling issue -- n=10 to n=12 alone is roughly a 15x jump (2.7s -> 41.1s), and n=12 to n=14 blows past a timeout 3x larger than the n=12 runtime entirely. 3.5.mmd's actual same-moment neighborhood size (16, one per history) sits well past this cliff. No explanation for *why* the growth is shaped this way is offered here -- only the measured breakpoint.
+
 **Process lesson, worth remembering for future investigations:** re-verify that comparison inputs are actually generated from the same code state before drawing conclusions from a diff -- a stale scratch file (`sparql_test.owl`, generated before a source-level fix, reused across many later tests without regeneration) produced a real, reproducible, but ultimately spurious "the fix works on this test" result that took a full re-run of the bisection with freshly-generated data to catch and correct.
