@@ -55,8 +55,18 @@ def to_dlsafe_rules(owl_xml: str, query_ids: Set[str], base_iri: str = DEFAULT_B
     Args:
         owl_xml: Serialized OWL/XML string (OWLSerializer.serialize() output,
             or any OWL/XML with the same axiom shapes)
-        query_ids: Set of class names that are real query IDs (e.g.
-            {q.query_id for q in model.queries if q.query_id})
+        query_ids: Set of class names to convert to DLSafeRule form. Callers
+            MUST exclude any `outcome_*` query ID from this set -- see
+            docs/reasoner_oddities.md: converting an `outcome_<...>` query
+            (whose body is a single non-compound ObjectSomeValuesFrom/
+            ObjectAllValuesFrom atom -- setup_layered_queries in
+            streamlit_app/utils.py always adds exactly one per eval point)
+            to a DLSafeRule breaks OTHER, unrelated rules' derivation under
+            HermiT/ROBOT, confirmed via clean bisection. Root cause unknown;
+            leaving outcome_* as a plain SubClassOf axiom is a verified
+            workaround, not yet automated here since callers should be
+            able to see this constraint rather than have it silently
+            applied.
 
     Returns:
         Rewritten OWL/XML string with query-definition SubClassOf axioms
