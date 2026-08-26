@@ -46,6 +46,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from generate_tables import (
     MODELS_DIR,
+    PAPER_MODELS,
     run_model,
     tex_escape,
 )
@@ -126,7 +127,7 @@ ROW_BUILDERS = {
 
 
 def compute_rows() -> dict:
-    mmd_files = sorted(MODELS_DIR.glob("*.mmd"))
+    mmd_files = [MODELS_DIR / name for name in PAPER_MODELS]
     by_name = {}
     for mmd_path in mmd_files:
         print(f"Analyzing {mmd_path.name}...", file=sys.stderr)

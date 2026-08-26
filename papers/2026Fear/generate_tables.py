@@ -288,8 +288,15 @@ def write_table_translations(rows, path: Path):
     path.write_text("\n".join(lines))
 
 
-def main():
-    mmd_files = sorted(MODELS_DIR.glob("*.mmd"))
+# The paper's actual model set -- NOT every .mmd in MODELS_DIR, which also
+# holds variant/scratch models (3.1v1-3, complete_manipulation, ...) added
+# for other purposes and never meant to appear in the paper's tables.
+PAPER_MODELS = ["3.1.mmd", "3.5.mmd", "3.6.mmd", "3.7.mmd", "isabella.mmd"]
+
+
+def main(mmd_files=None):
+    if mmd_files is None:
+        mmd_files = [MODELS_DIR / name for name in PAPER_MODELS]
     rows = []
     for mmd_path in mmd_files:
         print(f"Analyzing {mmd_path.name}...", file=sys.stderr)
