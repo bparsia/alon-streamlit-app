@@ -1,0 +1,2280 @@
+<?xml version="1.0" ?>
+<Ontology xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://www.w3.org/2002/07/owl#" ontologyIRI="http://www.semanticweb.org/alon#" rdf:about="http://www.semanticweb.org/alon#">
+    <Declaration>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+    </Declaration>
+    <Declaration>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+    </Declaration>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#ha2"/>
+        <Literal text="Action ha2"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#sd1"/>
+        <Literal text="Action sd1"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#ss1"/>
+        <Literal text="Action ss1"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#ss2"/>
+        <Literal text="Action ss2"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#q"/>
+        <Literal text="Proposition q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#Opp2ha2"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#Opp2ha2"/>
+        <Literal text="Opposing to ha2"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#Opp2sd1"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#Opp2sd1"/>
+        <Literal text="Opposing to sd1"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#Opp2ss1"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#Opp2ss1"/>
+        <Literal text="Opposing to ss1"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#Opp2ss2"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#Opp2ss2"/>
+        <Literal text="Opposing to ss2"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#pres_1_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#pres_1_q_m_h1_q"/>
+        <Literal text="[1 pres]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#sres_1_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#sres_1_q_m_h1_q"/>
+        <Literal text="[1 sres]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#res_1_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#res_1_q_m_h1_q"/>
+        <Literal text="[1 res]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#dxstit_1_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#dxstit_1_q_m_h1_q"/>
+        <Literal text="[1 DXSTIT]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#but_sd1_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#but_sd1_q_m_h1_q"/>
+        <Literal text="but(sd1, q)"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#ness_sd1_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#ness_sd1_q_m_h1_q"/>
+        <Literal text="ness(sd1, q)"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#pres_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#pres_2_q_m_h1_q"/>
+        <Literal text="[2 pres]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#sres_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#sres_2_q_m_h1_q"/>
+        <Literal text="[2 sres]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#res_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#res_2_q_m_h1_q"/>
+        <Literal text="[2 res]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#dxstit_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#dxstit_2_q_m_h1_q"/>
+        <Literal text="[2 DXSTIT]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#but_ss2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#but_ss2_q_m_h1_q"/>
+        <Literal text="but(ss2, q)"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#ness_ss2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#ness_ss2_q_m_h1_q"/>
+        <Literal text="ness(ss2, q)"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#pres_1_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#pres_1_2_q_m_h1_q"/>
+        <Literal text="[{1, 2} pres]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#sres_1_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#sres_1_2_q_m_h1_q"/>
+        <Literal text="[{1, 2} sres]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#res_1_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#res_1_2_q_m_h1_q"/>
+        <Literal text="[{1, 2} res]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#dxstit_1_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#dxstit_1_2_q_m_h1_q"/>
+        <Literal text="[{1, 2} DXSTIT]q"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#but_1_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#but_1_2_q_m_h1_q"/>
+        <Literal text="but({1:sd, 2:ss}, q)"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#ness_1_2_q_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#ness_1_2_q_m_h1_q"/>
+        <Literal text="ness({1:sd, 2:ss}, q)"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#outcome_m_h1_q"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#outcome_m_h1_q"/>
+        <Literal text="Xq"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+    </Declaration>
+    <ReflexiveObjectProperty>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+    </ReflexiveObjectProperty>
+    <SymmetricObjectProperty>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+    </SymmetricObjectProperty>
+    <FunctionalObjectProperty>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+    </FunctionalObjectProperty>
+    <SubClassOf>
+        <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectSomeValuesFrom>
+    </SubClassOf>
+    <SubClassOf>
+        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+        <Class IRI="http://www.semanticweb.org/alon#Opp2sd1"/>
+    </SubClassOf>
+    <DisjointClasses>
+        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+    </DisjointClasses>
+    <DisjointClasses>
+        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+    </DisjointClasses>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m1_h1"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m2_h2"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m3_h3"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </Declaration>
+    <Declaration>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m4_h4"/>
+    </Declaration>
+    <DifferentIndividuals>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m1_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m2_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m3_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m4_h4"/>
+    </DifferentIndividuals>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ObjectPropertyAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="4">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="4">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="4">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="4">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ClassAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m1_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m1_h1"/>
+    </ObjectPropertyAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m1_h1"/>
+    </ClassAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m2_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m2_h2"/>
+    </ObjectPropertyAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m2_h2"/>
+    </ClassAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m3_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m3_h3"/>
+    </ObjectPropertyAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m3_h3"/>
+    </ClassAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m4_h4"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m4_h4"/>
+    </ObjectPropertyAssertion>
+    <ClassAssertion>
+        <ObjectExactCardinality cardinality="1">
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <Class IRI="http://www.w3.org/2002/07/owl#Thing"/>
+        </ObjectExactCardinality>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m4_h4"/>
+    </ClassAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m1_h1"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m2_h2"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m3_h3"/>
+    </ObjectPropertyAssertion>
+    <ObjectPropertyAssertion>
+        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m4_h4"/>
+    </ObjectPropertyAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ha2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss1"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h1"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ha2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss1"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h2"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ha2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss1"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h3"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ha2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss1"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#Opp2ss2"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m_h4"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <Class IRI="http://www.semanticweb.org/alon#q"/>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m1_h1"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#q"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m2_h2"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#q"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m3_h3"/>
+    </ClassAssertion>
+    <ClassAssertion>
+        <ObjectComplementOf>
+            <Class IRI="http://www.semanticweb.org/alon#q"/>
+        </ObjectComplementOf>
+        <NamedIndividual IRI="http://www.semanticweb.org/alon#m4_h4"/>
+    </ClassAssertion>
+    <SubClassOf>
+        <ObjectUnionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                    <Class IRI="http://www.semanticweb.org/alon#f8"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                            <Class IRI="http://www.semanticweb.org/alon#f9"/>
+                        </ObjectIntersectionOf>
+                        <ObjectComplementOf>
+                            <ObjectAllValuesFrom>
+                                <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                                <ObjectSomeValuesFrom>
+                                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                                </ObjectSomeValuesFrom>
+                            </ObjectAllValuesFrom>
+                        </ObjectComplementOf>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f11"/>
+                </ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#f12"/>
+            </ObjectIntersectionOf>
+        </ObjectUnionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f7"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                            <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                        </ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#f27"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f29"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f28"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectUnionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    <Class IRI="http://www.semanticweb.org/alon#f10"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                            <Class IRI="http://www.semanticweb.org/alon#f9"/>
+                        </ObjectIntersectionOf>
+                        <ObjectComplementOf>
+                            <ObjectAllValuesFrom>
+                                <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                                <ObjectSomeValuesFrom>
+                                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                                </ObjectSomeValuesFrom>
+                            </ObjectAllValuesFrom>
+                        </ObjectComplementOf>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f11"/>
+                </ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#f12"/>
+            </ObjectIntersectionOf>
+        </ObjectUnionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f22"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <Class IRI="http://www.semanticweb.org/alon#f33"/>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <ObjectSomeValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectSomeValuesFrom>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f32"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectUnionOf>
+            <ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                <Class IRI="http://www.semanticweb.org/alon#f8"/>
+            </ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+                <Class IRI="http://www.semanticweb.org/alon#f15"/>
+            </ObjectIntersectionOf>
+        </ObjectUnionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f14"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                            <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                        </ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#f9"/>
+                    </ObjectIntersectionOf>
+                    <ObjectComplementOf>
+                        <ObjectAllValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                            <ObjectSomeValuesFrom>
+                                <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                                <Class IRI="http://www.semanticweb.org/alon#q"/>
+                            </ObjectSomeValuesFrom>
+                        </ObjectAllValuesFrom>
+                    </ObjectComplementOf>
+                </ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#f11"/>
+            </ObjectIntersectionOf>
+            <Class IRI="http://www.semanticweb.org/alon#f12"/>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f31"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+                <ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                    <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                </ObjectIntersectionOf>
+            </ObjectIntersectionOf>
+            <Class IRI="http://www.semanticweb.org/alon#f5"/>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f4"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f15"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectUnionOf>
+            <ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                <Class IRI="http://www.semanticweb.org/alon#f10"/>
+            </ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+                <Class IRI="http://www.semanticweb.org/alon#f25"/>
+            </ObjectIntersectionOf>
+        </ObjectUnionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f24"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectComplementOf>
+            <ObjectAllValuesFrom>
+                <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                <ObjectUnionOf>
+                    <ObjectComplementOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                    </ObjectComplementOf>
+                    <ObjectSomeValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectSomeValuesFrom>
+                </ObjectUnionOf>
+            </ObjectAllValuesFrom>
+        </ObjectComplementOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f12"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                        <Class IRI="http://www.semanticweb.org/alon#f17"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f22"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f21"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                        <Class IRI="http://www.semanticweb.org/alon#f17"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f19"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f18"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f8"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                            <ObjectComplementOf>
+                                <Class IRI="http://www.semanticweb.org/alon#Opp2sd1"/>
+                            </ObjectComplementOf>
+                        </ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                            <ObjectComplementOf>
+                                <Class IRI="http://www.semanticweb.org/alon#Opp2ss2"/>
+                            </ObjectComplementOf>
+                        </ObjectIntersectionOf>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f27"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <Class IRI="http://www.semanticweb.org/alon#f14"/>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <ObjectSomeValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectSomeValuesFrom>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f13"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    <Class IRI="http://www.semanticweb.org/alon#f17"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectSomeValuesFrom>
+                <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                <Class IRI="http://www.semanticweb.org/alon#q"/>
+            </ObjectSomeValuesFrom>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f16"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f27"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectSomeValuesFrom>
+                <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                <Class IRI="http://www.semanticweb.org/alon#q"/>
+            </ObjectSomeValuesFrom>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f26"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f34"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#f2"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f7"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f6"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <Class IRI="http://www.semanticweb.org/alon#f24"/>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <ObjectSomeValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectSomeValuesFrom>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f23"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f25"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <ObjectComplementOf>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectComplementOf>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f20"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                    <Class IRI="http://www.semanticweb.org/alon#f2"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectSomeValuesFrom>
+                <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                <Class IRI="http://www.semanticweb.org/alon#q"/>
+            </ObjectSomeValuesFrom>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f1"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f9"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                            <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                        </ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#f27"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f31"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f30"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f36"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <ObjectComplementOf>
+                            <Class IRI="http://www.semanticweb.org/alon#Opp2sd1"/>
+                        </ObjectComplementOf>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f2"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f35"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectUnionOf>
+            <ObjectUnionOf>
+                <ObjectUnionOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                            <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                        </ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#f9"/>
+                    </ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <ObjectIntersectionOf>
+                            <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                            <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+                        </ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#f34"/>
+                    </ObjectIntersectionOf>
+                </ObjectUnionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f35"/>
+                </ObjectIntersectionOf>
+            </ObjectUnionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+                    <Class IRI="http://www.semanticweb.org/alon#ha2"/>
+                </ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#f36"/>
+            </ObjectIntersectionOf>
+        </ObjectUnionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f33"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f10"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <ObjectComplementOf>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectComplementOf>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f5"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#f2"/>
+                    </ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#f4"/>
+                </ObjectIntersectionOf>
+                <ObjectComplementOf>
+                    <ObjectAllValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                        <ObjectSomeValuesFrom>
+                            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                            <Class IRI="http://www.semanticweb.org/alon#q"/>
+                        </ObjectSomeValuesFrom>
+                    </ObjectAllValuesFrom>
+                </ObjectComplementOf>
+            </ObjectIntersectionOf>
+            <ObjectComplementOf>
+                <ObjectAllValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                    <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                </ObjectAllValuesFrom>
+            </ObjectComplementOf>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f3"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+                <ObjectIntersectionOf>
+                    <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                    <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                </ObjectIntersectionOf>
+            </ObjectIntersectionOf>
+            <Class IRI="http://www.semanticweb.org/alon#f20"/>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f19"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectComplementOf>
+            <ObjectAllValuesFrom>
+                <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+                <ObjectUnionOf>
+                    <ObjectComplementOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectComplementOf>
+                    <ObjectSomeValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectSomeValuesFrom>
+                </ObjectUnionOf>
+            </ObjectAllValuesFrom>
+        </ObjectComplementOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f11"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectIntersectionOf>
+            <ObjectIntersectionOf>
+                <ObjectIntersectionOf>
+                    <ObjectSomeValuesFrom>
+                        <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                        <Class IRI="http://www.semanticweb.org/alon#q"/>
+                    </ObjectSomeValuesFrom>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#sd1"/>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                    </ObjectIntersectionOf>
+                </ObjectIntersectionOf>
+                <Class IRI="http://www.semanticweb.org/alon#f5"/>
+            </ObjectIntersectionOf>
+            <Class IRI="http://www.semanticweb.org/alon#f20"/>
+        </ObjectIntersectionOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f29"/>
+    </SubClassOf>
+    <SubClassOf>
+        <ObjectAllValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#same_moment"/>
+            <ObjectUnionOf>
+                <ObjectComplementOf>
+                    <ObjectIntersectionOf>
+                        <Class IRI="http://www.semanticweb.org/alon#ss2"/>
+                        <ObjectComplementOf>
+                            <Class IRI="http://www.semanticweb.org/alon#Opp2ss2"/>
+                        </ObjectComplementOf>
+                    </ObjectIntersectionOf>
+                </ObjectComplementOf>
+                <ObjectSomeValuesFrom>
+                    <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+                    <Class IRI="http://www.semanticweb.org/alon#q"/>
+                </ObjectSomeValuesFrom>
+            </ObjectUnionOf>
+        </ObjectAllValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f17"/>
+    </SubClassOf>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f7</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">ness(sd1, q)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f28</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[{1, 2} sres]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f22</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">ness(ss2, q)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f32</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[{1, 2} DXSTIT]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f14</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[1 xstit]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f31</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">ness({1:sd, 2:ss}, q)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f4</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">but(sd1, q)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f15</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do(ss1) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f24</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[2 xstit]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f12</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">~([](do(sd1) -&gt; Xq))</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f21</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[2 res]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f18</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[2 sres]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f8</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do(sd1) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f27</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](free_do({1:sd, 2:ss}) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f13</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[1 DXSTIT]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f16</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[2 pres]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f26</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[{1, 2} pres]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f34</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do({1:sd, 2:ha}) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f6</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[1 res]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f23</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[2 DXSTIT]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f25</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do(ha2) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f20</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do({1:sd, 2:ha}) -&gt; X(~q))</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f1</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[1 pres]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f9</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do({1:sd, 2:ss}) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f30</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[{1, 2} res]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f36</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do({1:ss, 2:ha}) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f2</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](free_do(sd1) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f35</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do({1:ss, 2:ss}) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f33</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[{1, 2} xstit]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f10</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do(ss2) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f5</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](do({1:ss, 2:ss}) -&gt; X(~q))</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f3</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[1 sres]q</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f19</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">but(ss2, q)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f11</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">~([](do(ss2) -&gt; Xq))</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f29</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">but({1:sd, 2:ss}, q)</Literal>
+    </AnnotationAssertion>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        
+        
+        <IRI>http://www.semanticweb.org/alon#f17</IRI>
+        
+        
+        <Literal datatypeIRI="http://www.w3.org/2001/XMLSchema#string">[](free_do(ss2) -&gt; Xq)</Literal>
+    </AnnotationAssertion>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f1"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#pres_1_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f3"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#sres_1_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f6"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#res_1_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f13"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#dxstit_1_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f4"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#but_sd1_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f7"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#ness_sd1_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f16"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#pres_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f18"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#sres_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f21"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#res_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f23"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#dxstit_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f19"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#but_ss2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f22"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#ness_ss2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f26"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#pres_1_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f28"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#sres_1_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f30"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#res_1_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f32"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#dxstit_1_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f29"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#but_1_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#f31"/>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#ness_1_2_q_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <SubClassOf>
+        
+        
+        <ObjectSomeValuesFrom>
+            <ObjectProperty IRI="http://www.semanticweb.org/alon#succ"/>
+            <Class IRI="http://www.semanticweb.org/alon#q"/>
+        </ObjectSomeValuesFrom>
+        
+        
+        <Class IRI="http://www.semanticweb.org/alon#outcome_m_h1_q"/>
+        
+    
+    </SubClassOf>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f32"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f32"/>
+        <Literal text="Formula f32"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f7"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f7"/>
+        <Literal text="Formula f7"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f9"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f9"/>
+        <Literal text="Formula f9"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f21"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f21"/>
+        <Literal text="Formula f21"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f8"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f8"/>
+        <Literal text="Formula f8"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f23"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f23"/>
+        <Literal text="Formula f23"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f17"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f17"/>
+        <Literal text="Formula f17"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f15"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f15"/>
+        <Literal text="Formula f15"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f2"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f2"/>
+        <Literal text="Formula f2"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f6"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f6"/>
+        <Literal text="Formula f6"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f35"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f35"/>
+        <Literal text="Formula f35"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f28"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f28"/>
+        <Literal text="Formula f28"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f30"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f30"/>
+        <Literal text="Formula f30"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f10"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f10"/>
+        <Literal text="Formula f10"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f4"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f4"/>
+        <Literal text="Formula f4"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f24"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f24"/>
+        <Literal text="Formula f24"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f16"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f16"/>
+        <Literal text="Formula f16"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f34"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f34"/>
+        <Literal text="Formula f34"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f33"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f33"/>
+        <Literal text="Formula f33"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f3"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f3"/>
+        <Literal text="Formula f3"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f5"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f5"/>
+        <Literal text="Formula f5"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f14"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f14"/>
+        <Literal text="Formula f14"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f31"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f31"/>
+        <Literal text="Formula f31"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f18"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f18"/>
+        <Literal text="Formula f18"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f20"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f20"/>
+        <Literal text="Formula f20"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f11"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f11"/>
+        <Literal text="Formula f11"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f13"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f13"/>
+        <Literal text="Formula f13"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f12"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f12"/>
+        <Literal text="Formula f12"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f27"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f27"/>
+        <Literal text="Formula f27"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f36"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f36"/>
+        <Literal text="Formula f36"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f29"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f29"/>
+        <Literal text="Formula f29"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f22"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f22"/>
+        <Literal text="Formula f22"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f25"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f25"/>
+        <Literal text="Formula f25"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f26"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f26"/>
+        <Literal text="Formula f26"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f19"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f19"/>
+        <Literal text="Formula f19"/>
+    </AnnotationAssertion>
+    <Declaration>
+        <Class IRI="http://www.semanticweb.org/alon#f1"/>
+    </Declaration>
+    <AnnotationAssertion>
+        <AnnotationProperty IRI="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <IRI text="http://www.semanticweb.org/alon#f1"/>
+        <Literal text="Formula f1"/>
+    </AnnotationAssertion>
+</Ontology>
