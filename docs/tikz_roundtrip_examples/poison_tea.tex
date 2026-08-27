@@ -1,0 +1,76 @@
+% Poison/shoot/letter example, John/Alice/Matt/Sam. Pasted by the user
+% as a candidate style/content reference for a future TikZ rendering path
+% (thread 6b: TikZ as an alternate rendering of ALOn models, alongside
+% Mermaid -- NOT a replacement, and not tied to Mermaid's limitations).
+% No corresponding .mmd model has been extracted/found for this one yet
+% -- kept here so the source isn't lost, per the user's "worth extracting
+% that for roundtrip testing" instruction. See README.md.
+\begin{example}
+Let John be agent 1, Alice be agent 2, and Matt be agent 3. The three agents have the following actions available to them in the moment immediately prior to Sam's death:\\
+\vspace{-\parskip}\nointerlineskip
+\begin{minipage}{.45\linewidth}
+    \begin{align*}
+        pt_1 &\quad \text{John puts poison in Sam's tea}\\
+        ss_2 &\quad \text{Alice shoots Sam}\\
+        wl_3 &\quad \text{Matt writes a letter in his bedroom}
+    \end{align*}
+\end{minipage}
+\begin{minipage}{.4\linewidth}
+    \begin{align*}
+        mt_1 &\quad \text{John puts milk in Sam's tea}\\
+        is_2 &\quad \text{Alice ignores Sam}\\
+        lb_3 &\quad \text{Matt leaves his bedroom}
+    \end{align*}
+\end{minipage}
+
+Let $\varphi$ be the proposition that Sam dies. In the actual scenario, John poisons Sam's tea, Alice shoots Sam, and Matt writes a letter in his room, i.e. $do(pt_1ss_2wl_3)$. The shaded area below represents this actual scenario, which results in the history $h_1$.
+\begin{figure}[h]
+\hspace{1cm}
+    \begin{tikzpicture}
+        \fill[lightgray] (0,0) rectangle (3,2.5);
+        \draw (0,0) rectangle (3,2.5); %bottom left
+        \fill[white] (3,2.5) circle (2);
+        \draw[rotate around={130:(3,2.5)},postaction={decorate, decoration={text along path, raise=-9pt, reverse path=False, text align={align=center}, text={Matt's actions}}}] (3,2.5) circle (2);
+        \draw (3,2.5) rectangle (6,5); %top right
+        \draw (3,0) rectangle (6,2.5); %bottom right
+        \draw (0,2.5) rectangle (3,5); %top left
+        \draw[postaction={decorate, decoration={text along path, text={Alice's}, text align={align=center}, raise=13pt}}] (0,1.25) -- (0,3.75);
+        \draw[postaction={decorate, decoration={text along path, text={actions}, text align={align=center}, raise=4pt}}] (0,1.25) -- (0,3.75);
+        \draw[postaction={decorate,decoration={text along path,text={John's},text align={align=center}, raise=-11pt}}] (1.5,0) -- (4.5,0);
+        \draw[postaction={decorate,decoration={text along path,text={actions},text align={align=center}, raise=-20pt}}] (1.5,0) -- (4.5,0);
+        \node[align=center] at (1.25,-0.3) {$pt_1$};
+        \node[align=center] at (4.75,-0.3) {$mt_1$};
+        \node[align=center] at (-0.4,1) {$ss_2$};
+        \node[align=center] at (-0.4,4) {$is_2$};
+
+        \node at (1.4,0.7) {$wl_3$};
+        \node at (2,1.2) {$lb_3$};
+
+        \node [label={[draw,label distance=-0.1cm]$h_1$}] (a) at (-0.5,7) {};
+        \node [label={[label distance=-0.1cm]$h_2$}] (b) at (0.5,7) {};
+        \node [label={[label distance=-0.1cm]$h_3$}] (c) at (1.5,7) {};
+        \node [label={[label distance=-0.1cm]$h_4$}] (d) at (2.5,7) {};
+        \node [label={[label distance=-0.1cm]$h_5$}] (e) at (3.5,7) {};
+        \node [label={[label distance=-0.1cm]$h_6$}] (f) at (4.5,7) {};
+        \node [label={[label distance=-0.1cm]$h_7$}] (g) at (5.5,7) {};
+        \node [label={[label distance=-0.1cm]$h_8$}] (h) at (6.5,7) {};
+
+        \node at (-0.7,6.25) {$\X\varphi$};
+        \node at (0.3,6.25) {$\X\varphi$};
+        \node at (1.3,6.25) {$\X\varphi$};
+        \node at (2.2,6.25) {$\X\varphi$};
+        \node at (6.7,6.25) {$\X\varphi$};
+        \draw (0.7,1.3) -- (a);
+        \draw (1,4) -- (b);
+        \draw (2,2) -- (c);
+        \draw (2.5,3.5) -- (d);
+        \draw (3.5,3.5) -- (e);
+        \draw (4,2) -- (f);
+        \draw (5,4) -- (g);
+        \draw (5.3,1.3) -- (h);
+
+    \end{tikzpicture}
+    \label{fig:1}
+\end{figure}
+\FloatBarrier
+\end{example}
