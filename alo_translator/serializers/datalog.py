@@ -87,24 +87,32 @@ class FormulaToDatalog(Transformer):
             return items[0]
         result = items[-1]
         for item in reversed(items[:-1]):
-            result = f"(({item} | {result}) & ({result} | {item}))"  # unused but kept
+            # p <-> q  ==  (p -> q) & (q -> p)
+            fwd = self.implication([item, result])
+            back = self.implication([result, item])
+            result = f"({fwd} & {back})"
         return result
 
     def implication(self, items):
         if len(items) == 1:
             return items[0]
-        raise ValueError(
-            "Implication (->) should not appear in pyDatalog axioms. "
-            "Use PyDatalogExpanderTransformer which eliminates implications."
-        )
+        # p -> q  ==  ~p v q
+        antecedent = items[-2] if len(items) == 2 else self.implication(items[:-1])
+        return self.disjunction([f"~({antecedent})", items[-1]])
 
     def disjunction(self, items):
         if len(items) == 1:
             return items[0]
-        raise ValueError(
-            "Disjunction (v) should not appear in pyDatalog axioms. "
-            "Use PyDatalogExpanderTransformer which splits disjunctions."
-        )
+        # pyDatalog has no `|` between rule-body terms (Query objects don't
+        # support it) -- disjunction must be split into multiple rules
+        # sharing one fresh helper head, standard Datalog style, not a
+        # single expression. Mirrors the box() helper-rule pattern below.
+        self.helper_counter += 1
+        helper_name = f"or_{self.helper_counter}"
+        self.predicates.add(helper_name)
+        for item in items:
+            self.rules.append(f"{helper_name}(I) <= {item}")
+        return f"{helper_name}(I)"
 
     def conjunction(self, items):
         if len(items) == 1:
