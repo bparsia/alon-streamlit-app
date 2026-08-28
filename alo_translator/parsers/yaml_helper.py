@@ -36,6 +36,7 @@ def yaml_to_partial_spec(yaml_data: Dict[str, Any]) -> Dict[str, Any]:
     - aliases: {id: "name"}
     - res_analyse: [(moment/history, target_proposition), ...]
     - evaluate: [(moment/history, formula), ...]
+    - background: [formula, ...] (holds at every index, no moment/history)
 
     Args:
         yaml_data: Parsed YAML dictionary from frontmatter
@@ -69,6 +70,14 @@ def yaml_to_partial_spec(yaml_data: Dict[str, Any]) -> Dict[str, Any]:
     #     - [m/h1, "[]do(sd1)"]
     if "evaluate" in yaml_data:
         partial_spec["evaluate"] = yaml_data["evaluate"]
+
+    # Extract background theory (GCI-style constraints holding at every index,
+    # not anchored to any particular moment/history)
+    # YAML format:
+    #   background:
+    #     - "q -> Xq"
+    if "background" in yaml_data:
+        partial_spec["background"] = yaml_data["background"]
 
     return partial_spec
 

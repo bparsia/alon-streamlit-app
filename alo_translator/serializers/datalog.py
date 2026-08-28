@@ -291,6 +291,14 @@ class DatalogIndexSerializer:
 
     def __init__(self, model: ALOModel, evaluation_history: Optional[str] = None,
                  evaluation_moment: Optional[str] = None, ness_empty_sufficient: bool = True):
+        if model.background:
+            raise ValueError(
+                "DatalogIndexSerializer cannot represent background theory "
+                "(model.background is non-empty): a background formula holds "
+                "universally at every index, which Datalog has no way to "
+                "express directly. Use OWLSerializer instead, or clear "
+                "model.background if it was set unintentionally."
+            )
         self.model = model
         self.evaluation_history = evaluation_history or model.evaluation_history
         self.evaluation_moment = evaluation_moment or model.evaluation_moment

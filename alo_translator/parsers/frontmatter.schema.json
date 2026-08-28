@@ -173,6 +173,19 @@
       "description": "NESS empty-set semantics toggle: if true (default), the empty set counts as a potential sufficient set in NESS minimality checks, matching the original semantics where q-inevitability blocks NESS. If false, only non-empty proper subsets are tested. Read by both the analysis pipeline (DatalogIndexSerializer/OWLSerializer) and alo_docs ({{results ness_empty_sufficient=...}}).",
       "paper_description": "",
       "default": true
+    },
+    "background": {
+      "type": "array",
+      "description": "Background theory (GCI-style constraints): a flat list of ALOn formula strings, each holding universally at every index of the model, not anchored to any particular moment/history (unlike res_analyse/evaluate). Read by the model parser into ALOModel.background. OWLSerializer emits each as SubClassOf(owl:Thing, <formula-as-OWL-expression>). DatalogIndexSerializer raises if this is non-empty -- Datalog has no way to represent a universally-quantified-over-every-index constraint, so this is treated as a hard incompatibility, not silently ignored.",
+      "paper_description": "",
+      "items": {
+        "type": "string"
+      },
+      "examples": [
+        [
+          "q -> Xq"
+        ]
+      ]
     }
   }
 }

@@ -245,6 +245,7 @@ def _parse_layered(diagram: Dict[str, Any], partial_spec: Dict[str, Any]) -> 'AL
         evaluation_moment="",
         target_proposition="",
         evaluations=evaluations,
+        background=[str(f) for f in partial_spec.get("background", [])],
     )
 
 

@@ -292,7 +292,11 @@ class ALOModel:
     evaluations: List[Tuple[str, str, str]] = field(default_factory=list)
     meta_opposings: List['MetaOpposingRelation'] = field(default_factory=list)
     responsibility_config: Optional['ResponsibilityConfig'] = None
+    background: List[str] = field(default_factory=list)
     # list of (moment, history, target_proposition) for multi-point evaluation
+    # background: GCI-style formulae holding at every index (no moment/history
+    # anchor); OWLSerializer emits SubClassOf(owl:Thing, ...) per entry,
+    # DatalogIndexSerializer raises if non-empty (see frontmatter.schema.json)
 
     def histories_through(self, moment_name: str) -> List[str]:
         """Return names of all histories whose path passes through moment_name."""

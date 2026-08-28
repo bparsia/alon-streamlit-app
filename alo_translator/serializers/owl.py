@@ -18,6 +18,7 @@ Two classes:
 """
 
 import re
+import warnings
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Set, Tuple
 from xml.etree.ElementTree import Element, SubElement, tostring, fromstring
@@ -311,6 +312,7 @@ class OWLSerializerBase(Serializer):
         self._add_proposition_assertions(ontology)
         self._add_query_classes(ontology)
         self._add_expansion_axioms(ontology)
+        self._add_background_axioms(ontology)
         return ontology
 
     # ---- XML helpers ----
@@ -427,6 +429,9 @@ class OWLSerializerBase(Serializer):
 
     @abstractmethod
     def _add_expansion_axioms(self, ontology: Element): ...
+
+    @abstractmethod
+    def _add_background_axioms(self, ontology: Element): ...
 
 
 # ---------------------------------------------------------------------------
@@ -659,6 +664,70 @@ class OWLSerializer(OWLSerializerBase):
                     class_name.startswith("Opp2") or
                     class_name in all_prop_names):
                 self._declare_class(ontology, class_name, f"Formula {class_name}")
+
+    def _add_background_axioms(self, ontology: Element):
+        """Emit SubClassOf(owl:Thing, <expr>) for each model.background formula.
+
+        Background formulae hold at every index, so they are expanded with
+        no evaluation_moment/evaluation_history -- ExpanderTransformer's
+        agent-action/CGA lookups (used by pres/sres/res/but_for/ness) raise
+        ValueError when those are None; that's treated as "this formula
+        depends on a concrete index" and skipped with a warning, not a
+        crash, since a background formula that genuinely requires knowing
+        the actual action at some specific moment isn't well-formed as a
+        universal constraint in the first place.
+        """
+        from lark.exceptions import VisitError
+        from ..parsers.expander_transformer import ExpanderTransformer
+
+        for formula_string in self.model.background:
+            expander = ExpanderTransformer(self.parser, self.model,
+                                           evaluation_moment=None,
+                                           evaluation_history=None)
+            try:
+                tree = self.parser.parse(formula_string)
+                expansion_name = expander.transform(tree)
+            except (ValueError, VisitError) as e:
+                underlying = e.orig_exc if isinstance(e, VisitError) else e
+                if not isinstance(underlying, ValueError):
+                    raise
+                warnings.warn(
+                    f"Skipping background formula {formula_string!r}: requires "
+                    f"a concrete evaluation moment/history ({underlying}). "
+                    f"Background formulae must hold at every index, so "
+                    f"operators needing a specific actual/group action "
+                    f"(pres/sres/res/but_for/ness) are not supported here.",
+                    stacklevel=2,
+                )
+                continue
+
+            formula_to_owl = FormulaToOWL(base_iri=self.BASE_IRI,
+                                          name_to_formula=expander.name_to_formula)
+            for axiom in expander.axioms:
+                if '=>' in axiom:
+                    parts = axiom.split('=>')
+                    if len(parts) == 2:
+                        lhs, rhs = parts[0].strip(), parts[1].strip()
+                        if not lhs or not rhs or lhs == rhs or lhs == '()':
+                            continue
+                formula_to_owl.transform(self.parser.parse(axiom))
+
+            for axiom_str in formula_to_owl.axioms:
+                m = re.search(r'<SubClassOf>\s*(.*?)\s*</SubClassOf>', axiom_str, re.DOTALL)
+                if not m:
+                    raise RuntimeError(f"Could not extract SubClassOf content from axiom: {axiom_str[:200]}")
+                ontology.append(fromstring(
+                    f'<SubClassOf xmlns="{self.OWL_NS}">{m.group(1).strip()}</SubClassOf>'))
+
+            for class_name in formula_to_owl.classes:
+                self._declare_class(ontology, class_name, f"Background formula class {class_name}")
+
+            expansion_owl = formula_to_owl.transform(self.parser.parse(expansion_name))
+            ontology.append(fromstring(
+                f'<SubClassOf xmlns="{self.OWL_NS}">\n'
+                f'        <Class IRI="{self.OWL_NS}Thing"/>\n'
+                f'        {expansion_owl}\n'
+                f'    </SubClassOf>'))
 
     # ---- private helpers ----
 
