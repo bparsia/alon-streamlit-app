@@ -11,8 +11,8 @@ Covers:
    actual action at the eval moment/history) is skipped with a warning
    rather than crashing the whole serialization.
 4. (Konclude required) The inertia axiom has real semantic force under a
-   full DL reasoner, not just axiom-text presence: a TD=2 model with q at
-   the root moment and ~q at its direct successor is genuinely
+   full DL reasoner, not just axiom-text presence: a bare TD=1 model with
+   q at the root moment and ~q at its direct successor is genuinely
    UNSATISFIABLE under q -> Xq, and satisfiable without it (control).
 
 Run with:
@@ -61,21 +61,20 @@ m --> m1 : h1({sd1})
 m1: q
 """
 
-# TD=2: q holds at the root moment m, ~q holds at m's direct successor mm.
-# Under "q -> Xq" this is a direct, minimal contradiction (X resolves to the
-# succ OWL object property, i.e. the actual next moment along the history --
-# not the eval-moment-relative "next query step").
+# Bare TD=1: q holds at the root moment m, ~q holds at m's direct successor
+# m1. Under "q -> Xq" this is a direct, minimal contradiction (X resolves to
+# the succ OWL object property, i.e. the actual next moment along the
+# history -- not the eval-moment-relative "next query step").
 INERTIA_CONTRADICTION_MMD = """---
-title: Inertia contradiction (TD=2)
+title: Inertia contradiction (bare, TD=1)
 background:
   - "q -> Xq"
 ---
 classDiagram
 direction BT
-m --> mm : h1({sd1})
-mm --> m1 : h1({ss2})
+m --> m1 : h1({sd1})
 m: q
-mm: ~q
+m1: ~q
 """
 
 INERTIA_CONTRADICTION_NO_BACKGROUND_MMD = INERTIA_CONTRADICTION_MMD.replace(
@@ -155,10 +154,23 @@ def test_background_formula_needing_eval_context_warns_and_is_skipped():
 
 
 @pytest.mark.skipif(not _konclude_available(), reason="Konclude binary not found")
-def test_inertia_background_makes_contradictory_td2_model_unsatisfiable(tmp_path):
+def test_inertia_background_makes_contradictory_model_unsatisfiable(tmp_path):
     """q -> Xq must have real semantic force under a full DL reasoner, not
-    just be present as axiom text: a TD=2 model with q at the root moment
+    just be present as axiom text: a bare model with q at the root moment
     and ~q at its direct successor is genuinely inconsistent.
+
+    REVIEW STATUS (temporary, flagged 2026-08-28): this is a reasoning-result
+    assertion, the kind tests/registry.py + tests/review.py exist to put
+    through independent human review before trusting as a baseline -- but
+    that tooling only covers named models in streamlit_app/models/, not
+    ad-hoc inline test fixtures like this one. As a stand-in, the model, the
+    generated SubClassOf(owl:Thing, ...) axiom, and Konclude's raw XML
+    output (individuals typed owl:Nothing, "Ontology is inconsistent") were
+    walked through directly with the user in-session instead. This is NOT
+    equivalent to registry capture+verify and should be replaced with a
+    real reviewed baseline once the registry tooling is extended to cover
+    ad-hoc/inline fixtures, not just named models -- do not treat this
+    docstring as permanent sign-off.
     """
     from streamlit_app.utils import konclude_path
     from alo_translator.reasoners.konclude import KoncludeAdapter
@@ -179,10 +191,13 @@ def test_inertia_background_makes_contradictory_td2_model_unsatisfiable(tmp_path
 
 
 @pytest.mark.skipif(not _konclude_available(), reason="Konclude binary not found")
-def test_same_td2_model_without_background_is_satisfiable(tmp_path):
+def test_same_model_without_background_is_satisfiable(tmp_path):
     """Control: the identical q/~q structure is consistent when the
     background axiom is absent -- confirms the axiom, not something else
     about the model shape, is what causes the inconsistency above.
+
+    REVIEW STATUS: same temporary stand-in as the paired unsatisfiability
+    test above -- see its docstring.
     """
     from streamlit_app.utils import konclude_path
     from alo_translator.reasoners.konclude import KoncludeAdapter
