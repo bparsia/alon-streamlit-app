@@ -39,3 +39,8 @@ bin/
 # Local mirror of the Overleaf paper source, for testing table/figure
 # regeneration scripts without touching the Dropbox-synced original
 papers/2026Fear/paper_mirror/
+
+# Generated translation-table output -- regenerate via
+# python -m tools.translation_table.build_ir && python -m tools.translation_table.render_latex
+tools/translation_table/translation_table.json
+tools/translation_table/translation_table.tex
