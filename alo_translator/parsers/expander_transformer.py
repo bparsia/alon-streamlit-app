@@ -6,6 +6,7 @@ Accumulates axioms in self.axioms, returns name references.
 
 import inspect
 from alo_translator.parsers.grammar_transformer import AlonTransformer
+from alo_translator.ordered_set import InsertionOrderedSet
 
 
 class ExpanderTransformer(AlonTransformer):
@@ -37,7 +38,7 @@ class ExpanderTransformer(AlonTransformer):
         self.evaluation_moment = evaluation_moment
         self.evaluation_history = evaluation_history
         self.ness_empty_sufficient = ness_empty_sufficient
-        self.axioms = set()  # Accumulate expansion axioms here (set for auto-deduplication)
+        self.axioms = InsertionOrderedSet()  # Accumulate expansion axioms here (deduplicated, insertion-ordered)
         self.always_false_names = set()  # Predicate names that are always False (bottom)
 
         # Systematic formula-name counter and bidirectional mapping
@@ -399,8 +400,10 @@ class ExpanderTransformer(AlonTransformer):
         # Works for both individual ("sd1") and group ("{1:sd, 2:ss}")
         parsed_actions = self._parse_action_str(action)
 
-        # Get h1 CGA actions as set of (agent, action_type) tuples
-        h1_actions = set(h1_cga.items())  # {('1', 'sd'), ('2', 'ha')}
+        # Get h1 CGA actions as (agent, action_type) tuples, sorted for a
+        # deterministic powerset order below (plain dict/set iteration order
+        # depends on PYTHONHASHSEED, making fN naming non-reproducible across runs).
+        h1_actions = sorted(h1_cga.items())  # [('1', 'sd'), ('2', 'ha')]
         target_actions = set(parsed_actions.items())  # {('1', 'sd')} or {('1', 'sd'), ('2', 'ss')}
 
         # Generate powerset of h1 actions, filter to subsets containing ALL target actions

@@ -29,6 +29,7 @@ from lark import Lark, Transformer
 
 from .base import Serializer
 from ..model.core import ALOModel, GroupAction, OpposingRelation
+from ..ordered_set import InsertionOrderedSet
 
 
 # ---------------------------------------------------------------------------
@@ -44,7 +45,7 @@ class FormulaToOWL(Transformer):
 
     def __init__(self, base_iri="http://www.semanticweb.org/alon#", name_to_formula=None):
         self.base_iri = base_iri
-        self.classes = set()
+        self.classes = InsertionOrderedSet()
         self.object_properties = set()
         self.axioms = []
         self.annotations = []

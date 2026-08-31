@@ -158,7 +158,10 @@ class PyDatalogExpanderTransformer(ExpanderTransformer):
 
         # Parse action string to get {agent: action_type} mapping
         parsed_actions = self._parse_action_str(action)
-        h1_actions = set(h1_cga.items())
+        # Sorted (not a plain set) for deterministic powerset order below --
+        # dict/set iteration order depends on PYTHONHASHSEED, making fN naming
+        # non-reproducible across runs otherwise.
+        h1_actions = sorted(h1_cga.items())
         target_actions = set(parsed_actions.items())
 
         # Generate powerset of h1 actions, filter to subsets containing ALL target actions
