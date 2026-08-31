@@ -6,6 +6,7 @@ from .owl import OWLSerializer, OWLSerializerBase, FormulaToOWL
 from .index_strategies import (
     EquivChainedNominalStrategy,
     EquivFullCardinalityStrategy,
+    EquivFullCardinalityNoPropAxiomsStrategy,
     EquivFullNominalStrategy,
     EquivFocusedCardinalityStrategy,
     ReifiedMomentsNominalStrategy,
@@ -20,6 +21,7 @@ __all__ = [
     "FormulaToOWL",
     "EquivChainedNominalStrategy",
     "EquivFullCardinalityStrategy",
+    "EquivFullCardinalityNoPropAxiomsStrategy",
     "EquivFullNominalStrategy",
     "EquivFocusedCardinalityStrategy",
     "ReifiedMomentsNominalStrategy",

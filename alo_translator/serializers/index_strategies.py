@@ -124,7 +124,6 @@ class EquivFullCardinalityStrategy(SameMomentStrategy):
     Strategy 2: Full closure with cardinality constraints.
 
     - Property: same_moment (simple - NO transitivity)
-    - Can optionally keep ReflexiveObjectProperty and SymmetricObjectProperty
     - Assertions: All pairs materialized (16 for 4 indices)
     - World closure: Cardinality constraints (exactly N)
     - Formula translation: []φ → same_moment only φ
@@ -141,8 +140,7 @@ class EquivFullCardinalityStrategy(SameMomentStrategy):
         # Declare same_moment property
         serializer._declare_object_property(ontology, "same_moment")
 
-        # Optional: Keep reflexive and symmetric (don't conflict with cardinality)
-        # These reduce the number of explicit assertions needed
+        # Can optionally keep ReflexiveObjectProperty and SymmetricObjectProperty
         reflexive = SubElement(ontology, "ReflexiveObjectProperty")
         SubElement(reflexive, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
 
@@ -157,35 +155,72 @@ class EquivFullCardinalityStrategy(SameMomentStrategy):
 
         Full closure ensures all transitivity/reflexivity/symmetry shortcuts are explicit.
         """
-        # Group indices by moment
-        indices_by_moment: Dict[str, List[str]] = {}
-        for moment, history in serializer._get_all_indices():
-            if moment not in indices_by_moment:
-                indices_by_moment[moment] = []
-            indices_by_moment[moment].append(serializer._index_name(moment, history))
+        _materialize_all_pairs_with_cardinality(ontology, serializer)
 
-        # For each moment, materialize all pairs
-        for moment, indices in indices_by_moment.items():
-            # Assert all pairs (including reflexive)
-            for i_idx in indices:
-                for j_idx in indices:
-                    assertion = SubElement(ontology, "ObjectPropertyAssertion")
-                    SubElement(assertion, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
-                    SubElement(assertion, "NamedIndividual", {"IRI": serializer._iri(i_idx)})
-                    SubElement(assertion, "NamedIndividual", {"IRI": serializer._iri(j_idx)})
 
-            # Add cardinality constraint for each index
-            count = len(indices)
-            for index in indices:
-                cardinality_axiom = SubElement(ontology, "ClassAssertion")
-                # Build: same_moment exactly N Thing
-                restriction = SubElement(cardinality_axiom, "ObjectExactCardinality",
-                                        {"cardinality": str(count)})
-                SubElement(restriction, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
-                SubElement(restriction, "Class", {"IRI": "http://www.w3.org/2002/07/owl#Thing"})
+class EquivFullCardinalityNoPropAxiomsStrategy(SameMomentStrategy):
+    """
+    Strategy 2b: Same as EquivFullCardinalityStrategy, but omits the
+    ReflexiveObjectProperty/SymmetricObjectProperty declarations.
 
-                # Apply to this index
-                SubElement(cardinality_axiom, "NamedIndividual", {"IRI": serializer._iri(index)})
+    add_same_moment_structure already unconditionally materializes every
+    (i, j) pair per moment group -- including reflexive pairs and both
+    directions of each symmetric pair -- as ground ObjectPropertyAssertions,
+    so those two schema-level characteristics add no new entailments over
+    this model's ground facts; whether omitting them changes Konclude's
+    reasoning performance is what this variant exists to test. Not the
+    default -- see EquivFullCardinalityStrategy for that.
+    """
+
+    def add_declarations(self, ontology: Element, serializer) -> None:
+        """No extra declarations needed for equivalence relation approach."""
+        pass
+
+    def add_structural_axioms(self, ontology: Element, serializer) -> None:
+        """Add same_moment property with NO transitivity and NO reflexive/symmetric declarations."""
+        serializer._declare_object_property(ontology, "same_moment")
+        # No ReflexiveObjectProperty/SymmetricObjectProperty/TransitiveObjectProperty.
+
+    def add_same_moment_structure(self, ontology: Element, serializer) -> None:
+        """
+        Materialize all same_moment pairs and add cardinality constraints.
+
+        Full closure ensures all transitivity/reflexivity/symmetry shortcuts are explicit.
+        """
+        _materialize_all_pairs_with_cardinality(ontology, serializer)
+
+
+def _materialize_all_pairs_with_cardinality(ontology: Element, serializer) -> None:
+    """Shared same_moment materialization for the EquivFullCardinality* strategies."""
+    # Group indices by moment
+    indices_by_moment: Dict[str, List[str]] = {}
+    for moment, history in serializer._get_all_indices():
+        if moment not in indices_by_moment:
+            indices_by_moment[moment] = []
+        indices_by_moment[moment].append(serializer._index_name(moment, history))
+
+    # For each moment, materialize all pairs
+    for moment, indices in indices_by_moment.items():
+        # Assert all pairs (including reflexive)
+        for i_idx in indices:
+            for j_idx in indices:
+                assertion = SubElement(ontology, "ObjectPropertyAssertion")
+                SubElement(assertion, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
+                SubElement(assertion, "NamedIndividual", {"IRI": serializer._iri(i_idx)})
+                SubElement(assertion, "NamedIndividual", {"IRI": serializer._iri(j_idx)})
+
+        # Add cardinality constraint for each index
+        count = len(indices)
+        for index in indices:
+            cardinality_axiom = SubElement(ontology, "ClassAssertion")
+            # Build: same_moment exactly N Thing
+            restriction = SubElement(cardinality_axiom, "ObjectExactCardinality",
+                                    {"cardinality": str(count)})
+            SubElement(restriction, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
+            SubElement(restriction, "Class", {"IRI": "http://www.w3.org/2002/07/owl#Thing"})
+
+            # Apply to this index
+            SubElement(cardinality_axiom, "NamedIndividual", {"IRI": serializer._iri(index)})
 
 
 class EquivFullNominalStrategy(SameMomentStrategy):
