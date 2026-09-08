@@ -53,16 +53,19 @@ class ResponsibilityConfig:
 
     responsibility_types: list[str]
     """
-    Types of responsibility to check: ['pres', 'sres', 'res', 'dsxtit', 'but', 'ness']
+    Types of responsibility to check: ['pres', 'sres', 'res', 'dsxtit', 'but', 'ness', 'msc']
     - pres: Potential responsibility ([A pres]φ)
     - sres: Strong responsibility ([A sres]φ)
     - res: Responsibility ([A res]φ)
     - dsxtit: DxStit ([A dsxtit]φ)
-    - but: But-for causation (but(action, φ)) - automatically uses agent's action from history
-    - ness: NESS causation (ness(action, φ)) - automatically uses agent's action from history
+    - but: But-for causation (but(action, φ)) - automatically uses agent's/coalition's action from history
+    - ness: NESS causation (ness(action, φ)) - automatically uses agent's/coalition's action from history
+    - msc: Minimal sufficient cause (msc(action, φ)) - automatically uses agent's/coalition's action from history
 
-    Note: but/ness queries are only generated for individual agents (singletons), not coalitions,
-    and require the agent to have an action specified in the named history.
+    Note: but/ness/msc queries require the agent(s) in the coalition to have
+    an action specified in the named history; both singleton agents and
+    multi-agent coalitions are supported (a coalition's query uses its
+    joint action, e.g. {1:sd, 2:ss}).
     """
 
     history: str = "h1"
@@ -232,8 +235,8 @@ class QueryGenerator:
                     query_id = f"{resp_type}_{agent_id_suffix}_{prop_id}"
                     queries.append(Query(formula_string=expr, query_id=query_id))
 
-                # Causal responsibility types: but(action, φ) / ness(action, φ)
-                elif resp_type in ["but", "ness"]:
+                # Causal responsibility types: but(action, φ) / ness(action, φ) / msc(action, φ)
+                elif resp_type in ["but", "ness", "msc"]:
                     if len(agent_set) == 1:
                         # Individual agent
                         agent_id = agent_set[0]

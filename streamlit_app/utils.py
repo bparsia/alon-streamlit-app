@@ -694,7 +694,7 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str],
         scope = _sanitize_id(f"{emom}_{ehist}_{etgt}")
         suffix = f"_{prop_id}_{scope}"
 
-        COLS = ("pres", "sres", "res", "dxstit", "but", "ness")
+        COLS = ("pres", "sres", "res", "dxstit", "but", "ness", "msc")
         agent_results = defaultdict(lambda: {c: False for c in COLS})
 
         for query in model.queries:
@@ -707,7 +707,7 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str],
                 continue
             resp_type, agent_str = parts[0], parts[1]
 
-            if resp_type in ("but", "ness"):
+            if resp_type in ("but", "ness", "msc"):
                 m = re.match(r"^([a-zA-Z]+)(\d+)$", agent_str)
                 if m:
                     agent_str = m.group(2)
@@ -744,7 +744,7 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str],
                 "CGA: \\texttt{" + cga_tex + "}, outcome: " + outcome_label + ", " + holds_str + "}"
             )
             col_spec = "|l|" + "l|" * len(COLS)
-            col_labels = {"ness": "NESS"}
+            col_labels = {"ness": "NESS", "msc": "MSC"}
             col_header = " & ".join(
                 [r"\textbf{Agent}"] + [r"\textbf{" + col_labels.get(c, c) + "}" for c in COLS]
             )
@@ -772,8 +772,8 @@ def format_layered_results_table(model: ALOModel, satisfied_ids: Set[str],
             lines = [
                 _section_header_layered(model, emom, ehist, etgt, satisfied_ids),
                 "",
-                "| Agent | pres | sres | res | dxstit | but | ness |",
-                "|-------|------|------|-----|--------|-----|------|",
+                "| Agent | pres | sres | res | dxstit | but | ness | msc |",
+                "|-------|------|------|-----|--------|-----|------|-----|",
             ]
             for agent in sorted_agents:
                 r = agent_results[agent]
@@ -876,7 +876,7 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
     """Format responsibility results as a markdown table."""
     agent_results = defaultdict(lambda: {
         "pres": False, "sres": False, "res": False,
-        "dxstit": False, "but": False, "ness": False,
+        "dxstit": False, "but": False, "ness": False, "msc": False,
     })
     action_legend = {}
 
@@ -900,7 +900,7 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
             continue
         resp_type, agent_str = parts[0], parts[1]
 
-        if resp_type in ("but", "ness"):
+        if resp_type in ("but", "ness", "msc"):
             m = re.match(r"^([a-zA-Z]+)(\d+)$", agent_str)
             if m:
                 action_legend[m.group(2)] = agent_str
@@ -920,8 +920,8 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
     lines = [
         header,
         "",
-        "| Agent/Coalition | pres | sres | res | dxstit | but | ness |",
-        "|----------------|------|------|-----|--------|-----|------|",
+        "| Agent/Coalition | pres | sres | res | dxstit | but | ness | msc |",
+        "|----------------|------|------|-----|--------|-----|------|-----|",
     ]
 
     for agent in sorted(agent_results.keys(), key=lambda x: (len(x.split("_")), x)):
@@ -932,7 +932,7 @@ def format_results_table(model, satisfied_query_ids: Set[str], result_prop: str,
         else:
             display = aliases.get(agent, agent)
 
-        row = [display] + ["✓" if r[k] else " " for k in ("pres", "sres", "res", "dxstit", "but", "ness")]
+        row = [display] + ["✓" if r[k] else " " for k in ("pres", "sres", "res", "dxstit", "but", "ness", "msc")]
         lines.append("| " + " | ".join(row) + " |")
 
     if action_legend and show_legend:

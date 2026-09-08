@@ -40,6 +40,7 @@
       | expected_result
       | but_for
       | ness
+      | msc
       | xstit
       | dxstit
       | potential_responsibility
@@ -68,6 +69,7 @@ opposing_op: action_expr "|>" action_expr          -> opposing
 expected_result: "do" "(" action_expr ")" "[+]->" unary    -> expected_result
 but_for: "but" "(" action_expr "," formula ")"     -> but_for
 ness: "ness" "(" action_expr "," formula ")"       -> ness
+msc: "msc" "(" action_expr "," formula ")"         -> msc
 
 // STIT operators
 xstit: "[" agent_expr "XSTIT" "]" unary            -> xstit

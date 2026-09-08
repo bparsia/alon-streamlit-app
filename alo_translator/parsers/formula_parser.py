@@ -21,7 +21,7 @@ from alo_translator.model.formula import (
     FormulaNode, Prop, DoAction, FreeDoAction, Opposing,
     Negation, Conjunction, Disjunction, Implication, Biconditional,
     Box, Diamond, Next, Top, Bottom,
-    PDLBox, PDLDiamond, ExpectedResult, ButFor, Ness,
+    PDLBox, PDLDiamond, ExpectedResult, ButFor, Ness, Msc,
     XSTIT, DXSTIT, PotentialResponsibility, StrongResponsibility, PlainResponsibility,
     # Action/Agent types
     IndividualAction, GroupAction, IndividualAgent, AgentGroup, NamedAgentGroup,
@@ -216,6 +216,10 @@ class FormulaTransformer(Transformer):
     def ness(self, items):
         """NESS causation: ness(a1, φ)"""
         return Ness(items[0], items[1])
+
+    def msc(self, items):
+        """Minimal sufficient cause: msc(a1, φ)"""
+        return Msc(items[0], items[1])
 
     # ========================================================================
     # STIT operators

@@ -491,6 +491,88 @@ class ExpanderTransformer(AlonTransformer):
         self.axioms.add(f"({expansion}) => {name}")
         return name
 
+    def msc(self, items):
+        """msc(a, φ)  →  do(a) & [a]φ & ⋀K⊂a (~[K]φ)
+
+        a itself is a minimal sufficient set for φ: sufficient ([a]φ)
+        and minimal (no proper subset of a, including ∅, is also
+        sufficient). Same sufficiency+minimality logic ness() runs per
+        candidate inside its powerset scan, but for exactly one
+        candidate (a itself) — no powerset enumeration needed here.
+
+        Adds: expansion => msc_a_φ
+        Returns: msc_a_φ
+        """
+        action, formula = items
+        name = self._name_for(f"msc({action}, {formula})")
+
+        if self.model is None:
+            raise ValueError("Model required for msc operator")
+
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA is empty — cannot expand msc")
+
+        # Parse action string to get {agent: action_type} mapping
+        parsed_actions = self._parse_action_str(action)
+        J = sorted(parsed_actions.items())  # [('1', 'sd'), ('2', 'ha')]
+
+        do_expr = f"do({action})"
+
+        # Build [J]φ and recursively expand — sufficiency of a itself
+        if len(J) == 1:
+            a, act = J[0]
+            sufficient_expr = f"[{act}{a}]{formula}"
+        else:
+            group_str = "{" + ", ".join(f"{a}:{act}" for a, act in J) + "}"
+            sufficient_expr = f"[{group_str}]{formula}"
+
+        tree = self.parser.parse(sufficient_expr)
+        sufficient_name = self.transform(tree)
+
+        # Build minimality checks: ⋀K⊂a (~[K]φ) — identical to ness()'s
+        # per-candidate minimality logic, applied to a itself.
+        from itertools import chain, combinations
+
+        def powerset(iterable):
+            s = list(iterable)
+            return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+
+        minimality_parts = []
+
+        min_k = 0 if self.ness_empty_sufficient else 1
+        proper_subsets = [
+            list(subset) for subset in powerset(J)
+            if min_k <= len(subset) < len(J)
+        ]
+
+        for K in proper_subsets:
+            if len(K) == 0:
+                pos_sufficient_expr = f"[]X{formula}"
+            elif len(K) == 1:
+                a, act = K[0]
+                pos_sufficient_expr = f"[{act}{a}]{formula}"
+            else:
+                group_str = "{" + ", ".join(f"{a}:{act}" for a, act in sorted(K)) + "}"
+                pos_sufficient_expr = f"[{group_str}]{formula}"
+
+            tree = self.parser.parse(pos_sufficient_expr)
+            pos_name = self.transform(tree)
+            body = self._get_axiom_body(pos_name)
+            if body is not None:
+                neg_formula_str = f"~({body})"
+                neg_name = self._name_for(neg_formula_str)
+                self.axioms.add(f"{neg_formula_str} => {neg_name}")
+                minimality_parts.append(neg_name)
+            else:
+                minimality_parts.append(f"~{pos_name}")
+
+        parts = [do_expr, sufficient_name] + minimality_parts
+        expansion = " & ".join(parts)
+
+        self.axioms.add(f"({expansion}) => {name}")
+        return name
+
     # ========== Responsibility Operators ==========
     # All use actual action α_I from evaluation history
 

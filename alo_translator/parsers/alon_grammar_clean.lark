@@ -36,6 +36,7 @@ expansion_axiom: formula "=>" IDENTIFIER
         | expected_result
         | but_for
         | ness
+        | msc
         | xstit
         | dxstit
         | pres
@@ -64,6 +65,7 @@ opposing: action_expr "|>" action_expr
 expected_result: "do" "(" action_expr ")" "[+]->" negation
 but_for: "but" "(" action_expr "," formula ")"
 ness: "ness" "(" action_expr "," formula ")"
+msc: "msc" "(" action_expr "," formula ")"
 
 // STIT operators
 xstit: "[" agent_expr "XSTIT" "]" formula

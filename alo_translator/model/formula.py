@@ -991,6 +991,106 @@ class Ness(FormulaNode):
 
 
 @dataclass
+class Msc(FormulaNode):
+    """Minimal sufficient cause: msc(a, φ) -- is a itself a minimal
+    sufficient set for φ (sufficient and minimal), not up to some
+    superset the way ness(a, φ) is."""
+    action: Action
+    formula: FormulaNode
+    provenance: Optional[str] = None
+
+    def modal_depth(self) -> int:
+        return self.formula.modal_depth() + 1  # Hidden X in PDL-Box
+
+    def __eq__(self, other) -> bool:
+        return (isinstance(other, Msc) and
+                self.action == other.action and
+                self.formula == other.formula)
+
+    def __str__(self) -> str:
+        return f"msc({self.action}, {self.formula})"
+
+    def to_owl_name(self) -> str:
+        # Use format like msc_sd1_q
+        action_str = str(self.action).replace("{", "").replace("}", "").replace(":", "_").replace(", ", "_")
+        return f"msc_{action_str}_{self.formula.to_owl_name()}"
+
+    def needs_expansion(self) -> bool:
+        return True  # Minimal sufficient cause needs expansion
+
+    def expand(self, expander: 'HierarchicalExpander') -> 'FormulaNode':
+        """
+        Expand msc: msc(a, φ) → do(a) ∧ [a]φ ∧ ⋀K⊂a(¬[K]φ)
+
+        Same sufficiency+minimality logic Ness.expand() runs per
+        candidate inside its powerset scan over supersets, but for
+        exactly one candidate -- a itself -- no powerset enumeration
+        over supersets and no disjunction needed.
+        """
+        from itertools import combinations
+
+        # a's own group action -- the single candidate under test
+        if isinstance(self.action, IndividualAction):
+            a = GroupAction({self.action.agent: self.action.action_type})
+        elif isinstance(self.action, GroupAction):
+            a = self.action
+        else:
+            return Bottom()
+
+        a_agents = sorted(a.actions.keys())
+
+        # Part 1: do(a)
+        do_terms = [DoAction(IndividualAction(a.actions[agent], agent)) for agent in a_agents]
+        if not do_terms:
+            do_a = Top()
+        else:
+            do_a = do_terms[0]
+            for term in do_terms[1:]:
+                do_a = Conjunction(do_a, term)
+        expander.registry.register(do_a)
+
+        # Part 2: [a]φ -- a is sufficient for φ
+        sufficient = PDLBox(a, self.formula)
+        expander.registry.register(sufficient)
+
+        # Part 3: ⋀K⊂a(¬[K]φ) -- minimality: no proper subset of a is
+        # also sufficient (including K=∅, i.e. ¬[]Xφ)
+        minimality_checks = []
+        for k_size in range(len(a_agents)):
+            for k_agents_tuple in combinations(a_agents, k_size):
+                if len(k_agents_tuple) == 0:
+                    box_next = Box(Next(self.formula))
+                    expander.registry.register(box_next)
+                    minimality_check = Negation(box_next)
+                    expander.registry.register(minimality_check)
+                    minimality_checks.append(minimality_check)
+                else:
+                    k_agents = set(k_agents_tuple)
+                    a_k = GroupAction({agent: a.actions[agent] for agent in k_agents})
+                    box_k = PDLBox(a_k, self.formula)
+                    expander.registry.register(box_k)
+                    minimality_check = Negation(box_k)
+                    expander.registry.register(minimality_check)
+                    minimality_checks.append(minimality_check)
+
+        if minimality_checks:
+            minimality = minimality_checks[0]
+            for check in minimality_checks[1:]:
+                minimality = Conjunction(minimality, check)
+                expander.registry.register(minimality)
+        else:
+            minimality = Top()
+
+        result = Conjunction(Conjunction(do_a, sufficient), minimality)
+        expander.registry.register(result)
+        return NamedFormula(result.to_owl_name())
+
+    def should_be_named(self) -> bool:
+        """Msc should get a named reference."""
+        return True
+
+
+@dataclass
 class XSTIT(FormulaNode):
     """XSTIT operator: [1 xstit]φ."""
     agent: Agent

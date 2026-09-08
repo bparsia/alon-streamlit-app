@@ -424,6 +424,7 @@ class FormulaToSPARQL(Transformer):
     def expected_result(self, items): self._must_not_appear("expected_result", items)
     def but_for(self, items):       self._must_not_appear("but_for", items)
     def ness(self, items):          self._must_not_appear("ness", items)
+    def msc(self, items):           self._must_not_appear("msc", items)
     def xstit(self, items):         self._must_not_appear("xstit", items)
     def dxstit(self, items):        self._must_not_appear("dxstit", items)
     def pres(self, items):          self._must_not_appear("pres", items)
