@@ -100,6 +100,7 @@ def setup_queries(model, result_prop: str, eval_history: str):
     )
     queries = generate_queries(model)
     model.queries.extend(queries)
+    model.responsibility_config = None  # prevent parse_queries from re-generating
     return parse_queries(model)
 
 
