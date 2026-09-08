@@ -224,7 +224,7 @@ class QueryGenerator:
 
             for resp_type in resp_types:
                 # Modal responsibility types: [A resp_type]φ
-                if resp_type in ["pres", "sres", "res", "dsxtit", "dxstit"]:
+                if resp_type in ["pres", "sres", "res", "dsxtit", "dxstit", "res_msc", "res_candidate"]:
                     # Parser requires uppercase DXSTIT (with X not S)
                     if resp_type in ["dsxtit", "dxstit"]:
                         modal_op = "DXSTIT"
@@ -235,8 +235,8 @@ class QueryGenerator:
                     query_id = f"{resp_type}_{agent_id_suffix}_{prop_id}"
                     queries.append(Query(formula_string=expr, query_id=query_id))
 
-                # Causal responsibility types: but(action, φ) / ness(action, φ) / msc(action, φ)
-                elif resp_type in ["but", "ness", "msc"]:
+                # Causal responsibility types: but(action, φ) / ness(action, φ) / msc(action, φ) / ness_via_msc(action, φ)
+                elif resp_type in ["but", "ness", "msc", "ness_via_msc"]:
                     if len(agent_set) == 1:
                         # Individual agent
                         agent_id = agent_set[0]

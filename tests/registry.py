@@ -75,8 +75,16 @@ def _model_hash(model_text: str) -> str:
 # Pipeline runners
 # ---------------------------------------------------------------------------
 
-def _setup_model(model_text: str):
-    """Parse model and attach standard responsibility config. Returns model."""
+DEFAULT_RESPONSIBILITY_TYPES = ["pres", "sres", "res", "dxstit", "but", "ness"]
+
+
+def _setup_model(model_text: str, responsibility_types: List[str] = None):
+    """Parse model and attach a responsibility config. Returns model.
+
+    responsibility_types defaults to the standard set; pass a different
+    list to generate queries for other operators (e.g. msc, res_msc,
+    res_candidate, ness_via_msc -- see docs/msc_operator_design.md).
+    """
     from alo_translator.parsers.dbt_parser import parse_dbt_diagram
     from alo_translator.parsers.builder import parse_formula
     from alo_translator.query_generation import ResponsibilityConfig, generate_queries
@@ -84,7 +92,7 @@ def _setup_model(model_text: str):
     model = parse_dbt_diagram(model_text)
     model.responsibility_config = ResponsibilityConfig(
         target_proposition="q", agents="all", groups="all",
-        responsibility_types=["pres", "sres", "res", "dxstit", "but", "ness"],
+        responsibility_types=responsibility_types or DEFAULT_RESPONSIBILITY_TYPES,
         history="h1",
     )
     model.queries = generate_queries(model)
@@ -191,6 +199,208 @@ def _run_owl(model_text: str, strategy_name: str) -> Optional[Dict[str, bool]]:
     except Exception as e:
         print(f"  OWL/{strategy_name} failed: {e}")
         return None
+
+
+# ---------------------------------------------------------------------------
+# Operator variants (res / res_msc / res_candidate+ness / ness / ness_via_msc)
+#
+# Different axis from the datalog/owl_* variants above: same reasoner
+# backend (OWL+Konclude), different FORMULA/OPERATOR shape for the same
+# semantic notion. See docs/msc_operator_design.md. Keyed by a normalized
+# (resp_type, agent_suffix) pair rather than raw formula string, since
+# e.g. "[1 res]q" and "[1 res_msc]q" are different strings for the same
+# semantic query -- comparable to each other but not via the generic
+# same-formula cross_check the datalog/owl_* variants use.
+# ---------------------------------------------------------------------------
+
+# Maps a comparison group name to the responsibility_types that belong in
+# it -- each group is compared against its own members only.
+OPERATOR_VARIANT_GROUPS = {
+    "res": ["res", "res_msc"],          # res_candidate+ness handled separately, see below
+    "ness": ["ness", "ness_via_msc"],
+}
+
+
+def _run_owl_operators(model_text: str, responsibility_types: List[str],
+                       strategy_name: str = "owl_full_cardinality") -> Optional[Dict[str, bool]]:
+    """Run OWL+Konclude for a given responsibility_types list. Returns
+    {query_id: satisfied} (NOT keyed by formula string -- query_id
+    already encodes resp_type + agent_suffix, which is exactly the
+    normalized key operator-variant comparison needs)."""
+    try:
+        import tempfile
+        from alo_translator.serializers.owl import OWLSerializer
+        from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
+        from alo_translator.reasoners.konclude import KoncludeAdapter
+        from alo_translator.reasoners.base import ReasoningMode
+        from alo_translator.reasoners.config import load_config
+
+        root = Path(__file__).parent.parent
+        konclude_path = None
+        for config_path in [root / "reasoner_config.toml"]:
+            if config_path.exists():
+                try:
+                    config = load_config(config_path)
+                    p = Path(config.reasoners["konclude"].path)
+                    if not p.is_absolute():
+                        p = config_path.parent / p
+                    if p.exists():
+                        konclude_path = p
+                        break
+                except Exception:
+                    pass
+        if konclude_path is None:
+            return None
+
+        strategy_map = {"owl_full_cardinality": EquivFullCardinalityStrategy()}
+        strategy = strategy_map.get(strategy_name)
+        if strategy is None:
+            return None
+
+        model = _setup_model(model_text, responsibility_types=responsibility_types)
+
+        serializer = OWLSerializer(model, evaluation_history="h1", evaluation_moment="m",
+                                   strategy=strategy)
+        owl_str = serializer.serialize()
+
+        with tempfile.NamedTemporaryFile(suffix=".owl", mode="w", delete=False) as f:
+            f.write(owl_str)
+            owl_path = Path(f.name)
+
+        try:
+            adapter = KoncludeAdapter(str(konclude_path))
+            result = adapter.run(owl_path, mode=ReasoningMode.REALISATION, timeout=600)
+        finally:
+            owl_path.unlink(missing_ok=True)
+
+        if not result.success:
+            return None
+
+        m_types = result.individual_types.get("m_h1", set())
+        return {
+            q.query_id: (q.query_id in m_types)
+            for q in model.queries if q.query_id
+        }
+    except Exception as e:
+        print(f"  OWL operator variants ({responsibility_types}) failed: {e}")
+        return None
+
+
+def _normalize_operator_key(query_id: str, resp_type: str,
+                            all_resp_types: List[str]) -> Optional[str]:
+    """Strip "{resp_type}_" prefix and "_{target}" suffix from a query_id,
+    leaving just the agent/coalition/action suffix -- the key shared
+    across operator variants for the same semantic query. Returns None
+    if query_id's resp_type prefix isn't exactly resp_type (not this
+    variant's row).
+
+    query_ids are "{resp_type}_{agent_or_action_suffix}_{target}"
+    (query_generation.py). Several resp_type names are prefixes of each
+    other ("res" is a prefix of "res_msc" and "res_candidate"; "ness" is
+    a prefix of "ness_via_msc") -- a plain startswith(f"{resp_type}_")
+    check would wrongly match e.g. "res_candidate_1_q" for resp_type
+    "res". Disambiguate by finding the SPECIFIC resp_type actually
+    present: among all_resp_types whose "{rt}_" prefix matches, the
+    longest one is authoritative (longest-prefix-wins, same principle
+    as tokenizer maximal-munch), and query_id is this row's ONLY if
+    that longest match equals resp_type exactly.
+    """
+    matching = [rt for rt in all_resp_types if query_id.startswith(f"{rt}_")]
+    if not matching:
+        return None
+    longest = max(matching, key=len)
+    if longest != resp_type:
+        return None
+
+    middle = query_id[len(resp_type) + 1:]
+    if "_" in middle:
+        return middle.rsplit("_", 1)[0]
+    return middle
+
+
+def run_operator_variant_comparison(model_text: str) -> Dict[str, Dict]:
+    """Run res, res_msc, res_candidate+ness, ness, ness_via_msc against
+    the real model and cross-check agreement within each semantic group
+    (res-family, ness-family). Returns a dict per group:
+    {group: {"results": {key: {variant: bool}}, "disagreements": [...]}}.
+
+    res_candidate+ness is composed here (not a query_generation.py
+    responsibility_type) by ANDing res_candidate's own result with the
+    separately-computed ness result for the same agent/coalition --
+    this is the actual post-step composition
+    docs/msc_operator_design.md's variant 3 describes; nothing in the
+    reasoner/serializer pipeline performs this AND, it happens in this
+    function only.
+    """
+    all_types = ["res", "res_msc", "res_candidate", "ness", "ness_via_msc"]
+    raw = _run_owl_operators(model_text, all_types)
+    if raw is None:
+        return {}
+
+    groups: Dict[str, Dict] = {}
+
+    for group_name, resp_types in OPERATOR_VARIANT_GROUPS.items():
+        results: Dict[str, Dict[str, bool]] = {}
+        for resp_type in resp_types:
+            for qid, satisfied in raw.items():
+                key = _normalize_operator_key(qid, resp_type, all_types)
+                if key is None:
+                    continue
+                results.setdefault(key, {})[resp_type] = satisfied
+        groups[group_name] = results
+
+    # res_candidate + ness composed separately, cross-checked against res/res_msc.
+    # res_candidate/res are keyed by agent/coalition NUMBER ("1", "1_2");
+    # ness/ness_via_msc are keyed by the ACTUAL ACTION STRING used at this
+    # eval index ("sd1", "1_2" for the coalition case where the joint
+    # action already embeds agent numbers) -- singleton ness queries use
+    # the action_type+agent form (e.g. "sd1", not "1"), so composing by
+    # raw key string alone silently mismatches every singleton agent.
+    # Bridge via the model's actual CGA at the eval index.
+    model = _setup_model(model_text, responsibility_types=["res"])
+    eh = model.evaluation_history or "h1"
+    em = model.evaluation_moment or "m"
+    cga = model.histories[eh].actions_at.get(em, {}) if eh in model.histories else {}
+    # agent_key -> action_key, e.g. "1" -> "sd1", "1_2" -> "1_2" (coalitions
+    # keep their agent-number key; ness's coalition query_id already uses
+    # "_".join(agent_set), matching res_candidate's suffix directly).
+    agent_to_action_key: Dict[str, str] = {}
+    for agent, action_type in cga.items():
+        agent_to_action_key[agent] = f"{action_type}{agent}"
+
+    res_candidate_results: Dict[str, bool] = {}
+    ness_results: Dict[str, bool] = {}
+    for qid, satisfied in raw.items():
+        k = _normalize_operator_key(qid, "res_candidate", all_types)
+        if k is not None:
+            res_candidate_results[k] = satisfied
+        k = _normalize_operator_key(qid, "ness", all_types)
+        if k is not None:
+            ness_results[k] = satisfied
+
+    composed: Dict[str, bool] = {}
+    for agent_key, satisfied in res_candidate_results.items():
+        # Coalitions (multi-agent) use the agent-number key directly in
+        # both res_candidate and ness; singletons need translation via
+        # agent_to_action_key.
+        ness_key = agent_key if "_" in agent_key else agent_to_action_key.get(agent_key, agent_key)
+        composed[agent_key] = satisfied and ness_results.get(ness_key, False)
+    for key, value in composed.items():
+        groups["res"].setdefault(key, {})["res_candidate_and_ness"] = value
+
+    disagreements: Dict[str, List[str]] = {}
+    for group_name, results in groups.items():
+        group_disagreements = []
+        for key, per_variant in results.items():
+            values = set(per_variant.values())
+            if len(values) > 1:
+                group_disagreements.append(f"{key}: {per_variant}")
+        disagreements[group_name] = group_disagreements
+
+    return {
+        group_name: {"results": results, "disagreements": disagreements[group_name]}
+        for group_name, results in groups.items()
+    }
 
 
 # ---------------------------------------------------------------------------
