@@ -9,7 +9,26 @@ operator encoding, primarily to compare performance against the existing SubClas
 
 ### Konclude rule support
 
-Konclude **parses** DL-safe rules but does not reason with them. In `COWL2QtXMLOntologyParser.cpp`:
+**CORRECTED 2026-09-02** (was: "Konclude parses DL-safe rules but does not
+reason with them... DL-safe rules are silently dropped," citing
+`COWL2QtXMLOntologyParser.cpp`'s `jumpFunctionParseIgnoredNode` handler).
+Directly tested against the real ALOn OWL output (3.1-scale, 19 queries,
+and 3.5-scale, 91 queries), using the existing `dlsafe_rules.py`
+post-processor to convert query-definition axioms into `DLSafeRule` form:
+**Konclude does reason over `DLSafeRule` axioms correctly** — exact match
+to the plain-`SubClassOf` baseline at both scales, confirmed via a
+negative-control test (deleting one rule removed exactly its derived class
+and nothing else). See
+`/Users/mbassbp2/Development/reasoners/Konclude/alon_test_suite/findings/perf-002-dlsafe-rules-no-faster-than-realization/`
+for full details. Whatever the cited parser code does/did, it does not
+describe the behavior of the Konclude build currently in use here.
+
+However, realization via `DLSafeRule` is **not faster** than plain
+`SubClassOf` axioms at either scale tested (3.1: 0.81s vs 0.24s; 3.5:
+42.77s vs 49.41s — same order of magnitude, no win) — so this is a
+correctness/robustness option, not a performance one. The original
+`jumpFunctionParseIgnoredNode` citation below is left in place for
+reference/history, not as a current claim about Konclude's behavior.
 
 ```cpp
 mParseFunctionJumpHash.insert("DLSafeRule",
@@ -18,11 +37,9 @@ mParseFunctionJumpHash.insert("owl:DLSafeRule",
     &COWL2QtXMLOntologyParser::jumpFunctionParseIgnoredNode);
 ```
 
-Rule data structures exist in the parser (`CParseRuleAtom`, `CRuleClassAtomTermExpression`,
-`CRulePropertyAtomTermExpression`, etc.) but there is no corresponding reasoner component
-that consumes them. DL-safe rules are silently dropped.
-
-**Nominal schemas** (OWL 2 extension) may be a different story — to be checked.
+**Nominal schemas** (OWL 2 extension) — not yet tested; `DLSafeRule` (plain
+SWRL-style rule syntax) is a different construct and is the one confirmed
+working above.
 
 ### HermiT
 
@@ -40,8 +57,10 @@ query the classified ontology. Responsibility operators would become SPARQL SELE
 
 ## Open questions (to verify)
 
-- Does Konclude support **nominal schemas** for rule-like reasoning, and how close is
-  that to the existing SubClassOf+nominal translation?
+- Does Konclude support **nominal schemas** specifically (distinct from the
+  plain `DLSafeRule` syntax confirmed working above) for rule-like
+  reasoning, and how close is that to the existing SubClassOf+nominal
+  translation? Not yet tested.
 - What is the exact SWRL/DL-safe rule format HermiT expects in OWL/XML?
   (Reference: https://www.cs.ox.ac.uk/files/2445/rulesyntaxTR.pdf)
 - Is HermiT available in the target environment (jar / owlready2 / CLI)?

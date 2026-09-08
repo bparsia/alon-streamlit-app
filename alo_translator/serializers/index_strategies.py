@@ -190,6 +190,64 @@ class EquivFullCardinalityNoPropAxiomsStrategy(SameMomentStrategy):
         _materialize_all_pairs_with_cardinality(ontology, serializer)
 
 
+class EquivFullCardinalitySingleIndexStrategy(SameMomentStrategy):
+    """
+    Strategy 2c: Same as EquivFullCardinalityStrategy, but only emits the
+    ObjectExactCardinality world-closure ClassAssertion for ONE named index
+    (default: m_h1), not all of them.
+
+    All pairwise same_moment ObjectPropertyAssertions are still fully
+    materialized (unchanged) -- an []phi formula only needs to come out
+    true AT the evaluation index, and that index's own same_moment links
+    to every other same-moment individual are what the ObjectAllValuesFrom
+    translation of []phi actually reads. The cardinality constraint on
+    every OTHER index exists only to close the world for THEIR
+    perspective, which is irrelevant if nothing ever evaluates []phi at
+    them. HermiT could not process the bare 3.5-scale structural model at
+    all without this exact pruning (see docs/reasoner_oddities.md); this
+    variant exists to test whether the same pruning changes Konclude's
+    performance the same way. Not the default.
+    """
+
+    def __init__(self, focus_index: str = "m_h1"):
+        self.focus_index = focus_index
+
+    def add_declarations(self, ontology: Element, serializer) -> None:
+        pass
+
+    def add_structural_axioms(self, ontology: Element, serializer) -> None:
+        serializer._declare_object_property(ontology, "same_moment")
+        reflexive = SubElement(ontology, "ReflexiveObjectProperty")
+        SubElement(reflexive, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
+        symmetric = SubElement(ontology, "SymmetricObjectProperty")
+        SubElement(symmetric, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
+        # NO TransitiveObjectProperty - incompatible with cardinality
+
+    def add_same_moment_structure(self, ontology: Element, serializer) -> None:
+        indices_by_moment: Dict[str, List[str]] = {}
+        for moment, history in serializer._get_all_indices():
+            if moment not in indices_by_moment:
+                indices_by_moment[moment] = []
+            indices_by_moment[moment].append(serializer._index_name(moment, history))
+
+        for moment, indices in indices_by_moment.items():
+            for i_idx in indices:
+                for j_idx in indices:
+                    assertion = SubElement(ontology, "ObjectPropertyAssertion")
+                    SubElement(assertion, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
+                    SubElement(assertion, "NamedIndividual", {"IRI": serializer._iri(i_idx)})
+                    SubElement(assertion, "NamedIndividual", {"IRI": serializer._iri(j_idx)})
+
+            if self.focus_index in indices:
+                count = len(indices)
+                cardinality_axiom = SubElement(ontology, "ClassAssertion")
+                restriction = SubElement(cardinality_axiom, "ObjectExactCardinality",
+                                        {"cardinality": str(count)})
+                SubElement(restriction, "ObjectProperty", {"IRI": serializer._iri("same_moment")})
+                SubElement(restriction, "Class", {"IRI": "http://www.w3.org/2002/07/owl#Thing"})
+                SubElement(cardinality_axiom, "NamedIndividual", {"IRI": serializer._iri(self.focus_index)})
+
+
 def _materialize_all_pairs_with_cardinality(ontology: Element, serializer) -> None:
     """Shared same_moment materialization for the EquivFullCardinality* strategies."""
     # Group indices by moment

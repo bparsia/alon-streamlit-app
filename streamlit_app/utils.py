@@ -17,8 +17,10 @@ import streamlit.components.v1 as components
 
 from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 from alo_translator.parsers.builder import parse_queries
+from alo_translator.parsers.expander_transformer import ExpanderTransformer
 from alo_translator.query_generation import ResponsibilityConfig, generate_queries
 from alo_translator.serializers.datalog import DatalogIndexSerializer
+from alo_translator.serializers.sparql import FormulaToSPARQL
 from alo_translator.model.core import ALOModel, Query
 
 def _sanitize_id(s: str) -> str:
@@ -320,6 +322,220 @@ def run_analysis_konclude_layered(model: ALOModel,
     except Exception as e:
         st.error(f"Konclude analysis error: {e}")
         return None
+
+
+def run_analysis_konclude_sparql_layered(model: ALOModel,
+                                          ness_empty_sufficient: bool = True) -> Optional[Set[str]]:
+    """Run responsibility analysis on a ALOModel using Konclude's SPARQL
+    mode (MINUS-based negation), instead of OWL SubClassOf-injection +
+    full realization.
+
+    Mirrors run_analysis_konclude_layered's shape and per-eval-point loop.
+    The OWL ontology (ABox: indices/succ/same_moment/actions/props, TBox
+    structural axioms) is built identically via the same OWLSerializer/
+    EquivFullCardinalityStrategy -- only the query-answering step differs:
+    instead of injecting SubClassOf axioms per query and running full
+    REALISATION, each query's expanded formula is compiled to a single
+    SPARQL SELECT query (FormulaToSPARQL), and ALL of a given eval point's
+    queries are run against one warm KoncludeSparqlServer instance
+    (ontology loaded/classified once, not once per query -- see that
+    class's docstring for why: the naive one-`sparqlfile`-subprocess-
+    per-query approach did not finish within 10 minutes on the real
+    3.5.mmd model's 90 queries, versus 16.65s through a warm server,
+    faster than the 32.1s OWL/realization path on the same model).
+
+    See docs/sparql_serializer.md for the design this implements.
+    """
+    try:
+        from alo_translator.serializers.index_strategies import EquivFullCardinalityStrategy
+        from alo_translator.reasoners.konclude import KoncludeSparqlServer
+
+        bin_path = konclude_path()
+        if bin_path is None:
+            st.error("Konclude binary not found.")
+            return None
+
+        eval_points = model.require_evaluations()
+        all_satisfied: Set[str] = set()
+        all_queries = []
+
+        for emom, ehist, etgt in eval_points:
+            model.evaluation_moment = emom
+            model.evaluation_history = ehist
+            model.target_proposition = etgt
+            model.queries = []
+            model = setup_layered_queries(model)
+            all_queries.extend(model.queries)
+
+            strategy = EquivFullCardinalityStrategy()
+            serializer = OWLSerializer(
+                model,
+                evaluation_moment=emom,
+                evaluation_history=ehist,
+                strategy=strategy,
+            )
+            # structural_only: SPARQL compiles formula logic directly via
+            # FormulaToSPARQL (MINUS/UNION), so the ~300+ per-query
+            # SubClassOf expansion axioms serialize() would otherwise
+            # inject are unused dead weight here -- and expensive dead
+            # weight: they're exactly what a DL reasoner's classification
+            # step has to process, and measured on 3.5.mmd this made the
+            # first SPARQL query against a freshly-started server take
+            # ~30s before this was split out (see
+            # OWLSerializer.serialize_structural_only's docstring).
+            owl_output = serializer.serialize_structural_only()
+
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".owl", delete=False) as f:
+                f.write(owl_output)
+                owl_path = Path(f.name)
+
+            try:
+                eval_idx = f"{emom}_{ehist}"
+
+                with KoncludeSparqlServer(bin_path, owl_path) as server:
+                    for query in model.queries:
+                        if not query.query_id:
+                            continue
+                        full_query = compile_query_to_sparql(
+                            query, model, serializer.parser,
+                            evaluation_moment=emom, evaluation_history=ehist,
+                            ness_empty_sufficient=ness_empty_sufficient,
+                        )
+                        if full_query is None:
+                            continue
+                        bound = server.query(full_query)
+                        if eval_idx in bound:
+                            all_satisfied.add(query.query_id)
+            finally:
+                owl_path.unlink()
+
+        model.queries = all_queries
+        return all_satisfied
+    except Exception as e:
+        st.error(f"Konclude SPARQL analysis error: {e}")
+        return None
+
+
+def compile_query_to_sparql(query, model: ALOModel, parser, evaluation_moment: str,
+                             evaluation_history: str, ness_empty_sufficient: bool = True) -> Optional[str]:
+    """Compile a single Query's formula_string to a full, self-contained
+    "PREFIX ... SELECT ?idx0 WHERE {...}" SPARQL query string, ready to
+    run against a KoncludeSparqlServer.
+
+    Each call gets its own fresh ExpanderTransformer/FormulaToSPARQL pass
+    (no shared fN helper classes between queries, no dependency on OWL
+    SubClassOf axioms for sub-formulas -- deliberate per user direction,
+    simpler and more robust than a stateful multi-query pipeline sharing
+    intermediate results across HTTP calls). This does re-expand shared
+    sub-formulas (e.g. "expected_result" appears inside pres/sres/res)
+    once per top-level query rather than once per model -- acceptable
+    duplication given ALOn's real formulas don't nest deeply (see
+    docs/sparql_serializer.md).
+
+    Returns None if the query's top-level formula never reaches a real
+    SPARQL fragment (currently: only if FormulaToSPARQL produced nothing
+    for the synthesized top-level name, which is not expected to happen
+    in practice but is handled rather than assumed impossible).
+
+    Shared by run_analysis_konclude_sparql_layered (this module) and
+    papers/2026Fear/generate_tables.py's performance-timing loop --
+    factored out after a real bug (isabella.mmd's action-valued
+    target_proposition produces a compound "outcome" formula like
+    "Xdo(sd1)", not a bare identifier) needed the identical fix in both
+    call sites; keeping one implementation avoids that happening again.
+    """
+    expander = ExpanderTransformer(
+        parser, model,
+        evaluation_moment=evaluation_moment, evaluation_history=evaluation_history,
+        ness_empty_sufficient=ness_empty_sufficient,
+    )
+    top_name = str(expander.transform(parser.parse(query.formula_string)))
+    expansions = _fN_expansion_map(expander.axioms)
+    # Not every top-level query goes through ExpanderTransformer._name_for
+    # -- primitive constructs (e.g. the bare "outcome" query) are
+    # returned as an already-compiled/primitive string directly, with no
+    # entry in .axioms to look up (nothing to expand: it's already
+    # primitive). Only inline when top_name actually names something.
+    # This primitive string can itself be COMPOUND (e.g. "Xdo(sd1)" when
+    # the model's target_proposition is an action, not a bare prop --
+    # confirmed via isabella.mmd) rather than a simple identifier -- using
+    # it directly as the "=> name" RHS below would be invalid ALOn syntax
+    # (axiom names must be plain identifiers), so a synthetic name is
+    # minted whenever top_name isn't already fN-shaped.
+    top_definition = expansions.get(top_name, top_name)
+    inlined = _inline_fN_references(top_definition, expansions)
+
+    axiom_name = top_name if re.fullmatch(r"f\d+", top_name) else "sparql_top"
+
+    formula_to_sparql = FormulaToSPARQL(name_to_formula=expander.name_to_formula)
+    formula_to_sparql.transform(parser.parse(f"({inlined}) => {axiom_name}"))
+    sparql_text = formula_to_sparql.queries.get(axiom_name)
+    if sparql_text is None:
+        return None
+    return (
+        "PREFIX alon: <http://www.semanticweb.org/alon#>\n"
+        "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n"
+        f"{sparql_text}"
+    )
+
+
+def _fN_expansion_map(axioms) -> Dict[str, str]:
+    """Build a {name: expansion} map from an ExpanderTransformer's
+    axioms (each a "<expansion> => <name>" string).
+
+    NOT the same as ExpanderTransformer.name_to_formula, which maps each
+    name to the ORIGINAL surface formula it names (e.g. "f1" -> "[1
+    pres]q") -- that's for OWL annotations/documentation, not the actual
+    derivation. The real expansion (what f1 is actually defined as, in
+    terms of primitive/other fN constructs) only exists in .axioms.
+    """
+    expansions: Dict[str, str] = {}
+    for axiom in axioms:
+        if "=>" not in axiom:
+            continue
+        lhs, _, rhs = axiom.rpartition("=>")
+        expansions[rhs.strip()] = lhs.strip()
+    return expansions
+
+
+def _inline_fN_references(formula_string: str, expansions: Dict[str, str]) -> str:
+    """Recursively substitute every fN helper-name reference in
+    formula_string with its own defining EXPANSION (parenthesized, from
+    `expansions`, see `_fN_expansion_map`), until no fN references remain.
+
+    ExpanderTransformer._name_for caches each distinct sub-formula under
+    a systematic fN name (f1, f2, ...) and reuses that name wherever the
+    same sub-formula recurs -- this is what OWL's SubClassOf-per-fN-class
+    mechanism exists to materialize. FormulaToSPARQL has no equivalent
+    (no OWL classes for the SPARQL path, see
+    OWLSerializer.serialize_structural_only), so every fN reference must
+    be inlined back into the formula text before compiling to SPARQL, or
+    FormulaToSPARQL.prop() would wrongly treat "fN" as a bare atomic
+    proposition (`?idx a alon:fN .`) with no defining axiom to back it.
+
+    Whole-token matching only (word boundaries) -- fN names never appear
+    as a substring of anything else in these formula strings (query IDs
+    use a 'q' prefix specifically to avoid collision, see
+    ExpanderTransformer._name_for's comment).
+    """
+    pattern = re.compile(r'\bf\d+\b')
+
+    def expand_once(s: str) -> str:
+        return pattern.sub(lambda m: f"({expansions[m.group(0)]})" if m.group(0) in expansions else m.group(0), s)
+
+    # Fixed-point iteration: each pass can introduce new fN references
+    # (from a just-inlined definition), stop once a pass changes nothing.
+    # Guard against a pathological/cyclic definition with a hard cap --
+    # not expected in practice (expansion axioms are acyclic by
+    # construction) but a silent infinite loop would be worse than a
+    # loud one here.
+    current = formula_string
+    for _ in range(1000):
+        expanded = expand_once(current)
+        if expanded == current:
+            return current
+        current = expanded
+    raise RuntimeError(f"fN inlining did not converge after 1000 passes: {formula_string!r}")
 
 
 def format_layered_model_overview(model: ALOModel) -> str:

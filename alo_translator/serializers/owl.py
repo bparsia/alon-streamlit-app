@@ -287,6 +287,32 @@ class OWLSerializerBase(Serializer):
 
     def serialize(self) -> str:
         ontology = self._build_ontology()
+        return self._render(ontology)
+
+    def serialize_structural_only(self) -> str:
+        """Like serialize(), but WITHOUT the per-query OWL classes/
+        SubClassOf expansion axioms (_add_query_classes,
+        _add_expansion_axioms) -- just the ABox (indices, succ/
+        same_moment/action/proposition assertions) and structural TBox
+        (property declarations, background GCIs).
+
+        For the SPARQL query path (FormulaToSPARQL, see
+        docs/sparql_serializer.md): formula logic is compiled directly
+        into SPARQL MINUS/UNION patterns instead of relying on
+        pre-materialized OWL classes, so those ~300+ SubClassOf axioms
+        (one f-name helper class per expanded sub-formula, same content
+        FormulaToOWL/_add_query_classes would otherwise inject) are pure
+        dead weight for that path -- and expensive dead weight: measured
+        on the real 3.5.mmd model (311 SubClassOf axioms via the full
+        serialize()), the first SPARQL query against a freshly-started
+        Konclude sparqlserver took ~30s (lazy classification of the full
+        TBox, including all those unused query-expansion axioms) before
+        this method existed.
+        """
+        ontology = self._build_ontology(include_query_axioms=False)
+        return self._render(ontology)
+
+    def _render(self, ontology: Element) -> str:
         rough = tostring(ontology, encoding='unicode')
         reparsed = minidom.parseString(rough)
         xml_string = reparsed.toprettyxml(indent="    ")
@@ -294,7 +320,7 @@ class OWLSerializerBase(Serializer):
         xml_string = re.sub(r'ns0:', '', xml_string)
         return xml_string
 
-    def _build_ontology(self) -> Element:
+    def _build_ontology(self, include_query_axioms: bool = True) -> Element:
         ontology = Element("Ontology", xmlns=self.OWL_NS, attrib={
             f"{{{self.OWL_NS}}}ontologyIRI": self.BASE_IRI,
             f"{{{self.RDF_NS}}}about": self.BASE_IRI,
@@ -311,8 +337,9 @@ class OWLSerializerBase(Serializer):
         self._add_succ_assertions(ontology)
         self._add_action_assertions(ontology)
         self._add_proposition_assertions(ontology)
-        self._add_query_classes(ontology)
-        self._add_expansion_axioms(ontology)
+        if include_query_axioms:
+            self._add_query_classes(ontology)
+            self._add_expansion_axioms(ontology)
         self._add_background_axioms(ontology)
         return ontology
 

@@ -1,0 +1,77 @@
+% Abstract grammar for the restricted Mermaid class-diagram syntax used to
+% encode ALOn moment/history structures. Derived from
+% alo_translator/parsers/mermaid_class.lark; lexical details (whitespace
+% within a line, comments) are elided, but newlines are shown explicitly
+% since they are structurally significant separators, not free whitespace.
+% label's internal structure (history-list/action) is resolved by a
+% second parsing pass (dbt_parser.parse_dbt_label) rather than the Lark
+% grammar itself, but is folded in here as ordinary productions.
+%
+% Requires \usepackage{simplebnf} (>= 0.3.2, bnf environment + tabularray
+% backend). Verified to compile against simplebnf/tabularray from
+% TeX Live 2026.
+%
+% simplebnf v1 delimiters (defaults): alternatives are separated by a
+% literal "|"; annotation is separated by ":"; "//" inside one
+% alternative renders as the or-symbol "|". No annotations are used
+% below, so every production is a single line with no ":" gloss column.
+%
+% simplebnf's \bnfexpr is only ever applied to RHS alternatives, never
+% to LHS names (confirmed against simplebnf.sty's
+% \__simplebnf_typeset_lhs:n, which inserts the LHS verbatim) -- so
+% redefining \bnfexpr cannot style nonterminal names uniformly.
+% Nonterminals (\texttt{}) and terminals (\textit{}) are instead marked
+% explicitly, token by token, with \nonterm{} / \term{}.
+\SetBNFLayout{colspec={rcl}}
+\newcommand{\nonterm}[1]{\texttt{#1}}
+\newcommand{\term}[1]{\textit{#1}}
+
+% Literal colons inside a production body collide with simplebnf's
+% "comment = :" annotation-separator regex. Route them through \char58
+% so they never appear as a bare ":" in the source the parser scans.
+\newcommand{\colontok}{\term{\char58}}
+
+% "-->" contains "->" as a substring, which simplebnf's relation regex
+% (::=|->|:in:) matches mid-token, splitting the production wrongly.
+% Build the arrow from \char45/\char62 so no literal "->" appears in
+% the source the parser scans.
+\newcommand{\arrowtok}{\term{\char45\char45\char62}}
+
+\begin{bnf}
+\nonterm{model} ::=
+   [\nonterm{frontmatter}] \term{classDiagram} \nonterm{NL} [\nonterm{direction}] \nonterm{stmt}*
+;;
+\nonterm{frontmatter} ::=
+   \term{---} \nonterm{NL} \nonterm{yaml} \term{---} \nonterm{NL}
+;;
+\nonterm{direction} ::=
+   \term{direction} (\term{BT} // \term{TB} // \term{LR} // \term{RL}) \nonterm{NL}
+;;
+\nonterm{stmt} ::=
+   \nonterm{succ}
+ | \nonterm{moment-props}
+;;
+\nonterm{succ} ::=
+   \nonterm{id} \arrowtok{} \nonterm{id} [\colontok{} \nonterm{label}] [\nonterm{NL}]
+;;
+\nonterm{moment-props} ::=
+   \nonterm{id} \colontok{} \nonterm{proposition} (\term{,} \nonterm{proposition})* [\nonterm{NL}]
+;;
+\nonterm{proposition} ::=
+   [\term{\textasciitilde}] \nonterm{id}
+;;
+\nonterm{label} ::=
+   \nonterm{history-list} \term{(}\textit{\textbraceleft} \nonterm{action} (\term{,} \nonterm{action})* \textit{\textbraceright}\term{)}
+;;
+\nonterm{history-list} ::=
+   \nonterm{id} (\term{/} \nonterm{id})*
+;;
+\nonterm{action} ::=
+   \nonterm{letter}\textsuperscript{+} \nonterm{digit}\textsuperscript{+}
+;;
+\nonterm{id} ::=
+   \nonterm{letter} (\nonterm{letter} // \nonterm{digit} // \term{\_} // \term{-})*
+;;
+\nonterm{NL} ::=
+   \bnfannot{one or more newlines}
+\end{bnf}

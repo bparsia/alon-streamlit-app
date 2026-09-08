@@ -12,6 +12,7 @@ class ReasoningMode(Enum):
     REALISATION = "realisation"
     CLASSIFICATION = "classification"
     ENTAILMENT = "entailment"
+    SPARQL = "sparql"
 
 
 @dataclass
@@ -25,6 +26,11 @@ class ReasoningResult:
         raw_output: Raw output from reasoner
         success: Whether reasoning succeeded
         error_message: Error message if reasoning failed
+        bound_individuals: For SPARQL SELECT queries, the set of individual
+            names bound to the query's single answer variable (one row per
+            individual, duplicates from e.g. UNION collapsed to a set --
+            membership, not row multiplicity, is what callers need). None
+            for non-SPARQL modes.
     """
     individual_types: Dict[str, Set[str]]
     wall_clock_time: float
@@ -32,6 +38,7 @@ class ReasoningResult:
     raw_output: str = ""
     success: bool = True
     error_message: Optional[str] = None
+    bound_individuals: Optional[Set[str]] = None
 
 
 class ReasonerAdapter(ABC):

@@ -24,22 +24,7 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from tools.translation_table.extract_primitives import build_rows as build_primitive_rows
 from tools.translation_table.renderings import PRIMITIVE_RENDERINGS
-from tools.translation_table.extract_structural import build_examples as build_structural_examples
-
-# Hand-written descriptions for structural categories -- same spirit as
-# renderings.py: extraction supplies real code output, a human supplies
-# the framing prose. Kept here (not in extract_structural.py) so the
-# extraction module stays pure "run the code, capture output."
-STRUCTURAL_NOTES = {
-    "indices": "One NamedIndividual per (moment, history) pair reached / one succ(...) fact per history-adjacent pair -- Datalog's fragment shown here covers both indices and succ facts together, since _generate_structural_facts emits them in one pass.",
-    "succ": "succ declared FunctionalObjectProperty + a totality axiom (every individual has some succ-successor). Datalog has no equivalent explicit schema axiom -- totality is implicit in which succ(...) facts are asserted, not a separate declared constraint.",
-    "succ_assertions": "Ground succ(from, to) facts, one per history-adjacent moment pair. On the Datalog side these are the same facts already shown under 'indices' (_generate_structural_facts emits both together) -- listed separately here only because OWL's succ-assertion code path is its own method.",
-    "same_moment": "OWL's same_moment structure is STRATEGY-DEPENDENT (self.strategy.add_same_moment_structure, not a plain _add_* method) -- see EquivChainedNominalStrategy vs EquivFullCardinalityStrategy in index_strategies.py; not captured by this extractor, needs its own pass if wanted in the table. Datalog side: same_moment_base ground facts (not shown here, see 'indices') plus reflexive/transitive closure rules and top(I) defined as same_moment(I,I).",
-    "action_disjointness": "OWL: DisjointClasses per agent-moment where >1 action type is available. Datalog: no explicit disjointness declaration found in the structural-facts/rules output inspected here -- action exclusivity isn't separately axiomed the way OWL declares it (worth double-checking this isn't a gap, not just an intentional omission, before publishing).",
-    "action_assertions": "OWL: ClassAssertion per actual action taken, PLUS closed-world-assumption ObjectComplementOf assertions for every action NOT taken at that index (explicit negation). Datalog: plain action(I, 'name') facts only for actions taken -- negation is handled by Datalog's native closed-world assumption at query time, not asserted as explicit facts the way OWL needs to.",
-    "opposing": "OWL: SubClassOf(opposed_action, Opp2<opposing_action>) directly. Datalog: a default '__never__' fact for every opposing_X predicate (closed-world default: nothing is opposed unless proven) plus a conditional rule opposing_sd1(I) <= action(I, 'ha2') deriving it when the opposing action is actually taken.",
-    "propositions": "OWL: ClassAssertion(q) or ClassAssertion(ObjectComplementOf(q)) per index, matching the model's stated proposition/negation. Datalog: prop(I, 'q') or prop(I, '~q') facts, same information, string-based rather than class-based.",
-}
+from tools.translation_table.extract_structural import build_rows as build_structural_rows
 
 
 def build_ir() -> dict:
@@ -57,12 +42,20 @@ def build_ir() -> dict:
         primitives_ir.append({
             "method_name": row.method_name,
             "alon_syntax": row.alon_syntax,
+            "ascii_syntax": row.ascii_syntax,
             "owl": {
                 "shape": row.owl_shape,
                 "rendering": rendering["owl"],
                 "source": row.owl_source,
                 "source_file": row.owl_file,
                 "source_line": row.owl_line,
+            },
+            "sparql": {
+                "shape": row.sparql_shape,
+                "rendering": rendering["sparql"],
+                "source": row.sparql_source,
+                "source_file": row.sparql_file,
+                "source_line": row.sparql_line,
             },
             "datalog": {
                 "shape": row.datalog_shape,
@@ -73,15 +66,7 @@ def build_ir() -> dict:
             },
         })
 
-    structural_examples = build_structural_examples()
-    structural_ir = []
-    for category, content in structural_examples.items():
-        structural_ir.append({
-            "category": category,
-            "notes": STRUCTURAL_NOTES.get(category, "(no notes written yet)"),
-            "owl_example": content["owl"],
-            "datalog_example": content["datalog"],
-        })
+    structural_ir = build_structural_rows()
 
     return {
         "canonical_model": "streamlit_app/models/3.1.mmd",
