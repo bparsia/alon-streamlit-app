@@ -1091,6 +1091,138 @@ class Msc(FormulaNode):
 
 
 @dataclass
+class NessViaMsc(FormulaNode):
+    """MSC-based reformulation of NESS causation: ness_via_msc(a, φ).
+
+    Parseable so the AST pipeline (formula_parser.py, used by
+    builder.py's parse_queries -- the main query-parsing path) never
+    crashes on this operator's grammar rule. .expand() is not
+    implemented here: this pipeline's HierarchicalExpander is only
+    invoked by alo_docs/_runner.py, not the main analysis path; the
+    real, working expansion lives in
+    ExpanderTransformer.ness_via_msc() (expander_transformer.py),
+    which the main string-based serialization pipeline actually uses.
+    Port here if/when alo_docs needs this operator.
+    """
+    action: Action
+    formula: FormulaNode
+    provenance: Optional[str] = None
+
+    def modal_depth(self) -> int:
+        return self.formula.modal_depth() + 1
+
+    def __eq__(self, other) -> bool:
+        return (isinstance(other, NessViaMsc) and
+                self.action == other.action and
+                self.formula == other.formula)
+
+    def __str__(self) -> str:
+        return f"ness_via_msc({self.action}, {self.formula})"
+
+    def to_owl_name(self) -> str:
+        action_str = str(self.action).replace("{", "").replace("}", "").replace(":", "_").replace(", ", "_")
+        return f"ness_via_msc_{action_str}_{self.formula.to_owl_name()}"
+
+    def needs_expansion(self) -> bool:
+        return True
+
+    def expand(self, expander: 'HierarchicalExpander') -> 'FormulaNode':
+        raise NotImplementedError(
+            "NessViaMsc.expand() is not implemented in the AST/HierarchicalExpander "
+            "pipeline -- use ExpanderTransformer.ness_via_msc() (the string-based "
+            "expander/serializer pipeline) instead, or port this method if "
+            "alo_docs/_runner.py needs ness_via_msc specifically."
+        )
+
+    def should_be_named(self) -> bool:
+        return True
+
+
+@dataclass
+class ResMsc(FormulaNode):
+    """MSC-based variant of plain responsibility: [I res_msc]φ.
+
+    Same parseable-but-not-expandable-here status as NessViaMsc -- see
+    that class's docstring. Real expansion is
+    ExpanderTransformer.res_msc().
+    """
+    agent: Agent
+    formula: FormulaNode
+    provenance: Optional[str] = None
+
+    def modal_depth(self) -> int:
+        return self.formula.modal_depth() + 1
+
+    def __eq__(self, other) -> bool:
+        return (isinstance(other, ResMsc) and
+                self.agent == other.agent and
+                self.formula == other.formula)
+
+    def __str__(self) -> str:
+        return f"[{self.agent} res_msc]{self.formula}"
+
+    def to_owl_name(self) -> str:
+        return f"res_msc_{self.agent}_{self.formula.to_owl_name()}"
+
+    def needs_expansion(self) -> bool:
+        return True
+
+    def expand(self, expander: 'HierarchicalExpander') -> 'FormulaNode':
+        raise NotImplementedError(
+            "ResMsc.expand() is not implemented in the AST/HierarchicalExpander "
+            "pipeline -- use ExpanderTransformer.res_msc() instead, or port this "
+            "method if alo_docs/_runner.py needs res_msc specifically."
+        )
+
+    def should_be_named(self) -> bool:
+        return True
+
+
+@dataclass
+class ResCandidate(FormulaNode):
+    """Reasoner-only piece of res() with the ness conjunct removed:
+    [I res_candidate]φ. See docs/msc_operator_design.md's variant 3 --
+    the ness-as-post-step composition is not part of this node's
+    .expand() (or of any FormulaNode's), it happens outside the
+    reasoner entirely.
+
+    Same parseable-but-not-expandable-here status as NessViaMsc -- see
+    that class's docstring. Real expansion is
+    ExpanderTransformer.res_candidate().
+    """
+    agent: Agent
+    formula: FormulaNode
+    provenance: Optional[str] = None
+
+    def modal_depth(self) -> int:
+        return self.formula.modal_depth() + 1
+
+    def __eq__(self, other) -> bool:
+        return (isinstance(other, ResCandidate) and
+                self.agent == other.agent and
+                self.formula == other.formula)
+
+    def __str__(self) -> str:
+        return f"[{self.agent} res_candidate]{self.formula}"
+
+    def to_owl_name(self) -> str:
+        return f"res_candidate_{self.agent}_{self.formula.to_owl_name()}"
+
+    def needs_expansion(self) -> bool:
+        return True
+
+    def expand(self, expander: 'HierarchicalExpander') -> 'FormulaNode':
+        raise NotImplementedError(
+            "ResCandidate.expand() is not implemented in the AST/HierarchicalExpander "
+            "pipeline -- use ExpanderTransformer.res_candidate() instead, or port "
+            "this method if alo_docs/_runner.py needs res_candidate specifically."
+        )
+
+    def should_be_named(self) -> bool:
+        return True
+
+
+@dataclass
 class XSTIT(FormulaNode):
     """XSTIT operator: [1 xstit]φ."""
     agent: Agent

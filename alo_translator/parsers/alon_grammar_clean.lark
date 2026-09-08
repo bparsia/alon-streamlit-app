@@ -37,11 +37,14 @@ expansion_axiom: formula "=>" IDENTIFIER
         | but_for
         | ness
         | msc
+        | ness_via_msc
         | xstit
         | dxstit
         | pres
         | sres
         | res
+        | res_msc
+        | res_candidate
         | do_action
         | free_do_action
         | opposing
@@ -66,6 +69,7 @@ expected_result: "do" "(" action_expr ")" "[+]->" negation
 but_for: "but" "(" action_expr "," formula ")"
 ness: "ness" "(" action_expr "," formula ")"
 msc: "msc" "(" action_expr "," formula ")"
+ness_via_msc: "ness_via_msc" "(" action_expr "," formula ")"
 
 // STIT operators
 xstit: "[" agent_expr "XSTIT" "]" formula
@@ -75,6 +79,8 @@ dxstit: "[" agent_expr "DXSTIT" "]" formula
 pres: "[" agent_expr "pres" "]" formula
 sres: "[" agent_expr "sres" "]" formula
 res: "[" agent_expr "res" "]" formula
+res_msc: "[" agent_expr "res_msc" "]" formula
+res_candidate: "[" agent_expr "res_candidate" "]" formula
 
 // Atoms and parenthesized formulas
 ?atom: "(" formula ")"                             -> parens

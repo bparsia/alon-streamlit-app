@@ -41,11 +41,14 @@
       | but_for
       | ness
       | msc
+      | ness_via_msc
       | xstit
       | dxstit
       | potential_responsibility
       | strong_responsibility
       | plain_responsibility
+      | res_msc_responsibility
+      | res_candidate_responsibility
       | do_action_op
       | free_do_action_op
       | opposing_op
@@ -70,6 +73,7 @@ expected_result: "do" "(" action_expr ")" "[+]->" unary    -> expected_result
 but_for: "but" "(" action_expr "," formula ")"     -> but_for
 ness: "ness" "(" action_expr "," formula ")"       -> ness
 msc: "msc" "(" action_expr "," formula ")"         -> msc
+ness_via_msc: "ness_via_msc" "(" action_expr "," formula ")"  -> ness_via_msc
 
 // STIT operators
 xstit: "[" agent_expr "XSTIT" "]" unary            -> xstit
@@ -79,6 +83,8 @@ dxstit: "[" agent_expr "DXSTIT" "]" unary          -> dxstit
 potential_responsibility: "[" agent_expr "pres" "]" unary   -> pres
 strong_responsibility: "[" agent_expr "sres" "]" unary      -> sres
 plain_responsibility: "[" agent_expr "res" "]" unary        -> res
+res_msc_responsibility: "[" agent_expr "res_msc" "]" unary        -> res_msc
+res_candidate_responsibility: "[" agent_expr "res_candidate" "]" unary  -> res_candidate
 
 // Atoms
 ?atom: "(" formula ")"                             -> parens

@@ -491,6 +491,80 @@ class ExpanderTransformer(AlonTransformer):
         self.axioms.add(f"({expansion}) => {name}")
         return name
 
+    @staticmethod
+    def _powerset(iterable):
+        "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
+        from itertools import chain, combinations
+        s = list(iterable)
+        return chain.from_iterable(combinations(s, r) for r in range(len(s) + 1))
+
+    def _msc_conjunction_str(self, J, action, formula) -> str:
+        """Build "do(action) & [J]φ & ⋀K⊂J (~[K]φ)" for one candidate J:
+        is J itself sufficient for φ, and minimal (no proper subset of
+        J, including ∅, is also sufficient)?
+
+        `action` is the raw action string tested by do(...) (msc's own
+        target, or the fixed a_I ness() is checking membership for —
+        these can differ from J when called from ness_via_msc, where J
+        ranges over supersets of a_I but do(...) should still check
+        a_I specifically). Shared by msc() (single candidate, J = the
+        parsed target action) and ness_via_msc() (called once per
+        superset candidate J, then OR'd together) so both operators run
+        the identical sufficiency+minimality logic, not two copies of it.
+
+        Returns the conjunction string (no name registered, no axiom
+        added for the conjunction itself — only for its sub-expressions
+        via recursive transform calls).
+        """
+        do_expr = f"do({action})"
+
+        if len(J) == 1:
+            a, act = J[0]
+            sufficient_expr = f"[{act}{a}]{formula}"
+        else:
+            group_str = "{" + ", ".join(f"{a}:{act}" for a, act in sorted(J)) + "}"
+            sufficient_expr = f"[{group_str}]{formula}"
+
+        tree = self.parser.parse(sufficient_expr)
+        sufficient_name = self.transform(tree)
+
+        minimality_parts = []
+
+        # K=∅ included iff ness_empty_sufficient (original semantics: if
+        # φ is inevitable, ∅ is sufficient and blocks minimality).
+        min_k = 0 if self.ness_empty_sufficient else 1
+        proper_subsets = [
+            list(subset) for subset in self._powerset(J)
+            if min_k <= len(subset) < len(J)
+        ]
+
+        for K in proper_subsets:
+            if len(K) == 0:
+                pos_sufficient_expr = f"[]X{formula}"
+            elif len(K) == 1:
+                a, act = K[0]
+                pos_sufficient_expr = f"[{act}{a}]{formula}"
+            else:
+                group_str = "{" + ", ".join(f"{a}:{act}" for a, act in sorted(K)) + "}"
+                pos_sufficient_expr = f"[{group_str}]{formula}"
+
+            # Named-negation trick: negate the body, not the name, since
+            # OWA gives "expansion => pos_name" (expansion sub pos_name)
+            # but not the converse — see ness()'s original comment.
+            tree = self.parser.parse(pos_sufficient_expr)
+            pos_name = self.transform(tree)
+            body = self._get_axiom_body(pos_name)
+            if body is not None:
+                neg_formula_str = f"~({body})"
+                neg_name = self._name_for(neg_formula_str)
+                self.axioms.add(f"{neg_formula_str} => {neg_name}")
+                minimality_parts.append(neg_name)
+            else:
+                minimality_parts.append(f"~{pos_name}")
+
+        parts = [do_expr, sufficient_name] + minimality_parts
+        return " & ".join(parts)
+
     def msc(self, items):
         """msc(a, φ)  →  do(a) & [a]φ & ⋀K⊂a (~[K]φ)
 
@@ -513,62 +587,58 @@ class ExpanderTransformer(AlonTransformer):
         if not h1_cga:
             raise ValueError("Evaluation history CGA is empty — cannot expand msc")
 
-        # Parse action string to get {agent: action_type} mapping
         parsed_actions = self._parse_action_str(action)
         J = sorted(parsed_actions.items())  # [('1', 'sd'), ('2', 'ha')]
 
-        do_expr = f"do({action})"
+        expansion = self._msc_conjunction_str(J, action, formula)
 
-        # Build [J]φ and recursively expand — sufficiency of a itself
-        if len(J) == 1:
-            a, act = J[0]
-            sufficient_expr = f"[{act}{a}]{formula}"
-        else:
-            group_str = "{" + ", ".join(f"{a}:{act}" for a, act in J) + "}"
-            sufficient_expr = f"[{group_str}]{formula}"
+        self.axioms.add(f"({expansion}) => {name}")
+        return name
 
-        tree = self.parser.parse(sufficient_expr)
-        sufficient_name = self.transform(tree)
+    def ness_via_msc(self, items):
+        """ness_via_msc(a_I, φ)  →  ⋁β_J⊇{a_I} msc's own sufficiency+
+        minimality conjunction for J
 
-        # Build minimality checks: ⋀K⊂a (~[K]φ) — identical to ness()'s
-        # per-candidate minimality logic, applied to a itself.
-        from itertools import chain, combinations
+        MSC-based reformulation of ness(a_I, φ): per the paper's theorem
+        (nessCause(a,φ) ⟺ ∃b. a⊑b, msCause(b,φ)), a_I is a NESS cause
+        of φ iff some superset J of a_I (within the CGA) is itself a
+        minimal sufficient set. Computes the identical powerset-of-
+        supersets enumeration ness() does, but delegates each
+        candidate's sufficiency+minimality check to
+        _msc_conjunction_str -- the same routine msc() uses -- instead
+        of ness()'s own inlined copy of that logic.
 
-        def powerset(iterable):
-            s = list(iterable)
-            return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+        Kept side by side with ness() (not a replacement) as the
+        MSC-based variant for regression comparison -- see
+        docs/msc_operator_design.md.
 
-        minimality_parts = []
+        Adds: expansion => ness_via_msc_a_φ
+        Returns: ness_via_msc_a_φ
+        """
+        action, formula = items
+        name = self._name_for(f"ness_via_msc({action}, {formula})")
 
-        min_k = 0 if self.ness_empty_sufficient else 1
-        proper_subsets = [
-            list(subset) for subset in powerset(J)
-            if min_k <= len(subset) < len(J)
+        if self.model is None:
+            raise ValueError("Model required for ness_via_msc operator")
+
+        h1_cga = self._get_eval_history_cga()
+        if not h1_cga:
+            raise ValueError("Evaluation history CGA is empty — cannot expand ness_via_msc")
+
+        parsed_actions = self._parse_action_str(action)
+        h1_actions = sorted(h1_cga.items())
+        target_actions = set(parsed_actions.items())
+
+        relevant_subsets = [
+            list(subset) for subset in self._powerset(h1_actions)
+            if target_actions.issubset(set(subset))
         ]
 
-        for K in proper_subsets:
-            if len(K) == 0:
-                pos_sufficient_expr = f"[]X{formula}"
-            elif len(K) == 1:
-                a, act = K[0]
-                pos_sufficient_expr = f"[{act}{a}]{formula}"
-            else:
-                group_str = "{" + ", ".join(f"{a}:{act}" for a, act in sorted(K)) + "}"
-                pos_sufficient_expr = f"[{group_str}]{formula}"
-
-            tree = self.parser.parse(pos_sufficient_expr)
-            pos_name = self.transform(tree)
-            body = self._get_axiom_body(pos_name)
-            if body is not None:
-                neg_formula_str = f"~({body})"
-                neg_name = self._name_for(neg_formula_str)
-                self.axioms.add(f"{neg_formula_str} => {neg_name}")
-                minimality_parts.append(neg_name)
-            else:
-                minimality_parts.append(f"~{pos_name}")
-
-        parts = [do_expr, sufficient_name] + minimality_parts
-        expansion = " & ".join(parts)
+        disjuncts = [
+            f"({self._msc_conjunction_str(J, action, formula)})"
+            for J in relevant_subsets
+        ]
+        expansion = " v ".join(disjuncts)
 
         self.axioms.add(f"({expansion}) => {name}")
         return name
@@ -687,5 +757,80 @@ class ExpanderTransformer(AlonTransformer):
 
         # Build res expansion (Def 3.11: add contingency ~[]Xφ and freedom ~[]do(αI))
         expansion = f"(do({actual_action}) & {expected_name} & {ness_name} & ~[]X{formula} & ~[]do({actual_action}))"
+        self.axioms.add(f"{expansion} => {name}")
+        return name
+
+    def res_msc(self, items):
+        """[I res_msc]φ  →  do(α_I) & (do(α_I) [+]-> φ) & ness_via_msc(α_I, φ) & ~[]Xφ & ~[]do(α_I)
+
+        MSC-based variant of res(): identical shape and one-axiom
+        splicing pattern, but uses ness_via_msc instead of ness for the
+        causal-cause conjunct. Kept side by side with res() for
+        regression comparison -- see docs/msc_operator_design.md.
+        Expected to be logically equivalent to res() (variant 1).
+
+        Adds: (do(α_I) & expected_result_name & ness_via_msc_name & ~[]Xφ & ~[]do(α_I)) => res_msc_I_φ
+        Returns: res_msc_I_φ
+        """
+        agent, formula = items
+        name = self._name_for(f"[{agent} res_msc]{formula}")
+
+        if self.model is None:
+            raise ValueError("Model required for res_msc operator")
+
+        h1_cga = self._get_eval_history_cga()
+        actual_action = self._get_actual_action_str(agent, h1_cga)
+        if actual_action is None:
+            self.always_false_names.add(name)
+            return name
+
+        expected_expr = f"do({actual_action}) [+]-> {formula}"
+        tree = self.parser.parse(expected_expr)
+        expected_name = self.transform(tree)
+
+        ness_msc_expr = f"ness_via_msc({actual_action}, {formula})"
+        tree = self.parser.parse(ness_msc_expr)
+        ness_msc_name = self.transform(tree)
+
+        expansion = f"(do({actual_action}) & {expected_name} & {ness_msc_name} & ~[]X{formula} & ~[]do({actual_action}))"
+        self.axioms.add(f"{expansion} => {name}")
+        return name
+
+    def res_candidate(self, items):
+        """[I res_candidate]φ  →  do(α_I) & (do(α_I) [+]-> φ) & ~[]Xφ & ~[]do(α_I)
+
+        The reasoner-side piece of res() with the ness conjunct removed
+        -- everything res() needs except NESS-causehood. Structurally
+        different from res()/res_msc(): this variant's ness component
+        is meant to be computed separately (in-reasoner or otherwise)
+        and combined with this axiom's result via a plain boolean AND
+        OUTSIDE the reasoner, not spliced into one axiom. See
+        docs/msc_operator_design.md's variant 3.
+
+        This method only builds the res_candidate axiom itself -- the
+        AND-with-ness composition is the caller's responsibility (not
+        yet wired into any analysis pipeline; res_candidate is usable
+        standalone as a query today).
+
+        Adds: (do(α_I) & expected_result_name & ~[]Xφ & ~[]do(α_I)) => res_candidate_I_φ
+        Returns: res_candidate_I_φ
+        """
+        agent, formula = items
+        name = self._name_for(f"[{agent} res_candidate]{formula}")
+
+        if self.model is None:
+            raise ValueError("Model required for res_candidate operator")
+
+        h1_cga = self._get_eval_history_cga()
+        actual_action = self._get_actual_action_str(agent, h1_cga)
+        if actual_action is None:
+            self.always_false_names.add(name)
+            return name
+
+        expected_expr = f"do({actual_action}) [+]-> {formula}"
+        tree = self.parser.parse(expected_expr)
+        expected_name = self.transform(tree)
+
+        expansion = f"(do({actual_action}) & {expected_name} & ~[]X{formula} & ~[]do({actual_action}))"
         self.axioms.add(f"{expansion} => {name}")
         return name

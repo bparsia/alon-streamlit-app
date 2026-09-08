@@ -274,11 +274,14 @@ class FormulaToDatalog(Transformer):
     def but_for(self, items):       self._must_not_appear("but_for", items)
     def ness(self, items):          self._must_not_appear("ness", items)
     def msc(self, items):           self._must_not_appear("msc", items)
+    def ness_via_msc(self, items):  self._must_not_appear("ness_via_msc", items)
     def xstit(self, items):         self._must_not_appear("xstit", items)
     def dxstit(self, items):        self._must_not_appear("dxstit", items)
     def pres(self, items):          self._must_not_appear("pres", items)
     def sres(self, items):          self._must_not_appear("sres", items)
     def res(self, items):           self._must_not_appear("res", items)
+    def res_msc(self, items):       self._must_not_appear("res_msc", items)
+    def res_candidate(self, items): self._must_not_appear("res_candidate", items)
     def opposing(self, items):      self._must_not_appear("opposing", items)
 
     def generate_rules(self):

@@ -21,8 +21,9 @@ from alo_translator.model.formula import (
     FormulaNode, Prop, DoAction, FreeDoAction, Opposing,
     Negation, Conjunction, Disjunction, Implication, Biconditional,
     Box, Diamond, Next, Top, Bottom,
-    PDLBox, PDLDiamond, ExpectedResult, ButFor, Ness, Msc,
+    PDLBox, PDLDiamond, ExpectedResult, ButFor, Ness, Msc, NessViaMsc,
     XSTIT, DXSTIT, PotentialResponsibility, StrongResponsibility, PlainResponsibility,
+    ResMsc, ResCandidate,
     # Action/Agent types
     IndividualAction, GroupAction, IndividualAgent, AgentGroup, NamedAgentGroup,
 )
@@ -221,6 +222,10 @@ class FormulaTransformer(Transformer):
         """Minimal sufficient cause: msc(a1, φ)"""
         return Msc(items[0], items[1])
 
+    def ness_via_msc(self, items):
+        """MSC-based NESS reformulation: ness_via_msc(a1, φ)"""
+        return NessViaMsc(items[0], items[1])
+
     # ========================================================================
     # STIT operators
     # ========================================================================
@@ -248,6 +253,14 @@ class FormulaTransformer(Transformer):
     def res(self, items):
         """Plain responsibility: [1 res]φ"""
         return PlainResponsibility(items[0], items[1])
+
+    def res_msc(self, items):
+        """MSC-based variant of plain responsibility: [1 res_msc]φ"""
+        return ResMsc(items[0], items[1])
+
+    def res_candidate(self, items):
+        """Reasoner-only piece of res() minus the ness conjunct: [1 res_candidate]φ"""
+        return ResCandidate(items[0], items[1])
 
 
 # Load grammar file
