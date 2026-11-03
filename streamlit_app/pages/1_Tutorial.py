@@ -9,8 +9,6 @@ from alo_translator.parsers.dbt_parser import parse_dbt_diagram
 from utils import (
     analysis_button,
     copy_button,
-    format_results_table,
-    run_analysis_datalog,
 )
 
 st.set_page_config(page_title="Tutorial — ALOn Model Explorer", page_icon="📖")
@@ -19,13 +17,13 @@ st.title("Tutorial")
 
 st.markdown("""# ALOn Causal Model basics
 
-For a "single step" model, i.e., when we are evaluating the effects of actions at a moment on possible next moments. We need to know which scenario we are considering. A casudsl scenario consists of:
+For a "single step" model, i.e., when we are evaluating the effects of actions at a moment on possible next moments. We need to know which scenario we are considering. A causal scenario consists of:
 
 1. a set of agents each with a set of available actions
 2. a "moment" where those agents might do some combinations of the available actions
 3. possible histories which correspond to different sets of actions those agents did
 
-By convention, the moment/history pair, `m/h1` is where we are evaluating responsibility. We need alternative histories (`m/h2`, `m/h3`) to determine what *would* have happend if the agents had acted otherwise. So a "scenario" specification needs to detail a possible histor for each "complete" set of actions.""")
+By convention, the moment/history pair, `m/h1` is where we are evaluating responsibility. We need alternative histories (`m/h2`, `m/h3`) to determine what *would* have happend if the agents had acted otherwise. So a "scenario" specification needs to detail a possible history for each "complete" set of actions.""")
 
 
 with st.expander("A trivial, single agent, scenario", expanded=False):
@@ -38,10 +36,6 @@ with st.expander("A trivial, single agent, scenario", expanded=False):
     ---
     title: Trivial 1 agent case
     type: DBT
-    actions:
-      1:
-        - sd
-        - ss
     aliases:
       1: Alice
       sd: shoots Dan
@@ -52,10 +46,7 @@ with st.expander("A trivial, single agent, scenario", expanded=False):
 
     The header is bracketed by `---` each on it's own line. You can add a title and other metadata. `type` is either `DBT` or `Index`.
 
-    Agents are represented by positive integers. For each agent you need to enumerate the "agent types" available to that agent.
-
-    You can also (optionally) add informative aliases for agents, action types, and propositions but currently these are just for the reader.
-
+    Agents are represented by positive integers. For each agent you can add a friendly alias. You can also do that for action *types* (`sd`) and propostionals (`Dan dies`). These can make reading a results table much easier. They are optional.
     After the closing `---`, you specify the temporal  structure as a Mermaid class diagram:
 
     ``` mermaid
@@ -77,15 +68,13 @@ with st.expander("A trivial, single agent, scenario", expanded=False):
     MODEL_1 ="""---
 title: Trivial 1 agent case
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
 aliases:
   1: Alice
   sd: shoots Dan
   ss: stands still
   q: Dan dies
+res_analyse:
+  - [m/h1, q]
 ---
 classDiagram
 direction BT
@@ -106,7 +95,22 @@ direction BT
     model = parse_dbt_diagram(MODEL_1)
 
     st.markdown(
-        """At this point we can run a complete responsibility analysis at `m/h1`. That is, for every possible "actor" (individual agent or group), we determine if that actor is potentially responsible (`pres`), strongly responsible (`sres`), or plainly responsible (`res`). We also determine whether the actor sees to it that the outcome happens (`dxstit`) and whether thier action is an actual cause of the outcome (either as a but for cause or a NESS (necessary element of a sufficient set) cause).
+        """While pretty, in order to do an responsibility analysis, we need to specify a point of evaluation and an outcome. We do this in the header:
+        
+    ``` yaml
+    ---
+    title: Trivial 1 agent case
+    type: DBT
+    aliases:
+      1: Alice
+      sd: shoots Dan
+      ss: stands still
+      q: Dan dies
+      res_analyse:
+        - [m/h1, q]
+    ---
+    ```
+    We can add as many point (also known as an "index")/outcome pairs as wel like. At this point we can run a complete responsibility analysis at `m/h1` for `q`. That is, for every possible "actor" (individual agent or group), we determine if that actor is potentially responsible (`pres`), strongly responsible (`sres`), or plainly responsible (`res`). We also determine whether the actor sees to it that the outcome happens (`dxstit`) and whether their action is an actual cause of the outcome (either as a but for cause or a NESS (necessary element of a sufficient set) cause).
         
 Click the button to see the results. A tick means the corresponding formula is true at `m/h1` and a blank means that it is false there."""
     )
@@ -119,15 +123,13 @@ Click the button to see the results. A tick means the corresponding formula is t
     MODEL_2 = """---
 title: Trivial 1 agent case
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
 aliases:
   1: Alice
   sd: shoots Dan
   ss: stands still
-  q: Dan dies
+  q: Dan dies   
+res_analyse:
+  - [m/h1, q]
 ---
 classDiagram
 direction BT
@@ -142,46 +144,18 @@ direction BT
         label="▶️ Run Analysis on a model where Dan is doomed no matter what Alice does.",
     show_legend=False)
 
-with st.expander("Shortcuts", expanded=False):
-    st.markdown("""In order to have a model of the right sort and consistent with the semantics of ALOn, we must have one history for each "complete group action" that is for each possible combination of 1 action per agent. That is, we must enumerate the cross product of sets of available actions for agents. E.g., 2 agents with 2 actions each require 4 histories. Adding another agent with 2 actions takes you to 8 and so on.
 
-The key information from a history is whether or not the outcome of interest holds. Since this is (in current models) just whether a proposition or its negation holds, we take advantage of that and allow the modeller to omit histories where the negation holds. Thus the following spec is equivalent to our original model:
+st.markdown("""In order to have a model of the right sort and consistent with the semantics of ALOn, we must have one history for each "complete group action" that is for each possible combination of 1 action per agent. That is, we must enumerate the cross product of sets of available actions for agents. E.g., 2 agents with 2 actions each require 4 histories. Adding another agent with 2 actions takes you to 8 and so on.
+    
+Note: We derive the set of agents and their available actions *from the DBT structure*. So, as a modeller, you need to keep track of them as you build up your DBT structure.
 
-```
----
-title: Trivial 1 agent case
-type: DBT
-actions:
-  1:
-    - sd
-    - ss
-aliases:
-  1: Alice
-  sd: shoots Dan
-  ss: stands still
-  q: Dan dies
----
-classDiagram
-direction BT
-  m --> m1 : h1({sd1})
-  m1: q
-```
+In these single step models (rather model fragments), the outcomes happens at the leaf nodes and we do not add any actions to those nodes. While, from a model perspective, the root node should have every proprosition (or its negation), we can safely omit propositions on the root node since not of our formulae that we are checking at `m/h1` can depend on propositional true (or false) at `m/h1`.
 
-This will produce the exact same responsibility analysis as the complete spec.
-
-(In future implementations, we may support designating the default rule in case it'd be more efficient to default to the positive proposition.) Several of the example models are partial models.
 """)
 
 MODEL_3 = """---
-title: Example 3.5
+title: Example 3.1 from Where Responsibility Takes You
 type: DBT
-actions:
-  1:
-    - sd
-    - ss
-  2:
-    - ss
-    - ha
 opposings:
   sd1:
     - ha2
@@ -192,18 +166,26 @@ aliases:
   ss: stands still
   ha: hits Alice
   q: Dan dies
+res_analyse:
+  - [m/h1, q]
 ---
 classDiagram
 direction BT
   m --> m1 : h1({sd1, ss2})
-  m1: q"""
+  m --> m2 : h2({sd1, ha2})
+  m --> m3 : h3({ss1, ss2})
+  m --> m4 : h4({ss1, ha2})
+  m1: q
+  m2: ~q
+  m3: ~q
+  m4: ~q
+"""
 with st.expander("An example with opposing", expanded=False):
-    st.markdown(f"""While the trivial, 1 agent examples suffices to show that there is meaningful responsibility attribute even for a single agent, the interesting scenarios for ALOn is where there are multiple agents acting in concert or in opposition. We can thus extend our initial model to example 3.5 from Where Responsibility Takes You:
+    st.markdown(f"""While the trivial, 1 agent example suffices to show that there is meaningful responsibility attribution even for a single agent, the interesting scenarios for ALOn is where there are multiple agents acting in concert or in opposition. We can thus extend our initial model to example 3.5 from Where Responsibility Takes You:
      
 ```
 {MODEL_3}
 ```  
-(Note, since in all other histories Dan doesn't die, we just specify `h1`.)
 
 In addition to adding a second agent (2, aka, "Beth") and an additional action type (`ha` aka "hits Alice"), we add an opposing relation between *Beth's* hitting Alice and *Alice's* shooting Dan. 
 
@@ -217,9 +199,9 @@ Note that not all action types are available to all agents: We don't model Beth'
     st.image('streamlit_app/pages/images/3.5results.png')
     st.markdown("""(We don't show all the lower level queries in our standard table. You can test fairly arbitrary formulae using the underlying toolkit.)
     
-One point to note is that our responsibility analysis is *complete* that is we test all the causation and responsibility queries for *all* relevant actions and actors. Thus when look the book results, we do not see any analysis of the group of Alice and Beth or their joint action of (Alice) shooting Dan *and* (Beth) standing still. Interestingly, the group of Alice and Beth is *at least* as responsible as Alice is alone, but also while the group sees to it that Dan dies, Alice alone does not. This teases out the way that Beth's omission is causally relevant: She's didn't cause Dan's death, but she and Alice together did.""")
+One point to note is that our responsibility analysis is *complete* that is we test all the causation and responsibility queries for *all* relevant actions and actors. Thus when look results table in the book, we do not see any analysis of the group of Alice and Beth or their joint action of (Alice) shooting Dan *and* (Beth) standing still. Interestingly, the group of Alice and Beth is *at least* as responsible as Alice is alone, but also while the group sees to it that Dan dies, Alice alone does not. This teases out the way that Beth's omission is causally relevant: She's didn't cause Dan's death, but she and Alice together did.""")
 
 
 with st.expander("Next Steps", expanded=False):
-    st.markdown("""You're now ready to explore! There are several pre-defined models you can load from the menu in the sidebar including all 4 examples from chapter 3 in "Where Responsibility Takes You". If you come up with other intereting models, please submit them for sharing.
+    st.markdown("""You're now ready to explore! There are several pre-defined models you can load from the menu in the sidebar including all 4 examples from chapter 3 in "Where Responsibility Takes You".
 """)
