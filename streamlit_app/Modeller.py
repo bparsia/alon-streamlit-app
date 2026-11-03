@@ -102,12 +102,6 @@ st.markdown(
 )
 st.markdown("""
 You may load or enter either a Discrete Branching Time or an Index style model.
-The model can also be *partially* specified:
-
-1. You can omit some complete group actions (and their associated histories).
-   You must always designate h1 (the evaluation history); additional ones
-   should be consecutively numbered.
-2. If a successor moment is omitted, it defaults to the negation of the target outcome.
 """)
 
 mermaid_text = st.session_state.mermaid_input  # may be updated below
@@ -122,7 +116,7 @@ with st.expander("Model Definition", expanded=True):
     with col_edit:
         st.subheader("Mermaid Text")
         mermaid_text = st.text_area(
-            "Enter Mermaid diagram",
+            "Enter Mermaid source",
             value=st.session_state.mermaid_input,
             height=400,
             key="mermaid_editor",
@@ -132,7 +126,7 @@ with st.expander("Model Definition", expanded=True):
             st.session_state.mermaid_input = mermaid_text
 
     with col_preview:
-        st.subheader("Partial Diagram")
+        st.subheader("Rendered Diagram")
         if mermaid_text.strip():
             st_mermaid(mermaid_text, height=600)
         else:

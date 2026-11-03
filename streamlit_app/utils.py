@@ -89,6 +89,50 @@ def konclude_path() -> Optional[Path]:
     return None
 
 
+def robot_path() -> Optional[Path]:
+    """Return ROBOT wrapper-script path, or None if not available.
+
+    Mirrors konclude_path()'s discovery order exactly:
+    1. ROBOT_PATH in .streamlit/secrets.toml (Streamlit Cloud / local override)
+    2. reasoner_config.toml in project root or next to this file (local dev)
+    """
+    if not _KONCLUDE_IMPORTS_OK:
+        return None
+
+    # 1. Streamlit secrets
+    try:
+        p = Path(st.secrets["ROBOT_PATH"])
+        if p.exists():
+            return p
+    except (KeyError, Exception):
+        pass
+
+    # 2. reasoner_config.toml
+    try:
+        from alo_translator.reasoners.config import load_config
+        for config_path in [
+            Path("reasoner_config.toml"),
+            Path(__file__).parent / "reasoner_config.toml",
+            Path(__file__).parent.parent / "reasoner_config.toml",
+        ]:
+            try:
+                config = load_config(config_path)
+                raw = config.reasoners["robot"].path
+                if not raw:
+                    continue
+                p = Path(raw)
+                if not p.is_absolute():
+                    p = config_path.parent / p
+                if p.is_file():
+                    return p
+            except Exception:
+                continue
+    except ImportError:
+        pass
+
+    return None
+
+
 def setup_queries(model, result_prop: str, eval_history: str):
     """Attach responsibility config, generate and parse queries. Mutates model."""
     model.responsibility_config = ResponsibilityConfig(
@@ -104,27 +148,28 @@ def setup_queries(model, result_prop: str, eval_history: str):
     return parse_queries(model)
 
 
-def analysis_button(key: str, model, result_prop: str = "q", eval_point: str = "m/h1",
-                    label: str = "▶️ Run Analysis", show_legend: bool = True) -> None:
+def analysis_button(key: str, model, label: str = "▶️ Run Analysis",
+                    show_legend: bool = True) -> None:
     """
     Render a self-contained analysis button that persists results across reruns.
 
+    Uses the layered analysis pathway (run_analysis_datalog_layered +
+    format_layered_results_table), driven by the model's res_analyse /
+    evaluations. The model must carry at least one evaluation point.
+
     Args:
         key: Unique session_state key for this analysis (e.g. "tut_analysis_1").
-        model: Parsed ALOn model.
-        result_prop: Outcome proposition to evaluate (default "q").
-        eval_point: "moment/history" to evaluate at (default "m/h1").
+        model: Parsed ALOn model (must have res_analyse / evaluations set).
         label: Button label text.
+        show_legend: Retained for call-site compatibility; the layered
+            table does not emit the flat but/ness legend.
     """
     if st.button(label, key=f"btn_{key}"):
         with st.spinner("Running…"):
-            eval_history = eval_point.split("/")[1] if "/" in eval_point else "h1"
-            satisfied    = run_analysis_datalog(model, result_prop, eval_history)
+            satisfied = run_analysis_datalog_layered(model)
             if satisfied is not None:
                 # Store the rendered markdown — model.queries won't survive the rerun
-                st.session_state[key] = format_results_table(model, satisfied, result_prop,
-                                                              show_legend=show_legend,
-                                                              eval_point=eval_point)
+                st.session_state[key] = format_layered_results_table(model, satisfied)
 
     if key in st.session_state:
         results_md = st.session_state[key]
